@@ -25,9 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-gbks$prf3dlx-_not8=@mtd6f%6^210_2u*jkbu@gt-&6gkgm@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'logisedge.onrender.com',
+    'localhost',
+    '127.0.0.1',
+]
 
 
 
