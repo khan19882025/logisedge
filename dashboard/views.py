@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db.models import Q
 from django.urls import reverse
+from django.http import JsonResponse
 from datetime import date, timedelta
 from .models import ActivityLog
 
@@ -479,3 +480,8 @@ def get_warehouse_stats():
             'occupied': 0,
             'free': 0,
         }
+
+
+def health_check(request):
+    """Simple health check endpoint for deployment platforms"""
+    return JsonResponse({'status': 'healthy', 'timestamp': timezone.now().isoformat()})

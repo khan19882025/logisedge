@@ -58,7 +58,6 @@ urlpatterns = [
     path('fiscal-year/', include('fiscal_year.urls', namespace='fiscal_year')),
     path('login/', CustomLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
-    path('', CustomLoginView.as_view(), name='home'),
     path('reports/accounts-receivable-aging/', include('accounts_receivable_aging.urls')),
     path('chart-of-accounts/', include('chart_of_accounts.urls', namespace='chart_of_accounts')),
     path('payment-source/', include('payment_source.urls', namespace='payment_source')),
