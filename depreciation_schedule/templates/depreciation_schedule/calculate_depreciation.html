@@ -1,0 +1,178 @@
+{% extends 'depreciation_schedule/base.html' %}
+{% load static %}
+
+{% block title %}Calculate Depreciation - {{ schedule.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_list' %}">Schedules</a></li>
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}">{{ schedule.name }}</a></li>
+<li class="breadcrumb-item active">Calculate Depreciation</li>
+{% endblock %}
+
+{% block depreciation_schedule_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-calculator me-2"></i>Calculate Depreciation
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info" role="alert">
+                    <h5 class="alert-heading">Depreciation Calculation</h5>
+                    <p>You are about to calculate depreciation for the schedule <strong>"{{ schedule.name }}"</strong>.</p>
+                    <hr>
+                    <p class="mb-0">This will calculate depreciation for all eligible assets from {{ schedule.start_date|date:"M d, Y" }} to {{ schedule.end_date|date:"M d, Y" }}.</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Schedule Details</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Schedule Number:</dt>
+                            <dd class="col-sm-8">{{ schedule.schedule_number }}</dd>
+                            
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">{{ schedule.name }}</dd>
+                            
+                            <dt class="col-sm-4">Start Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.start_date|date:"M d, Y" }}</dd>
+                            
+                            <dt class="col-sm-4">End Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.end_date|date:"M d, Y" }}</dd>
+                            
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-{{ schedule.status }} rounded-pill">
+                                    {{ schedule.get_status_display }}
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Calculation Summary</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Eligible Assets
+                                <span class="badge bg-primary rounded-pill" id="eligible-assets-count">Calculating...</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Estimated Depreciation
+                                <span class="badge bg-success rounded-pill" id="estimated-depreciation">Calculating...</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Calculation Method
+                                <span class="text-muted">Straight-line / Declining Balance</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <hr>
+
+                <form method="post" id="calculate-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirm-calculation" name="confirm_calculation" required>
+                                    <label class="form-check-label" for="confirm-calculation">
+                                        I confirm that I want to calculate depreciation for the selected period
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="include-disposed" name="include_disposed">
+                                    <label class="form-check-label" for="include-disposed">
+                                        Include assets that were disposed during the period
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="recalculate-existing" name="recalculate_existing">
+                                    <label class="form-check-label" for="recalculate-existing">
+                                        Recalculate existing depreciation entries
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success" id="calculate-btn" disabled>
+                            <i class="bi bi-calculator me-2"></i>Calculate Depreciation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">Calculating Depreciation</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <p class="text-center" id="progress-text">Initializing calculation...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirm-calculation');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const calculateForm = document.getElementById('calculate-form');
+    const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+    
+    // Enable/disable calculate button based on confirmation
+    confirmCheckbox.addEventListener('change', function() {
+        calculateBtn.disabled = !this.checked;
+    });
+    
+    // Show progress modal on form submit
+    calculateForm.addEventListener('submit', function() {
+        progressModal.show();
+    });
+    
+    // Load eligible assets count
+    fetch('{% url "depreciation_schedule:api" %}?action=eligible_assets&schedule_id={{ schedule.pk }}')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('eligible-assets-count').textContent = data.count || 0;
+            document.getElementById('estimated-depreciation').textContent = data.estimated_depreciation || '0.00';
+        })
+        .catch(error => {
+            console.error('Error loading eligible assets:', error);
+            document.getElementById('eligible-assets-count').textContent = 'Error';
+            document.getElementById('estimated-depreciation').textContent = 'Error';
+        });
+});
+</script>
+{% endblock %}

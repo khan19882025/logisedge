@@ -1,0 +1,384 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Transactions - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'all_transactions/css/all_transactions.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="transactions-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="transactions-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-list-alt"></i> All Transactions</h1>
+                    <p class="subtitle">
+                        View, search, and analyze all accounting transactions across modules
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group">
+                        <a href="{% url 'all_transactions:transaction_dashboard' %}" class="btn btn-light">
+                            <i class="fas fa-chart-bar"></i> Dashboard
+                        </a>
+                        <button type="button" class="btn btn-light" id="toggle-filters">
+                            <i class="fas fa-filter"></i> Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Filter Sidebar -->
+            <div class="col-lg-3">
+                <div class="filter-sidebar">
+                    <h4><i class="fas fa-filter"></i> Filters</h4>
+                    
+                    <form id="filter-form" method="get">
+                        <!-- Date Range -->
+                        <div class="filter-group">
+                            <label for="{{ filter_form.date_from.id_for_label }}">Date Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    {{ filter_form.date_from }}
+                                </div>
+                                <div class="col-6">
+                                    {{ filter_form.date_to }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Type -->
+                        <div class="filter-group">
+                            <label for="{{ filter_form.transaction_type.id_for_label }}">Transaction Type</label>
+                            {{ filter_form.transaction_type }}
+                        </div>
+
+                        <!-- Account Filters -->
+                        <div class="filter-group">
+                            <label for="{{ filter_form.debit_account.id_for_label }}">Debit Account</label>
+                            {{ filter_form.debit_account }}
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="{{ filter_form.credit_account.id_for_label }}">Credit Account</label>
+                            {{ filter_form.credit_account }}
+                        </div>
+
+                        <!-- Amount Range -->
+                        <div class="filter-group">
+                            <label>Amount Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    {{ filter_form.amount_from }}
+                                </div>
+                                <div class="col-6">
+                                    {{ filter_form.amount_to }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Filter -->
+                        <div class="filter-group">
+                            <label for="{{ filter_form.posted_by.id_for_label }}">Posted By</label>
+                            {{ filter_form.posted_by }}
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="filter-group">
+                            <label for="{{ filter_form.status.id_for_label }}">Status</label>
+                            {{ filter_form.status }}
+                        </div>
+
+                        <!-- Reference Number -->
+                        <div class="filter-group">
+                            <label for="{{ filter_form.reference_number.id_for_label }}">Reference Number</label>
+                            {{ filter_form.reference_number }}
+                        </div>
+
+                        <!-- Export Format -->
+                        <div class="filter-group">
+                            <label for="{{ filter_form.export_format.id_for_label }}">Export Format</label>
+                            {{ filter_form.export_format }}
+                        </div>
+
+                        <!-- Filter Actions -->
+                        <div class="filter-actions">
+                            <button type="submit" class="btn btn-apply-filters">
+                                <i class="fas fa-search"></i> Apply Filters
+                            </button>
+                            <button type="button" class="btn btn-clear-filters" id="clear-filters">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <div class="transactions-content">
+                    <!-- Toolbar -->
+                    <div class="transactions-toolbar">
+                        <div class="toolbar-left">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" class="form-control" id="search-input" placeholder="Search transactions...">
+                            </div>
+                            
+                            <!-- Quick Filters -->
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm quick-filter" data-filter="status" data-value="posted">
+                                    Posted
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm quick-filter" data-filter="status" data-value="draft">
+                                    Draft
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm quick-filter" data-filter="transaction_type" data-value="journal_entry">
+                                    Journal
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="toolbar-right">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto-refresh">
+                                <label class="form-check-label" for="auto-refresh">
+                                    Auto-refresh
+                                </label>
+                            </div>
+                            
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-outline-success btn-sm" id="export-excel">
+                                    <i class="fas fa-file-excel"></i> Excel
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="export-pdf">
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="p-3">
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-list"></i>
+                                </div>
+                                <div class="card-title">Total Transactions</div>
+                                <div class="card-value" id="total-transactions">{{ total_count|default:"0" }}</div>
+                                <div class="card-subtitle">Records found</div>
+                            </div>
+                            
+                            <div class="summary-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div class="card-title">Total Amount</div>
+                                <div class="card-value" id="total-amount">{{ total_amount|floatformat:2|default:"0.00" }}</div>
+                                <div class="card-subtitle">AED</div>
+                            </div>
+                            
+                            <div class="summary-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-chart-pie"></i>
+                                </div>
+                                <div class="card-title">Transaction Types</div>
+                                <div class="card-value">{{ type_summary|length|default:"0" }}</div>
+                                <div class="card-subtitle">Different types</div>
+                            </div>
+                            
+                            <div class="summary-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="card-title">Last Updated</div>
+                                <div class="card-value">{{ page_obj.0.created_at|date:"H:i"|default:"--" }}</div>
+                                <div class="card-subtitle">Today</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Table -->
+                    <div class="transactions-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-column" data-column="transaction_date">
+                                        Date <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th class="sortable-column" data-column="transaction_type">
+                                        Type <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th class="sortable-column" data-column="document_number">
+                                        Document <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th class="sortable-column" data-column="debit_account">
+                                        Debit Account <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th class="sortable-column" data-column="credit_account">
+                                        Credit Account <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th class="sortable-column" data-column="amount">
+                                        Amount <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th>Narration</th>
+                                    <th class="sortable-column" data-column="posted_by">
+                                        Posted By <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th class="sortable-column" data-column="status">
+                                        Status <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                <tr class="transaction-row" data-id="{{ transaction.id }}" style="cursor: pointer;">
+                                    <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="transaction-type-badge badge-{{ transaction.transaction_type }}" data-type="{{ transaction.transaction_type }}">
+                                            {{ transaction.transaction_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ transaction.document_number }}</strong>
+                                        {% if transaction.reference_number %}
+                                            <br><small class="text-muted">{{ transaction.reference_number }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.debit_account %}
+                                            <div class="account-name">{{ transaction.debit_account.account_name }}</div>
+                                            <div class="account-code">{{ transaction.debit_account.account_code }}</div>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if transaction.credit_account %}
+                                            <div class="account-name">{{ transaction.credit_account.account_name }}</div>
+                                            <div class="account-code">{{ transaction.credit_account.account_code }}</div>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="amount-positive">{{ transaction.amount|floatformat:2 }}</td>
+                                    <td>
+                                        <div class="narration-text" title="{{ transaction.narration|default:'' }}">
+                                            {{ transaction.narration|truncatechars:50|default:"-" }}
+                                        </div>
+                                    </td>
+                                    <td>{{ transaction.posted_by.username }}</td>
+                                    <td>
+                                        <span class="status-badge badge-{{ transaction.status }}">
+                                            {{ transaction.status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'all_transactions:transaction_detail' transaction.pk %}" 
+                                               class="btn btn-outline-primary btn-sm" 
+                                               data-bs-toggle="tooltip" 
+                                               title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ transaction.source_url }}" 
+                                               class="btn btn-outline-secondary btn-sm" 
+                                               data-bs-toggle="tooltip" 
+                                               title="View Source Document"
+                                               target="_blank">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                                            <p>No transactions found matching your criteria</p>
+                                            <p class="small">Try adjusting your filters or search terms</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <div class="pagination-container">
+                        <div class="pagination-info">
+                            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} transactions
+                        </div>
+                        
+                        <nav aria-label="Transaction pagination">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Container -->
+<div class="notifications-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'all_transactions/js/all_transactions.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Set initial filter values from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.forEach((value, key) => {
+        $(`[name="${key}"]`).val(value);
+    });
+});
+</script>
+{% endblock %} 

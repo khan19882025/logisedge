@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Backup Schedule{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'backup_scheduler/css/schedule_confirm_delete.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-trash me-2"></i>Delete Backup Schedule
+                </h1>
+                <p class="text-muted">Confirm deletion of backup schedule</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-warning me-2"></i>Warning</h6>
+                        <p class="mb-0">You are about to delete the backup schedule "<strong>{{ schedule.name }}</strong>". This action cannot be undone.</p>
+                    </div>
+
+                    <div class="schedule-details mb-4">
+                        <h6>Schedule Details:</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ schedule.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Description:</strong></td>
+                                <td>{{ schedule.description|default:"No description" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Backup Type:</strong></td>
+                                <td>{{ schedule.backup_type.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Backup Scope:</strong></td>
+                                <td>{{ schedule.backup_scope.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Frequency:</strong></td>
+                                <td>{{ schedule.frequency|title }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Start Time:</strong></td>
+                                <td>{{ schedule.start_time|time:"H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge badge-{{ schedule.is_active|yesno:'success,secondary' }}">
+                                        {{ schedule.is_active|yesno:'Active,Inactive' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Created:</strong></td>
+                                <td>{{ schedule.created_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Created By:</strong></td>
+                                <td>{{ schedule.created_by.username }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="impact-analysis mb-4">
+                        <h6><i class="fas fa-info-circle me-2"></i>Impact Analysis</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="impact-item">
+                                    <h6 class="text-warning">Active Executions</h6>
+                                    <p class="text-muted">Any currently running backups from this schedule will continue to completion.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="impact-item">
+                                    <h6 class="text-info">Future Backups</h6>
+                                    <p class="text-muted">No new automated backups will be created from this schedule.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="impact-item">
+                                    <h6 class="text-success">Existing Backups</h6>
+                                    <p class="text-muted">Previously completed backups will remain in storage.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="impact-item">
+                                    <h6 class="text-secondary">Logs</h6>
+                                    <p class="text-muted">Execution logs will be preserved for audit purposes.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="confirmation-section">
+                        <h6><i class="fas fa-check-circle me-2"></i>Confirmation</h6>
+                        <p class="text-muted">To confirm deletion, please type the schedule name exactly as shown above:</p>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="confirm_name" 
+                                       placeholder="Type: {{ schedule.name }}" required>
+                                <small class="form-text text-muted">Type the exact schedule name to confirm deletion</small>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-danger" id="delete_btn" disabled>
+                                    <i class="fas fa-trash me-2"></i>Delete Schedule
+                                </button>
+                                <a href="{% url 'backup_scheduler:schedule_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'backup_scheduler/js/schedule_confirm_delete.js' %}"></script>
+<script>
+    // Enable delete button only when name matches
+    document.getElementById('confirm_name').addEventListener('input', function() {
+        const confirmName = this.value;
+        const scheduleName = '{{ schedule.name }}';
+        const deleteBtn = document.getElementById('delete_btn');
+        
+        if (confirmName === scheduleName) {
+            deleteBtn.disabled = false;
+            deleteBtn.classList.remove('btn-secondary');
+            deleteBtn.classList.add('btn-danger');
+        } else {
+            deleteBtn.disabled = true;
+            deleteBtn.classList.remove('btn-danger');
+            deleteBtn.classList.add('btn-secondary');
+        }
+    });
+</script>
+{% endblock %}

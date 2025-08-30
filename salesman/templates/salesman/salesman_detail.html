@@ -1,0 +1,231 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ salesman.get_full_name }} - Salesman Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/salesman/salesman.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-person-badge me-2"></i>{{ salesman.get_full_name }}
+            </h1>
+            <p class="text-muted mb-0">{{ salesman.salesman_code }} - Salesman Details</p>
+        </div>
+        <div>
+            <a href="{% url 'salesman:salesman_update' salesman.pk %}" class="btn btn-warning">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <a href="{% url 'salesman:salesman_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Basic Information -->
+        <div class="col-md-6">
+            <div class="salesman-detail-section">
+                <h6><i class="bi bi-person me-2"></i>Basic Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Salesman Code:</strong></td>
+                        <td><span class="badge bg-primary">{{ salesman.salesman_code }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Full Name:</strong></td>
+                        <td>{{ salesman.get_full_name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Email:</strong></td>
+                        <td>
+                            {% if salesman.email %}
+                            <a href="mailto:{{ salesman.email }}">{{ salesman.email }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phone:</strong></td>
+                        <td>
+                            {% if salesman.phone %}
+                            <a href="tel:{{ salesman.phone }}">{{ salesman.phone }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gender:</strong></td>
+                        <td>{{ salesman.get_gender_display|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Date of Birth:</strong></td>
+                        <td>{{ salesman.date_of_birth|date:"M d, Y"|default:"-" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Employment Information -->
+        <div class="col-md-6">
+            <div class="salesman-detail-section">
+                <h6><i class="bi bi-briefcase me-2"></i>Employment Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            {% if salesman.status == 'active' %}
+                            <span class="badge bg-success">Active</span>
+                            {% elif salesman.status == 'inactive' %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% elif salesman.status == 'on_leave' %}
+                            <span class="badge bg-warning">On Leave</span>
+                            {% else %}
+                            <span class="badge bg-danger">Terminated</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hire Date:</strong></td>
+                        <td>{{ salesman.hire_date|date:"M d, Y" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Years of Service:</strong></td>
+                        <td>{{ salesman.years_of_service }} years</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Department:</strong></td>
+                        <td>{{ salesman.department|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Position:</strong></td>
+                        <td>{{ salesman.position|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Manager:</strong></td>
+                        <td>
+                            {% if salesman.manager %}
+                            <a href="{% url 'salesman:salesman_detail' salesman.manager.pk %}">
+                                {{ salesman.manager.get_full_name }}
+                            </a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Performance Information -->
+        <div class="col-md-6">
+            <div class="salesman-detail-section">
+                <h6><i class="bi bi-graph-up me-2"></i>Performance Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Commission Rate:</strong></td>
+                        <td>
+                            {% if salesman.commission_rate > 0 %}
+                            <span class="salesman-commission">{{ salesman.commission_rate }}%</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Monthly Target:</strong></td>
+                        <td>
+                            {% if salesman.target_amount > 0 %}
+                            <span class="salesman-target">{{ salesman.target_amount|floatformat:2 }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="col-md-6">
+            <div class="salesman-detail-section">
+                <h6><i class="bi bi-geo-alt me-2"></i>Address Information</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Address:</strong></td>
+                        <td>{{ salesman.address|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>City:</strong></td>
+                        <td>{{ salesman.city|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>State/Province:</strong></td>
+                        <td>{{ salesman.state|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Country:</strong></td>
+                        <td>{{ salesman.country|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Postal Code:</strong></td>
+                        <td>{{ salesman.postal_code|default:"-" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    {% if salesman.notes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="salesman-detail-section">
+                <h6><i class="bi bi-info-circle me-2"></i>Additional Information</h6>
+                <p class="mb-0">{{ salesman.notes|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    <div class="row">
+        <div class="col-12">
+            <div class="salesman-detail-section">
+                <h6><i class="bi bi-clock me-2"></i>Metadata</h6>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Created:</strong></td>
+                        <td>{{ salesman.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Last Updated:</strong></td>
+                        <td>{{ salesman.updated_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% if salesman.created_by %}
+                    <tr>
+                        <td><strong>Created By:</strong></td>
+                        <td>{{ salesman.created_by.get_full_name|default:salesman.created_by.username }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if salesman.updated_by %}
+                    <tr>
+                        <td><strong>Updated By:</strong></td>
+                        <td>{{ salesman.updated_by.get_full_name|default:salesman.updated_by.username }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

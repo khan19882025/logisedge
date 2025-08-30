@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ledger Entry Detail - {{ ledger.ledger_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ledger/ledger.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-journal-text me-2"></i>
+                        Ledger Entry Detail
+                    </h4>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'ledger:ledger_update' ledger.id %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </a>
+                        <a href="{% url 'ledger:ledger_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Basic Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted" style="width: 150px;">Ledger Number:</th>
+                                    <td><strong>{{ ledger.ledger_number }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Date:</th>
+                                    <td>{{ ledger.date|date:"F d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Account:</th>
+                                    <td>
+                                        <span class="badge bg-info">{{ ledger.account.account_type.name }}</span>
+                                        {{ ledger.account.account_name }}
+                                        <small class="text-muted">({{ ledger.account.account_code }})</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Description:</th>
+                                    <td>{{ ledger.description|default:"No description provided" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Financial Details</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted" style="width: 150px;">Amount:</th>
+                                    <td>
+                                        {% if ledger.amount %}
+                                            <span class="h5 text-success">AED {{ ledger.amount|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="text-muted">No amount specified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Transaction Type:</th>
+                                    <td>
+                                        {% if ledger.transaction_type == 'debit' %}
+                                            <span class="badge bg-danger">Debit</span>
+                                        {% elif ledger.transaction_type == 'credit' %}
+                                            <span class="badge bg-success">Credit</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ ledger.transaction_type|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Reference:</th>
+                                    <td>{{ ledger.reference|default:"No reference" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Status:</th>
+                                    <td>
+                                        {% if ledger.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">Additional Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted" style="width: 150px;">Company:</th>
+                                    <td>{{ ledger.company.company_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Fiscal Year:</th>
+                                    <td>{{ ledger.fiscal_year.name }} ({{ ledger.fiscal_year.start_date|date:"Y" }} - {{ ledger.fiscal_year.end_date|date:"Y" }})</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Created By:</th>
+                                    <td>{{ ledger.created_by.get_full_name|default:ledger.created_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Created On:</th>
+                                    <td>{{ ledger.created_at|date:"F d, Y H:i" }}</td>
+                                </tr>
+                                {% if ledger.updated_at != ledger.created_at %}
+                                <tr>
+                                    <th class="text-muted">Last Updated:</th>
+                                    <td>{{ ledger.updated_at|date:"F d, Y H:i" }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if ledger.notes %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">Notes</h5>
+                            <div class="alert alert-info">
+                                {{ ledger.notes|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ledger/ledger.js' %}"></script>
+{% endblock %} 

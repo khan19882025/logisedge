@@ -1,0 +1,337 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bank Transfers{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_transfer/css/bank_transfer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1 class="page-title">
+                        <i class="fas fa-exchange-alt"></i>
+                        Bank Transfers
+                    </h1>
+                    <div class="header-actions">
+                        <a href="{% url 'bank_transfer:create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> New Transfer
+                        </a>
+                        <a href="{% url 'bank_transfer:quick_transfer' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-bolt"></i> Quick Transfer
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-value" id="totalTransfers">{{ total_count }}</div>
+                            <div class="summary-label">Total Transfers</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-value" id="pendingTransfers">-</div>
+                            <div class="summary-label">Pending</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-value" id="completedTransfers">-</div>
+                            <div class="summary-label">Completed</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-value" id="totalAmount">{{ total_amount|floatformat:2 }}</div>
+                            <div class="summary-label">Total Amount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-filter"></i>
+                        Filters
+                    </h5>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-toggle="collapse" data-target="#filterCollapse">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="collapse show" id="filterCollapse">
+                    <div class="card-body">
+                        <form method="get" id="filterForm">
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>From Date</label>
+                                        {{ filter_form.date_from }}
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>To Date</label>
+                                        {{ filter_form.date_to }}
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Status</label>
+                                        {{ filter_form.status }}
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Type</label>
+                                        {{ filter_form.transfer_type }}
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>From Account</label>
+                                        {{ filter_form.from_account }}
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>To Account</label>
+                                        {{ filter_form.to_account }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Currency</label>
+                                        {{ filter_form.currency }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Search</label>
+                                        {{ filter_form.search }}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <div class="btn-group w-100">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-search"></i> Filter
+                                            </button>
+                                            <a href="{% url 'bank_transfer:list' %}" class="btn btn-outline-secondary">
+                                                <i class="fas fa-times"></i> Clear
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transfers Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-table"></i>
+                        Bank Transfers
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Transfer #</th>
+                                    <th>Date</th>
+                                    <th>From Account</th>
+                                    <th>To Account</th>
+                                    <th>Amount</th>
+                                    <th>Currency</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transfer in page_obj %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'bank_transfer:detail' transfer.pk %}" class="transfer-link">
+                                            {{ transfer.transfer_number }}
+                                        </a>
+                                        {% if transfer.reference_number %}
+                                        <br><small class="text-muted">{{ transfer.reference_number }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ transfer.transfer_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="account-info">
+                                            <div class="account-name">{{ transfer.from_account.name }}</div>
+                                            <small class="text-muted">{{ transfer.from_account.account_code }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="account-info">
+                                            <div class="account-name">{{ transfer.to_account.name }}</div>
+                                            <small class="text-muted">{{ transfer.to_account.account_code }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="amount-info">
+                                            <div class="amount">{{ transfer.amount|floatformat:2 }}</div>
+                                            {% if transfer.is_multi_currency %}
+                                            <small class="text-info">FX: {{ transfer.converted_amount|floatformat:2 }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="currency-badge">{{ transfer.currency.code }}</span>
+                                        {% if transfer.is_multi_currency %}
+                                        <br><small class="text-info">Multi-currency</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ transfer.status }}">
+                                            {{ transfer.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-name">{{ transfer.created_by.get_full_name|default:transfer.created_by.username }}</div>
+                                            <small class="text-muted">{{ transfer.created_at|date:"M d, Y" }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="{% url 'bank_transfer:detail' transfer.pk %}" class="btn btn-sm btn-outline-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if transfer.can_edit %}
+                                            <a href="{% url 'bank_transfer:edit' transfer.pk %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if transfer.can_complete %}
+                                            <button class="btn btn-sm btn-outline-success complete-btn" data-transfer-id="{{ transfer.pk }}" title="Complete">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if transfer.can_cancel %}
+                                            <button class="btn btn-sm btn-outline-warning cancel-btn" data-transfer-id="{{ transfer.pk }}" title="Cancel">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if transfer.can_edit %}
+                                            <a href="{% url 'bank_transfer:delete' transfer.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Bank transfers pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <h4>No Bank Transfers Found</h4>
+                        <p>No bank transfers match your current filters.</p>
+                        <a href="{% url 'bank_transfer:create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create First Transfer
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_transfer/js/bank_transfer.js' %}"></script>
+{% endblock %} 

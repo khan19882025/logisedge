@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ dispatch_note.gdn_number }} - Dispatch Note</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 15mm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .company-section {
+            flex: 1;
+            text-align: left;
+        }
+        
+        .company-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .company-details {
+            font-size: 10px;
+            line-height: 1.2;
+        }
+        
+        .company-details p {
+            margin: 2px 0;
+        }
+        
+        .dispatch-section {
+            flex: 1;
+            text-align: right;
+        }
+        
+        .document-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .dispatch-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .info-section {
+            margin-bottom: 15px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .info-item {
+            margin-bottom: 6px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .info-value {
+            margin-left: 8px;
+        }
+        
+        .cargo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 9px;
+        }
+        
+        .cargo-table th,
+        .cargo-table td {
+            border: 1px solid #ddd;
+            padding: 3px;
+            text-align: left;
+        }
+        
+        .cargo-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        
+        .cargo-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+        }
+        
+        .signature-section {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .signature-box {
+            border-top: 1px solid #333;
+            padding-top: 8px;
+            text-align: center;
+        }
+        
+        .signature-label {
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-size: 10px;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 5px;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-section">
+            <div class="company-name">
+                {% if company %}
+                    {{ company.name }}
+                {% else %}
+                    LOGISEDGE
+                {% endif %}
+            </div>
+            <div class="company-details">
+                {% if company %}
+                <p><strong>Address:</strong> {{ company.address }}</p>
+                <p><strong>Phone:</strong> {{ company.phone }}</p>
+                <p><strong>Email:</strong> {{ company.email }}</p>
+                {% if company.website %}
+                <p><strong>Website:</strong> {{ company.website }}</p>
+                {% endif %}
+                {% if company.tax_number %}
+                <p><strong>Tax Number:</strong> {{ company.tax_number }}</p>
+                {% endif %}
+                {% if company.registration_number %}
+                <p><strong>Registration:</strong> {{ company.registration_number }}</p>
+                {% endif %}
+                {% else %}
+                <p><strong>Address:</strong> Your Company Address</p>
+                <p><strong>Phone:</strong> +971 XX XXX XXXX</p>
+                <p><strong>Email:</strong> info@logisedge.com</p>
+                <p><strong>Website:</strong> www.logisedge.com</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="dispatch-section">
+            <div class="document-title">DISPATCH NOTE</div>
+            <div class="dispatch-number">{{ dispatch_note.gdn_number }}</div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Customer:</span>
+                    <span class="info-value">{{ dispatch_note.customer.customer_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Dispatch Date:</span>
+                    <span class="info-value">{{ dispatch_note.dispatch_date|date:"M d, Y" }}</span>
+                </div>
+                {% if dispatch_note.delivery_order %}
+                <div class="info-item">
+                    <span class="info-label">Delivery Order:</span>
+                    <span class="info-value">{{ dispatch_note.delivery_order.do_number }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Deliver To:</span>
+                    <span class="info-value">{{ dispatch_note.deliver_to|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Facility:</span>
+                    <span class="info-value">{{ dispatch_note.facility|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Mode:</span>
+                    <span class="info-value">{{ dispatch_note.mode|default:"-" }}</span>
+                </div>
+            </div>
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Vehicle No:</span>
+                    <span class="info-value">{{ dispatch_note.vehicle_no|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Driver Name:</span>
+                    <span class="info-value">{{ dispatch_note.name|default:"-" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Contact Number:</span>
+                    <span class="info-value">{{ dispatch_note.contact_number|default:"-" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        {% if dispatch_note.deliver_address %}
+        <div class="info-item">
+            <span class="info-label">Delivery Address:</span>
+            <span class="info-value">{{ dispatch_note.deliver_address }}</span>
+        </div>
+        {% endif %}
+        
+        {% if dispatch_note.notes %}
+        <div class="info-item">
+            <span class="info-label">Notes:</span>
+            <span class="info-value">{{ dispatch_note.notes }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if dispatch_note.dispatch_items.all %}
+    <table class="cargo-table">
+        <thead>
+            <tr>
+                <th>GRN No</th>
+                <th>Item Code</th>
+                <th>Item</th>
+                <th>HS Code</th>
+                <th>Unit</th>
+                <th>QTY</th>
+                <th>COO</th>
+                <th>N-weight</th>
+                <th>G-weight</th>
+                <th>CBM</th>
+                <th>P-Date</th>
+                <th>E-Date</th>
+                <th>Color</th>
+                <th>Size</th>
+                <th>Barcode</th>
+                <th>ED</th>
+                <th>CTNR</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in dispatch_note.dispatch_items.all %}
+            <tr>
+                <td>{{ item.grn_no|default:"-" }}</td>
+                <td>{{ item.item_code|default:"-" }}</td>
+                <td>{{ item.item_name|default:"-" }}</td>
+                <td>{{ item.hs_code|default:"-" }}</td>
+                <td>{{ item.unit|default:"-" }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.coo|default:"-" }}</td>
+                <td>{{ item.n_weight|default:"-" }}</td>
+                <td>{{ item.g_weight|default:"-" }}</td>
+                <td>{{ item.cbm|default:"-" }}</td>
+                <td>{{ item.p_date|date:"M d, Y"|default:"-" }}</td>
+                <td>{{ item.e_date|date:"M d, Y"|default:"-" }}</td>
+                <td>{{ item.color|default:"-" }}</td>
+                <td>{{ item.size|default:"-" }}</td>
+                <td>{{ item.barcode|default:"-" }}</td>
+                <td>{{ item.ed|default:"-" }}</td>
+                <td>{{ item.ctnr|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 20px; color: #666;">
+        <p>No cargo items found</p>
+    </div>
+    {% endif %}
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-label">Prepared By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-label">Checked By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-label">Authorized By</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Generated on {{ dispatch_note.updated_at|date:"M d, Y H:i" }} | LogisEdge Dispatch Management System</p>
+    </div>
+
+    <script>
+        // Auto-print when page loads
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html> 

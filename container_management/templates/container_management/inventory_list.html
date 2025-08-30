@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Container Inventory{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-building me-2"></i>Container Inventory
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:inventory_create' %}" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-plus me-1"></i>Add Inventory
+            </a>
+            <a href="{% url 'container_management:inventory_export' %}" class="btn btn-success btn-sm me-2">
+                <i class="bi bi-download me-1"></i>Export
+            </a>
+            <a href="{% url 'container_management:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-graph-up me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-search me-2"></i>Search & Filter
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="{{ search_form.search_by.id_for_label }}" class="form-label">Search By</label>
+                    {{ search_form.search_by }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ search_form.search_term.id_for_label }}" class="form-label">Search Term</label>
+                    {{ search_form.search_term }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.port.id_for_label }}" class="form-label">Port</label>
+                    {{ search_form.port }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.container_type.id_for_label }}" class="form-label">Container Type</label>
+                    {{ search_form.container_type }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.status.id_for_label }}" class="form-label">Status</label>
+                    {{ search_form.status }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-sm me-2">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                    <a href="{% url 'container_management:inventory_list' %}" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Containers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-container fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Available
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ available_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                In Use
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ in_use_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-gear fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Overstayed
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ overstayed_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory List -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-list me-2"></i>Inventory ({{ page_obj.paginator.count }})
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if inventory_records %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Container</th>
+                                <th>Port</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Arrival Date</th>
+                                <th>Days in Port</th>
+                                <th>Next Action</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in inventory_records %}
+                                <tr {% if record.is_overstayed %}class="table-warning"{% endif %}>
+                                    <td>
+                                        <div>
+                                            <strong>{{ record.container.container_number }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ record.container.get_container_type_display }} - {{ record.container.size }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ record.port }}</strong>
+                                        {% if record.terminal %}
+                                            <br>
+                                            <small class="text-muted">{{ record.terminal }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ record.yard_location }}</strong>
+                                            {% if record.stack_position %}
+                                                <br>
+                                                <small class="text-muted">Stack: {{ record.stack_position }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ record.get_status_display_class }}">
+                                            {{ record.get_status_display }}
+                                        </span>
+                                        {% if record.is_overstayed %}
+                                            <br>
+                                            <small class="text-danger">Overstayed</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ record.arrival_date|date:"M d, Y" }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ record.arrival_date|date:"H:i" }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ record.get_days_in_port }}</strong> days
+                                            {% if record.is_overstayed %}
+                                                <br>
+                                                <small class="text-danger">+{{ record.get_overstay_days }} days</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if record.next_action %}
+                                            <div>
+                                                <strong>{{ record.next_action }}</strong>
+                                                {% if record.next_action_date %}
+                                                    <br>
+                                                    <small class="text-muted">{{ record.next_action_date|date:"M d, Y" }}</small>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'container_management:inventory_detail' record.pk %}" 
+                                               class="btn btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'container_management:inventory_update' record.pk %}" 
+                                               class="btn btn-outline-warning" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'container_management:inventory_delete' record.pk %}" 
+                                               class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Inventory pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.port %}&port={{ request.GET.port }}{% endif %}{% if request.GET.container_type %}&container_type={{ request.GET.container_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.port %}&port={{ request.GET.port }}{% endif %}{% if request.GET.container_type %}&container_type={{ request.GET.container_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.port %}&port={{ request.GET.port }}{% endif %}{% if request.GET.container_type %}&container_type={{ request.GET.container_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.port %}&port={{ request.GET.port }}{% endif %}{% if request.GET.container_type %}&container_type={{ request.GET.container_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.port %}&port={{ request.GET.port }}{% endif %}{% if request.GET.container_type %}&container_type={{ request.GET.container_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-building fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No inventory records found</h5>
+                    <p class="text-muted">Try adjusting your search criteria or add a new inventory record.</p>
+                    <a href="{% url 'container_management:inventory_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Add First Record
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+    <script>
+        // Initialize form enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add Bootstrap classes to form fields
+            const formFields = document.querySelectorAll('input, select, textarea');
+            formFields.forEach(field => {
+                field.classList.add('form-control');
+            });
+
+            // Auto-submit form on select changes
+            const selectFields = document.querySelectorAll('select');
+            selectFields.forEach(select => {
+                select.addEventListener('change', function() {
+                    this.closest('form').submit();
+                });
+            });
+
+            // Search debouncing
+            const searchInput = document.getElementById('{{ search_form.search_term.id_for_label }}');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        this.closest('form').submit();
+                    }, 500);
+                });
+            }
+
+            // Highlight overstayed containers
+            const overstayedRows = document.querySelectorAll('tr.table-warning');
+            overstayedRows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#fff3cd';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                });
+            });
+        });
+    </script>
+{% endblock %}

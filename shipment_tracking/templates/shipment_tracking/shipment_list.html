@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load shipment_filters %}
+
+{% block title %}Shipment List - Tracking & Status{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shipment_tracking/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-ship fa-fw"></i> Shipment List
+        </h1>
+        <div class="btn-group" role="group">
+            {% if user.is_staff %}
+            <a href="{% url 'shipment_tracking:shipment_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> New Shipment
+            </a>
+            {% endif %}
+            <a href="{% url 'shipment_tracking:shipment_search' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-search"></i> Advanced Search
+            </a>
+            <a href="{% url 'shipment_tracking:export_shipments' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-download"></i> Export
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Shipments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ship fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Delivered
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ delivered_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                In Transit
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ in_transit_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-truck fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                On Hold
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ on_hold_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-pause-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filters & Search</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        {{ filter_form.status }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="origin_port" class="form-label">Origin Port</label>
+                        {{ filter_form.origin_port }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="destination_port" class="form-label">Destination Port</label>
+                        {{ filter_form.destination_port }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="customer" class="form-label">Customer</label>
+                        {{ filter_form.customer }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="date_from" class="form-label">Date From</label>
+                        {{ filter_form.date_from }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="date_to" class="form-label">Date To</label>
+                        {{ filter_form.date_to }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="form-check mt-4">
+                            {{ filter_form.is_tracking_enabled }}
+                            <label class="form-check-label" for="is_tracking_enabled">
+                                Tracking Enabled Only
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Apply Filters
+                            </button>
+                            <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    {% if user.is_staff %}
+    <div id="bulkActions" class="alert alert-info" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center">
+            <span><strong id="selectedCount">0</strong> shipment(s) selected</span>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success btn-sm" onclick="performBulkAction('mark_delivered')">
+                    <i class="fas fa-check"></i> Mark Delivered
+                </button>
+                <button type="button" class="btn btn-warning btn-sm" onclick="performBulkAction('mark_on_hold')">
+                    <i class="fas fa-pause"></i> Mark On Hold
+                </button>
+                <button type="button" class="btn btn-info btn-sm" onclick="performBulkAction('enable_tracking')">
+                    <i class="fas fa-eye"></i> Enable Tracking
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="performBulkAction('delete')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Shipments Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Shipments</h6>
+            <div class="d-flex align-items-center">
+                <span class="text-muted mr-2">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if shipments %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                {% if user.is_staff %}
+                                <th width="30">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
+                                {% endif %}
+                                <th>Shipment ID</th>
+                                <th>Container</th>
+                                <th>Customer</th>
+                                <th>Route</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shipment in shipments %}
+                            <tr data-shipment-id="{{ shipment.pk }}">
+                                {% if user.is_staff %}
+                                <td>
+                                    <input type="checkbox" class="form-check-input shipment-checkbox" value="{{ shipment.pk }}">
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <a href="{% url 'shipment_tracking:shipment_detail' shipment.pk %}" class="font-weight-bold">
+                                        {{ shipment.shipment_id }}
+                                    </a>
+                                </td>
+                                <td>{{ shipment.container_number|default:"-" }}</td>
+                                <td>{{ shipment.customer_name }}</td>
+                                <td>
+                                    <small>
+                                        <i class="fas fa-map-marker-alt text-danger"></i> {{ shipment.origin_port }}<br>
+                                        <i class="fas fa-map-marker-alt text-success"></i> {{ shipment.destination_port }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ shipment.current_status|status_badge_color }}">
+                                        {{ shipment.get_current_status_display }}
+                                    </span>
+                                    {% if shipment|is_delayed %}
+                                    <br><small class="text-danger">
+                                        <i class="fas fa-exclamation-triangle"></i> Delayed {{ shipment|delay_days }} days
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-{{ shipment.current_status|status_badge_color }}" 
+                                             role="progressbar" 
+                                             style="width: {{ shipment|progress_percentage }}%"
+                                             aria-valuenow="{{ shipment|progress_percentage }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ shipment|progress_percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>
+                                        {{ shipment.last_updated|date:"M d, Y" }}<br>
+                                        <span class="text-muted">{{ shipment.last_updated|date:"H:i" }}</span>
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'shipment_tracking:shipment_detail' shipment.pk %}" 
+                                           class="btn btn-info" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.is_staff %}
+                                        <a href="{% url 'shipment_tracking:add_status_update' shipment.pk %}" 
+                                           class="btn btn-warning" title="Update Status">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'shipment_tracking:shipment_update' shipment.pk %}" 
+                                           class="btn btn-secondary" title="Edit Shipment">
+                                            <i class="fas fa-cog"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Shipment pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-ship fa-4x text-gray-300 mb-3"></i>
+                    <h4 class="text-gray-500">No shipments found</h4>
+                    <p class="text-gray-400">Try adjusting your filters or create a new shipment.</p>
+                    {% if user.is_staff %}
+                    <a href="{% url 'shipment_tracking:shipment_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Shipment
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;"></div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'shipment_tracking/js/dashboard.js' %}"></script>
+<script>
+    // Initialize filters
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit form when filters change
+        const filterInputs = document.querySelectorAll('#filterForm select, #filterForm input[type="date"]');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                document.getElementById('filterForm').submit();
+            });
+        });
+        
+        // Initialize bulk actions
+        initializeQuickActions();
+    });
+</script>
+{% endblock %}

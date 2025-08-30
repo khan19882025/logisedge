@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Export Details - {{ export_log.filename }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-container {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .detail-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-section h5 {
+        color: #495057;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .status-completed { background-color: #d4edda; color: #155724; }
+    .status-processing { background-color: #fff3cd; color: #856404; }
+    .status-failed { background-color: #f8d7da; color: #721c24; }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .info-item {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .info-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .filters-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .filters-list li {
+        background: white;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 6px;
+        border-left: 3px solid #28a745;
+    }
+    
+    .filters-list li strong {
+        color: #495057;
+        margin-right: 0.5rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Export Details
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'bulk_export:dashboard' %}">Bulk Export</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'bulk_export:export_logs' %}">Export Logs</a></li>
+                        <li class="breadcrumb-item active">Details</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="detail-container">
+                <!-- Header Section -->
+                <div class="detail-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">{{ export_log.filename }}</h2>
+                            <p class="mb-0 opacity-75">
+                                {{ export_log.export_type|title }} export created by {{ export_log.user.get_full_name|default:export_log.user.username }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <span class="status-badge status-{{ export_log.status }}">
+                                {{ export_log.status|title }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Basic Information -->
+                <div class="detail-section">
+                    <h5>
+                        <i class="fas fa-info-circle me-2"></i>Basic Information
+                    </h5>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Export Type</div>
+                            <div class="info-value">
+                                <span class="badge bg-primary">{{ export_log.export_type|title }}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Format</div>
+                            <div class="info-value">
+                                <span class="badge bg-secondary">{{ export_log.export_format|upper }}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Records Exported</div>
+                            <div class="info-value">
+                                <span class="badge bg-info">{{ export_log.records_exported }}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">File Size</div>
+                            <div class="info-value">
+                                {% if export_log.file_size %}
+                                    {{ export_log.file_size|filesizeformat }}
+                                {% else %}
+                                    <span class="text-muted">Not available</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Created At</div>
+                            <div class="info-value">
+                                {{ export_log.created_at|date:"M d, Y H:i:s" }}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Completed At</div>
+                            <div class="info-value">
+                                {% if export_log.completed_at %}
+                                    {{ export_log.completed_at|date:"M d, Y H:i:s" }}
+                                {% else %}
+                                    <span class="text-muted">Not completed</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if export_log.duration %}
+                        <div class="info-item">
+                            <div class="info-label">Duration</div>
+                            <div class="info-value">
+                                {{ export_log.duration|floatformat:1 }} seconds
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Filters Applied -->
+                {% if export_log.filters_applied %}
+                <div class="detail-section">
+                    <h5>
+                        <i class="fas fa-filter me-2"></i>Filters Applied
+                    </h5>
+                    <ul class="filters-list">
+                        {% for key, value in export_log.filters_applied.items %}
+                            {% if value and key != 'export_format' %}
+                            <li>
+                                <strong>{{ key|title|replace:"_":" " }}:</strong> 
+                                {{ value }}
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Error Information (if failed) -->
+                {% if export_log.status == 'failed' and export_log.error_message %}
+                <div class="detail-section">
+                    <h5>
+                        <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Error Details
+                    </h5>
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> {{ export_log.error_message }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="detail-section">
+                    <h5>
+                        <i class="fas fa-cogs me-2"></i>Actions
+                    </h5>
+                    <div class="action-buttons">
+                        <a href="{% url 'bulk_export:export_logs' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Logs
+                        </a>
+                        
+                        {% if export_log.status == 'completed' %}
+                            <button class="btn btn-success btn-lg" 
+                                    onclick="downloadFile('{{ export_log.filename }}', '{{ export_log.export_format }}')">
+                                <i class="fas fa-download me-2"></i>Download File
+                            </button>
+                        {% endif %}
+                        
+                        {% if export_log.status == 'failed' %}
+                            <a href="{% url 'bulk_export:dashboard' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-redo me-2"></i>Try Again
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'bulk_export:dashboard' %}" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-home me-2"></i>Go to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function downloadFile(filename, format) {
+        // This function would handle file download
+        // In a real implementation, you might redirect to a download URL
+        // or trigger a download through AJAX
+        alert(`Download functionality for ${filename} would be implemented here.`);
+    }
+</script>
+{% endblock %}

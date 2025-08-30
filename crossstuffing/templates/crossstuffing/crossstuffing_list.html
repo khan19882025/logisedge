@@ -1,0 +1,234 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Cross Stuffing - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'crossstuffing/css/crossstuffing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="crossstuffing-container">
+    <!-- Header -->
+    <div class="crossstuffing-header">
+        <h1 class="crossstuffing-title">Cross Stuffing</h1>
+        <div class="crossstuffing-actions">
+            <a href="{% url 'crossstuffing:crossstuffing_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create CS
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filters">
+        <form method="get" action="{% url 'crossstuffing:crossstuffing_list' %}">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="search">Search:</label>
+                    <input type="text" id="search" name="search" value="{{ search_query }}" 
+                           placeholder="Search by CS number, title, customer, container..." class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        {% for status_value, status_label in status_choices %}
+                            <option value="{{ status_value }}" {% if status_filter == status_value %}selected{% endif %}>
+                                {{ status_label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="priority">Priority:</label>
+                    <select id="priority" name="priority" class="form-select">
+                        <option value="">All Priorities</option>
+                        {% for priority_value, priority_label in priority_choices %}
+                            <option value="{{ priority_value }}" {% if priority_filter == priority_value %}selected{% endif %}>
+                                {{ priority_label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <button type="button" class="btn btn-secondary clear-filters-btn">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results -->
+    <div class="crossstuffing-card">
+        <div class="crossstuffing-card-header">
+            <h5 class="mb-0">
+                Cross Stuffing Operations 
+                {% if page_obj %}
+                    <span class="badge bg-secondary">{{ page_obj.paginator.count }} total</span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="crossstuffing-card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="crossstuffing-table">
+                        <thead>
+                            <tr>
+                                <th>CS Number</th>
+                                <th>Title</th>
+                                <th>Customer</th>
+                                <th>Facility</th>
+                                <th>Container</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Scheduled Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for crossstuffing in page_obj %}
+                            <tr data-cs-id="{{ crossstuffing.id }}">
+                                <td>
+                                    <strong>{{ crossstuffing.cs_number }}</strong>
+                                    {% if crossstuffing.is_overdue %}
+                                        <span class="badge bg-danger ms-1">Overdue</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ crossstuffing.title|truncatechars:30 }}</td>
+                                <td>{{ crossstuffing.customer.name }}</td>
+                                <td>{{ crossstuffing.facility.name }}</td>
+                                <td>
+                                    {{ crossstuffing.container_number }}<br>
+                                    <small class="text-muted">{{ crossstuffing.get_container_size_display }} {{ crossstuffing.get_container_type_display }}</small>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ crossstuffing.status }}">
+                                        {{ crossstuffing.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="priority-badge priority-{{ crossstuffing.priority }}">
+                                        {{ crossstuffing.get_priority_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {{ crossstuffing.scheduled_date|date:"M d, Y" }}
+                                    {% if crossstuffing.is_overdue %}
+                                        <br><small class="overdue">Overdue</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="quick-actions">
+                                        <a href="{% url 'crossstuffing:crossstuffing_detail' crossstuffing.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'crossstuffing:crossstuffing_update' crossstuffing.pk %}" 
+                                           class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-info quick-view-btn" 
+                                                data-cs-id="{{ crossstuffing.id }}" title="Quick View">
+                                            <i class="bi bi-lightning"></i>
+                                        </button>
+                                        {% if crossstuffing.status != 'completed' %}
+                                            <div class="dropdown d-inline">
+                                                <button class="btn btn-sm btn-outline-success dropdown-toggle" 
+                                                        type="button" data-bs-toggle="dropdown" title="Update Status">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    {% for status_value, status_label in status_choices %}
+                                                        {% if status_value != crossstuffing.status %}
+                                                            <li>
+                                                                <button class="dropdown-item status-update-btn" 
+                                                                        data-cs-id="{{ crossstuffing.id }}" 
+                                                                        data-status="{{ status_value }}">
+                                                                    {{ status_label }}
+                                                                </button>
+                                                            </li>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Cross stuffing pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">No Cross Stuffing Operations Found</h4>
+                    <p class="text-muted">
+                        {% if search_query or status_filter or priority_filter %}
+                            No cross stuffing operations match your current filters.
+                            <a href="{% url 'crossstuffing:crossstuffing_list' %}" class="btn btn-outline-primary mt-2">Clear Filters</a>
+                        {% else %}
+                            Get started by creating your first cross stuffing operation.
+                            <a href="{% url 'crossstuffing:crossstuffing_create' %}" class="btn btn-primary mt-2">Create Cross Stuffing</a>
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'crossstuffing/js/crossstuffing.js' %}"></script>
+{% endblock %}

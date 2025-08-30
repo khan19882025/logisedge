@@ -1,0 +1,1001 @@
+{% extends 'delivery_order/base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Delivery Order{% else %}Create New Delivery Order{% endif %}
+{% endblock %}
+
+{% block delivery_order_content %}
+<div class="delivery-order-form-container" style="color: black;">
+    <!-- Page Header -->
+    <div class="page-header" style="background: white; color: black; border: 1px solid #dee2e6;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="page-title" style="color: black;">
+                <i class="bi bi-truck me-2"></i>
+                {% if form.instance.pk %}
+                    Edit Delivery Order
+                {% else %}
+                    Create New Delivery Order
+                {% endif %}
+            </h1>
+            <div class="page-actions">
+                <a href="{% url 'delivery_order:delivery_order_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card mt-4" style="background: white; border: 1px solid #dee2e6;">
+        <div class="card-body" style="color: black;">
+            <form method="post" class="delivery-order-form">
+                {% csrf_token %}
+                
+                <!-- Two Column Layout -->
+                <div class="row">
+                    <!-- Left Column -->
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-info-circle me-2"></i>Basic Information
+                        </h6>
+                        
+                        <!-- DO No and Document Type on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ form.do_number.id_for_label }}" class="form-label">
+                                    DO No 
+                                    <small class="text-muted">(Auto-generated)</small>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                {% if delivery_order %}
+                                    <!-- Edit mode - show current DO number -->
+                                    <input type="text" class="form-control bg-light" value="{{ current_do_number }}" readonly>
+                                {% else %}
+                                    <!-- Create mode - show next DO number -->
+                                    <input type="text" class="form-control bg-light text-primary fw-bold" value="{{ next_do_number }}" readonly>
+                                    <small class="text-muted">This number will be assigned when you save the delivery order</small>
+                                {% endif %}
+                                {{ form.do_number.as_hidden }}
+                                {% if form.do_number.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.do_number.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ form.document_type.id_for_label }}" class="form-label">Document Type</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.document_type }}
+                                {% if form.document_type.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.document_type.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Customer -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.customer.id_for_label }}" class="form-label">Customer</label>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.customer }}
+                                {% if form.customer.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.customer.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Facility -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.facility.id_for_label }}" class="form-label">Facility</label>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.facility }}
+                                {% if form.facility.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.facility.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Bill To -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.bill_to.id_for_label }}" class="form-label">Bill To</label>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.bill_to }}
+                                {% if form.bill_to.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.bill_to.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Bill to Address -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.bill_to_address.id_for_label }}" class="form-label">Bill to Address</label>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.bill_to_address }}
+                                {% if form.bill_to_address.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.bill_to_address.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Deliver to Address -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.deliver_to_address.id_for_label }}" class="form-label">Deliver to Address</label>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.deliver_to_address }}
+                                {% if form.deliver_to_address.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.deliver_to_address.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Port of Loading and Discharge Port on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ form.port_of_loading.id_for_label }}" class="form-label">Port of Loading</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.port_of_loading }}
+                                {% if form.port_of_loading.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.port_of_loading.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ form.discharge_port.id_for_label }}" class="form-label">Discharge Port</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.discharge_port }}
+                                {% if form.discharge_port.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.discharge_port.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column -->
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-calendar-event me-2"></i>Delivery Details
+                        </h6>
+                        
+                        <!-- Date and Payment Mode on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ form.date.id_for_label }}" class="form-label">Date</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.date }}
+                                {% if form.date.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.date.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ form.payment_mode.id_for_label }}" class="form-label">Payment Mode</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.payment_mode }}
+                                {% if form.payment_mode.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.payment_mode.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Delivery Contact and Phone on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ form.delivery_contact.id_for_label }}" class="form-label">Contact</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.delivery_contact }}
+                                {% if form.delivery_contact.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.delivery_contact.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ form.delivery_phone.id_for_label }}" class="form-label">Phone</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.delivery_phone }}
+                                {% if form.delivery_phone.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.delivery_phone.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.delivery_email.id_for_label }}" class="form-label">Email</label>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.delivery_email }}
+                                {% if form.delivery_email.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.delivery_email.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Container, BL Number and BOE on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-1">
+                                <label for="{{ form.container.id_for_label }}" class="form-label">Container</label>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.container }}
+                                {% if form.container.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.container.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-1">
+                                <label for="{{ form.bl_number.id_for_label }}" class="form-label">BL Number</label>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.bl_number }}
+                                {% if form.bl_number.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.bl_number.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-1">
+                                <label for="{{ form.boe.id_for_label }}" class="form-label">BOE</label>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.boe }}
+                                {% if form.boe.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.boe.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Exit Point and Destination on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ form.exit_point.id_for_label }}" class="form-label">Exit Point</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.exit_point }}
+                                {% if form.exit_point.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.exit_point.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ form.destination.id_for_label }}" class="form-label">Destination</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.destination }}
+                                {% if form.destination.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.destination.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Ship Mode and Ship Date on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ form.ship_mode.id_for_label }}" class="form-label">Ship Mode</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.ship_mode }}
+                                {% if form.ship_mode.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.ship_mode.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ form.ship_date.id_for_label }}" class="form-label">Ship Date</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.ship_date }}
+                                {% if form.ship_date.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.ship_date.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Vessel and Voyage on same line -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ form.vessel.id_for_label }}" class="form-label">Vessel</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.vessel }}
+                                {% if form.vessel.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.vessel.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ form.voyage.id_for_label }}" class="form-label">Voyage</label>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.voyage }}
+                                {% if form.voyage.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.voyage.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Delivery Terms -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.delivery_terms.id_for_label }}" class="form-label">Delivery Terms</label>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.delivery_terms }}
+                                {% if form.delivery_terms.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.delivery_terms.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Available Items Section - Below Main Form -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-box-seam me-2"></i>Available Items
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="items-selection">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>
+                                                        <input type="checkbox" id="select-all-items" class="form-check-input">
+                                                    </th>
+                                                    <th>GRN No</th>
+                                                    <th>Item Code</th>
+                                                    <th>Item</th>
+                                                    <th>HS Code</th>
+                                                    <th>Unit</th>
+                                                    <th>QTY</th>
+                                                    <th>COO</th>
+                                                    <th>N-weight</th>
+                                                    <th>G-weight</th>
+                                                    <th>CBM</th>
+                                                    <th>P-Date</th>
+                                                    <th>E-Date</th>
+                                                    <th>Color</th>
+                                                    <th>Size</th>
+                                                    <th>Barcode</th>
+                                                    <th>Rate</th>
+                                                    <th>Amount</th>
+                                                    <th>ED</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="available-items-tbody">
+                                                <tr>
+                                                    <td colspan="19" class="text-center text-muted">
+                                                        Select a customer to view available items
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" id="add-selected-items" class="btn btn-primary btn-sm" disabled>
+                                            <i class="bi bi-plus-circle me-1"></i>Add Selected Items
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Selected Items Summary -->
+                                <div id="selected-items-summary" class="mt-3" style="display: none;">
+                                    <h6 class="text-primary">Selected Items</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>GRN No</th>
+                                                    <th>Item Code</th>
+                                                    <th>Item</th>
+                                                    <th>HS Code</th>
+                                                    <th>Unit</th>
+                                                    <th>QTY</th>
+                                                    <th>COO</th>
+                                                    <th>N-weight</th>
+                                                    <th>G-weight</th>
+                                                    <th>CBM</th>
+                                                    <th>P-Date</th>
+                                                    <th>E-Date</th>
+                                                    <th>Color</th>
+                                                    <th>Size</th>
+                                                    <th>Barcode</th>
+                                                    <th>Rate</th>
+                                                    <th>Amount</th>
+                                                    <th>ED</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="selected-items-tbody">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden field to store selected items data -->
+                <input type="hidden" name="selected_items_data" id="selected_items_data" value="">
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        {% if form.instance.pk %}
+                            <i class="bi bi-check-circle me-1"></i>Update Delivery Order
+                        {% else %}
+                            <i class="bi bi-plus-circle me-1"></i>Create Delivery Order
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Items Selection -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerSelect = document.getElementById('{{ form.customer.id_for_label }}');
+    const itemsSelection = document.getElementById('items-selection');
+    const availableItemsTbody = document.getElementById('available-items-tbody');
+    const selectAllItems = document.getElementById('select-all-items');
+    const addSelectedItemsBtn = document.getElementById('add-selected-items');
+    const selectedItemsSummary = document.getElementById('selected-items-summary');
+    const selectedItemsTbody = document.getElementById('selected-items-tbody');
+    
+    let selectedItems = [];
+    
+    // Load customers with available GRNs on page load
+    loadCustomersWithGRNs();
+    
+    // Handle form submission to save selected items
+    const form = document.querySelector('.delivery-order-form');
+    form.addEventListener('submit', function(e) {
+        console.log('Form submission started');
+        
+        // Update the hidden field with selected items data
+        const hiddenField = document.getElementById('selected_items_data');
+        hiddenField.value = JSON.stringify(selectedItems);
+        console.log('Selected items data:', selectedItems);
+        console.log('Hidden field value:', hiddenField.value);
+        
+        // Validate form
+        if (!form.checkValidity()) {
+            console.log('Form validation failed');
+            e.preventDefault();
+            form.reportValidity();
+            return;
+        }
+        
+        // Validate selected items
+        if (selectedItems.length === 0) {
+            console.log('No items selected');
+            e.preventDefault();
+            alert('Please select at least one item before creating the delivery order.');
+            return;
+        }
+        
+        console.log('Form is valid and has items, allowing submission');
+        
+        // Show loading state
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Creating Delivery Order...';
+        submitButton.disabled = true;
+        
+        // Form is valid and has items, allow submission
+        // The backend will handle the delivery order and item creation
+    });
+    
+    // Handle customer selection change
+    customerSelect.addEventListener('change', function() {
+        const customerId = this.value;
+        if (customerId) {
+            loadCustomerItems(customerId);
+        } else {
+            hideItemsSelection();
+        }
+    });
+    
+    // Event delegation for checkbox changes
+    availableItemsTbody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-checkbox')) {
+            updateAddButton();
+        }
+    });
+    
+    // Select all functionality
+    selectAllItems.addEventListener('change', function() {
+        const checkboxes = availableItemsTbody.querySelectorAll('.item-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateAddButton();
+    });
+    
+    // Handle add selected items button
+    addSelectedItemsBtn.addEventListener('click', function() {
+        addSelectedItems();
+    });
+    
+    function loadCustomersWithGRNs() {
+        // Show loading state
+        customerSelect.innerHTML = '<option value="">Loading customers...</option>';
+        
+        // Get current delivery order ID if editing
+        const currentDoId = '{{ form.instance.pk }}' || null;
+        
+        // Build URL with query parameters
+        let url = '/delivery_order/get-customers-with-grns/';
+        if (currentDoId && currentDoId !== 'None') {
+            url += `?current_do_id=${currentDoId}`;
+        }
+        
+        // Fetch customers with available GRNs via AJAX
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.customers.length > 0) {
+                    // Clear loading state
+                    customerSelect.innerHTML = '<option value="">Select Customer</option>';
+                    
+                    // Add customers to dropdown
+                    data.customers.forEach(customer => {
+                        const option = document.createElement('option');
+                        option.value = customer.id;
+                        option.textContent = `${customer.name} (${customer.code}) - ${customer.available_items_count} items available`;
+                        customerSelect.appendChild(option);
+                    });
+                } else {
+                    customerSelect.innerHTML = '<option value="">No customers with available GRNs found</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading customers:', error);
+                customerSelect.innerHTML = '<option value="">Error loading customers</option>';
+            });
+    }
+    
+    function loadCustomerItems(customerId) {
+        // Show loading state
+        availableItemsTbody.innerHTML = '<tr><td colspan="19" class="text-center">Loading items...</td></tr>';
+        
+        // Get current delivery order ID if editing
+        const currentDoId = '{{ form.instance.pk }}' || null;
+        
+        // Build URL with query parameters
+        let url = `/delivery_order/get-customer-items/${customerId}/`;
+        if (currentDoId && currentDoId !== 'None') {
+            url += `?current_do_id=${currentDoId}`;
+        }
+        
+        // Fetch items via AJAX
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.items.length > 0) {
+                    displayItems(data.items);
+                } else {
+                    availableItemsTbody.innerHTML = '<tr><td colspan="19" class="text-center text-muted">No items found for this customer</td></tr>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading items:', error);
+                availableItemsTbody.innerHTML = '<tr><td colspan="19" class="text-center text-danger">Error loading items</td></tr>';
+            });
+    }
+    
+    function displayItems(items) {
+        if (items.length === 0) {
+            availableItemsTbody.innerHTML = '<tr><td colspan="19" class="text-center text-muted">No items found for this customer</td></tr>';
+            return;
+        }
+        
+        availableItemsTbody.innerHTML = '';
+        items.forEach(item => {
+            // Create balance info text
+            let balanceInfo = '';
+            if (item.used_quantity && parseFloat(item.used_quantity) > 0) {
+                const usedQty = parseFloat(item.used_quantity);
+                const originalQty = parseFloat(item.original_quantity);
+                const availableQty = parseFloat(item.quantity);
+                const usedPercentage = ((usedQty / originalQty) * 100).toFixed(1);
+                
+                balanceInfo = `
+                    <br><small class="text-info">
+                        <strong>Balance:</strong> ${availableQty} / ${originalQty} 
+                        <span class="text-warning">(Used: ${usedQty} - ${usedPercentage}%)</span>
+                    </small>
+                `;
+            }
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <input type="checkbox" class="form-check-input item-checkbox" data-item-id="${item.id}" data-grn-id="${item.grn_id}">
+                </td>
+                <td>${item.grn_number}</td>
+                <td>${item.item_code || '-'}</td>
+                <td>${item.item_name || '-'}</td>
+                <td>${item.hs_code || '-'}</td>
+                <td>${item.unit || '-'}</td>
+                <td>
+                    <input type="number" class="form-control form-control-sm item-qty" 
+                           value="${item.quantity || 0}" 
+                           min="0" 
+                           max="${item.quantity || 0}"
+                           step="0.01"
+                           data-original-qty="${item.quantity || 0}"
+                           data-original-n-weight="${item.n_weight || 0}"
+                           data-original-g-weight="${item.g_weight || 0}"
+                           onchange="calculateItemValues(this)">
+                    ${balanceInfo}
+                </td>
+                <td>${item.coo || '-'}</td>
+                <td>
+                    <span class="item-n-weight">${item.n_weight || '-'}</span>
+                </td>
+                <td>
+                    <span class="item-g-weight">${item.g_weight || '-'}</span>
+                </td>
+                <td>${item.volume || '-'}</td>
+                <td>${item.p_date || '-'}</td>
+                <td>${item.expiry_date || '-'}</td>
+                <td>${item.color || '-'}</td>
+                <td>${item.size || '-'}</td>
+                <td>${item.barcode || '-'}</td>
+                <td>
+                    <input type="number" class="form-control form-control-sm item-rate" 
+                           value="${item.rate || 0}" 
+                           min="${item.rate || 0}"
+                           step="0.01"
+                           data-original-rate="${item.rate || 0}"
+                           onchange="validateAndCalculateRate(this)">
+                </td>
+                <td>
+                    <span class="item-amount">${item.amount || '-'}</span>
+                </td>
+                <td>${item.ed || '-'}</td>
+            `;
+            availableItemsTbody.appendChild(row);
+        });
+        
+        // Add event listeners to checkboxes
+        const checkboxes = availableItemsTbody.querySelectorAll('.item-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateAddButton);
+        });
+    }
+    
+    function updateAddButton() {
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        addSelectedItemsBtn.disabled = checkedBoxes.length === 0;
+    }
+    
+    function addSelectedItems() {
+        selectedItems = getSelectedItems();
+        
+        if (selectedItems.length === 0) {
+            alert('Please select at least one item.');
+            return;
+        }
+        
+        selectedItemsTbody.innerHTML = '';
+        selectedItems.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.grn_number}</td>
+                <td>${item.item_code}</td>
+                <td>${item.item_name}</td>
+                <td>${item.hs_code}</td>
+                <td>${item.unit}</td>
+                <td>${item.quantity}</td>
+                <td>${item.coo}</td>
+                <td>${item.n_weight}</td>
+                <td>${item.g_weight}</td>
+                <td>${item.volume || '-'}</td>
+                <td>${item.p_date || '-'}</td>
+                <td>${item.expiry_date || '-'}</td>
+                <td>${item.color || '-'}</td>
+                <td>${item.size || '-'}</td>
+                <td>${item.barcode || '-'}</td>
+                <td>${item.rate}</td>
+                <td>${item.amount}</td>
+                <td>${item.ed || 'NO ED DATA'}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem('${item.id}')">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </td>
+            `;
+            selectedItemsTbody.appendChild(row);
+        });
+        
+        selectedItemsSummary.style.display = 'block';
+        addSelectedItemsBtn.disabled = true;
+        
+        // Uncheck all checkboxes after adding
+        document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    }
+    
+    function removeItem(itemId) {
+        selectedItems = selectedItems.filter(item => item.id !== itemId);
+        
+        if (selectedItems.length === 0) {
+            selectedItemsSummary.style.display = 'none';
+        } else {
+            // Refresh the display
+            selectedItemsTbody.innerHTML = '';
+            selectedItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.grn_number}</td>
+                    <td>${item.item_code}</td>
+                    <td>${item.item_name}</td>
+                    <td>${item.hs_code}</td>
+                    <td>${item.unit}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.coo}</td>
+                    <td>${item.n_weight}</td>
+                    <td>${item.g_weight}</td>
+                    <td>${item.volume || '-'}</td>
+                    <td>${item.p_date || '-'}</td>
+                    <td>${item.expiry_date || '-'}</td>
+                    <td>${item.color || '-'}</td>
+                    <td>${item.size || '-'}</td>
+                    <td>${item.barcode || '-'}</td>
+                    <td>${item.rate}</td>
+                    <td>${item.amount}</td>
+                    <td>${item.ed || 'NO ED DATA'}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem('${item.id}')">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </td>
+                `;
+                selectedItemsTbody.appendChild(row);
+            });
+        }
+    }
+    
+    function hideItemsSelection() {
+        availableItemsTbody.innerHTML = '<tr><td colspan="19" class="text-center text-muted">Select a customer to view available items</td></tr>';
+        selectedItemsSummary.style.display = 'none';
+        selectedItems = [];
+    }
+    
+    // Make functions globally available
+    window.removeItem = removeItem;
+    window.calculateItemValues = calculateItemValues;
+    window.calculateItemAmount = calculateItemAmount;
+    window.validateAndCalculateRate = validateAndCalculateRate;
+
+    function getSelectedItems() {
+        const selected = [];
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        
+        checkedBoxes.forEach(checkbox => {
+            const row = checkbox.closest('tr');
+            const cells = row.cells;
+            
+            // Get the editable values
+            const qtyInput = row.querySelector('.item-qty');
+            const rateInput = row.querySelector('.item-rate');
+            const nWeightSpan = row.querySelector('.item-n-weight');
+            const gWeightSpan = row.querySelector('.item-g-weight');
+            const amountSpan = row.querySelector('.item-amount');
+            
+            const item = {
+                id: checkbox.dataset.itemId,
+                grn_id: checkbox.dataset.grnId,
+                grn_number: cells[1].textContent,
+                item_code: cells[2].textContent,
+                item_name: cells[3].textContent,
+                hs_code: cells[4].textContent,
+                unit: cells[5].textContent,
+                quantity: qtyInput ? qtyInput.value : '0',
+                coo: cells[7].textContent,
+                n_weight: nWeightSpan ? nWeightSpan.textContent : '-',
+                g_weight: gWeightSpan ? gWeightSpan.textContent : '-',
+                volume: cells[10] ? cells[10].textContent : '-',
+                p_date: cells[11] ? cells[11].textContent : '-',
+                expiry_date: cells[12] ? cells[12].textContent : '-',
+                color: cells[13] ? cells[13].textContent : '-',
+                size: cells[14] ? cells[14].textContent : '-',
+                barcode: cells[15] ? cells[15].textContent : '-',
+                rate: rateInput ? rateInput.value : '0',
+                amount: amountSpan ? amountSpan.textContent : '-',
+                ed: cells[18] ? cells[18].textContent : '-'
+            };
+            
+            selected.push(item);
+        });
+        
+        return selected;
+    }
+    
+    function calculateItemValues(qtyInput) {
+        const row = qtyInput.closest('tr');
+        const originalQty = parseFloat(qtyInput.dataset.originalQty) || 0;
+        const originalNWeight = parseFloat(qtyInput.dataset.originalNWeight) || 0;
+        const originalGWeight = parseFloat(qtyInput.dataset.originalGWeight) || 0;
+        const newQty = parseFloat(qtyInput.value) || 0;
+        
+        // Get original volume from the volume cell (column 10)
+        const volumeCell = row.cells[10];
+        const originalVolume = parseFloat(volumeCell.textContent) || 0;
+        
+        // Validate quantity - cannot exceed original quantity
+        if (newQty > originalQty) {
+            qtyInput.value = originalQty;
+            alert(`Quantity cannot exceed the original quantity of ${originalQty}`);
+            return;
+        }
+        
+        // Calculate proportional weights and volume
+        let newNWeight = 0;
+        let newGWeight = 0;
+        let newVolume = 0;
+        
+        if (originalQty > 0) {
+            const ratio = newQty / originalQty;
+            newNWeight = (originalNWeight * ratio).toFixed(2);
+            newGWeight = (originalGWeight * ratio).toFixed(2);
+            newVolume = (originalVolume * ratio).toFixed(2);
+        }
+        
+        // Update weight displays
+        const nWeightSpan = row.querySelector('.item-n-weight');
+        const gWeightSpan = row.querySelector('.item-g-weight');
+        
+        if (nWeightSpan) nWeightSpan.textContent = newNWeight > 0 ? newNWeight : '-';
+        if (gWeightSpan) gWeightSpan.textContent = newGWeight > 0 ? newGWeight : '-';
+        
+        // Update volume display
+        if (volumeCell) volumeCell.textContent = newVolume > 0 ? newVolume : '-';
+        
+        // Recalculate amount
+        calculateItemAmount(row.querySelector('.item-rate'));
+    }
+    
+    function validateAndCalculateRate(rateInput) {
+        const originalRate = parseFloat(rateInput.dataset.originalRate) || 0;
+        const newRate = parseFloat(rateInput.value) || 0;
+        
+        // Validate rate - cannot be less than original rate
+        if (newRate < originalRate) {
+            rateInput.value = originalRate;
+            alert(`Rate cannot be less than the original rate of ${originalRate}`);
+            return;
+        }
+        
+        // If validation passes, calculate amount
+        calculateItemAmount(rateInput);
+    }
+    
+    function calculateItemAmount(rateInput) {
+        const row = rateInput.closest('tr');
+        const qtyInput = row.querySelector('.item-qty');
+        const newRate = parseFloat(rateInput.value) || 0;
+        const newQty = parseFloat(qtyInput.value) || 0;
+        
+        const newAmount = (newQty * newRate).toFixed(2);
+        
+        // Update amount display
+        const amountSpan = row.querySelector('.item-amount');
+        if (amountSpan) amountSpan.textContent = newAmount > 0 ? newAmount : '-';
+    }
+});
+</script>
+{% endblock %} 

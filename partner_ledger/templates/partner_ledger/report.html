@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Partner Ledger Report{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'partner_ledger/css/partner_ledger.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-people-fill text-primary me-2"></i>
+                        Partner Ledger Report
+                    </h2>
+                    <p class="text-muted mb-0">Comprehensive customer invoice and payment tracking</p>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if report_data %}
+                    <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="exportToPDF()">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>
+                Filters
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row g-3">
+                    <!-- Customer Filter -->
+                    <div class="col-md-3">
+                        <label for="{{ form.customer.id_for_label }}" class="form-label">Customer/Partner</label>
+                        {{ form.customer }}
+                    </div>
+
+                    <!-- Date From -->
+                    <div class="col-md-2">
+                        <label for="{{ form.date_from.id_for_label }}" class="form-label">Date From</label>
+                        {{ form.date_from }}
+                    </div>
+
+                    <!-- Date To -->
+                    <div class="col-md-2">
+                        <label for="{{ form.date_to.id_for_label }}" class="form-label">Date To</label>
+                        {{ form.date_to }}
+                    </div>
+
+                    <!-- Payment Status -->
+                    <div class="col-md-2">
+                        <label for="{{ form.payment_status.id_for_label }}" class="form-label">Payment Status</label>
+                        {{ form.payment_status }}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Generate Report
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
+                                <i class="bi bi-arrow-clockwise"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Date Filters -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">Quick Date Filters:</label>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickFilter('today')">Today</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickFilter('this_week')">This Week</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickFilter('this_month')">This Month</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickFilter('this_quarter')">This Quarter</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickFilter('this_year')">This Year</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickFilter('last_month')">Last Month</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setQuickFilter('last_quarter')">Last Quarter</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if report_data %}
+    <!-- Summary Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Summary ({{ summary.date_from|date:"M d, Y" }} - {{ summary.date_to|date:"M d, Y" }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-value text-info">{{ summary.total_invoice_amount|floatformat:2 }}</div>
+                                <div class="summary-label">Total Invoice Amount</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-value text-success">{{ summary.total_payment_received|floatformat:2 }}</div>
+                                <div class="summary-label">Total Payment Received</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-value text-danger">{{ summary.total_pending_amount|floatformat:2 }}</div>
+                                <div class="summary-label">Total Pending Amount</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-value text-primary">{{ summary.ending_balance|floatformat:2 }}</div>
+                                <div class="summary-label">Ending Balance</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-table me-2"></i>
+                Partner Ledger Details ({{ summary.total_customers }} customers)
+            </h5>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="expandAllRows()">
+                    <i class="bi bi-arrows-expand"></i> Expand All
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="collapseAllRows()">
+                    <i class="bi bi-arrows-collapse"></i> Collapse All
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="partnerLedgerTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="5%"></th>
+                            <th width="20%" class="sortable" data-sort="customer">Customer <i class="bi bi-arrow-down-up"></i></th>
+                            <th width="10%" class="sortable" data-sort="date">Date <i class="bi bi-arrow-down-up"></i></th>
+                            <th width="15%">Reference</th>
+                            <th width="25%">Description</th>
+                            <th width="10%" class="text-end sortable" data-sort="invoice">Invoice Amount <i class="bi bi-arrow-down-up"></i></th>
+                            <th width="10%" class="text-end sortable" data-sort="payment">Payment Amount <i class="bi bi-arrow-down-up"></i></th>
+                            <th width="10%" class="text-end sortable" data-sort="balance">Running Balance <i class="bi bi-arrow-down-up"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer_data in report_data %}
+                        <!-- Customer Header Row -->
+                        <tr class="customer-header-row" data-customer-id="{{ customer_data.customer.id }}">
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary toggle-customer" data-customer-id="{{ customer_data.customer.id }}">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            </td>
+                            <td colspan="7">
+                                <strong>{{ customer_data.customer.customer_code }} - {{ customer_data.customer.customer_name }}</strong>
+                                <span class="badge bg-info ms-2">{{ customer_data.invoices|length }} invoice{{ customer_data.invoices|length|pluralize }}</span>
+                                <div class="customer-summary mt-1">
+                                    <small class="text-muted">
+                                        Total Invoice: <span class="text-info">{{ customer_data.customer_total_invoice|floatformat:2 }}</span> |
+                                Total Payment: <span class="text-success">{{ customer_data.customer_total_payment|floatformat:2 }}</span> |
+                                Pending: <span class="text-danger">{{ customer_data.customer_pending|floatformat:2 }}</span>
+                                    </small>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Invoice and Payment Rows -->
+                        {% for invoice_data in customer_data.invoices %}
+                        <tr class="invoice-row customer-{{ customer_data.customer.id }}-rows" style="display: none;">
+                            <td>
+                                {% if invoice_data.payments %}
+                                <button class="btn btn-sm btn-outline-secondary toggle-payments" data-invoice-id="{{ invoice_data.invoice.id }}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                            <td>{{ customer_data.customer.customer_name }}</td>
+                            <td>{{ invoice_data.invoice.invoice_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ invoice_data.invoice.invoice_number }}</span>
+                            </td>
+                            <td>Invoice {{ invoice_data.invoice.invoice_number }}</td>
+                            <td class="text-end">
+                                <span class="amount-positive">{{ invoice_data.invoice_amount|floatformat:2 }}</span>
+                            </td>
+                            <td class="text-end">-</td>
+                            <td class="text-end">
+                                <span class="running-balance">{{ invoice_data.running_balance|floatformat:2 }}</span>
+                            </td>
+                        </tr>
+
+                        <!-- Payment Rows -->
+                        {% for payment_data in invoice_data.payments %}
+                        <tr class="payment-row invoice-{{ invoice_data.invoice.id }}-payments customer-{{ customer_data.customer.id }}-rows" style="display: none;">
+                            <td></td>
+                            <td class="ps-4">
+                                <i class="bi bi-arrow-return-right text-muted me-1"></i>
+                                Payment
+                            </td>
+                            <td>{{ payment_data.payment_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge bg-success">{{ payment_data.payment.formatted_payment_id }}</span>
+                            </td>
+                            <td>
+                                <small>Payment - {{ payment_data.payment_method }}</small>
+                            </td>
+                            <td class="text-end">-</td>
+                            <td class="text-end">
+                                <span class="amount-negative">({{ payment_data.amount_received|floatformat:2 }})</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="running-balance">{{ payment_data.running_balance|floatformat:2 }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Data Message -->
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="mt-3">No Data Found</h4>
+            <p class="text-muted">Please adjust your filters and try again.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-3">Generating report...</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="{% static 'partner_ledger/js/partner_ledger.js' %}"></script>
+
+<script>
+// Initialize page
+$(document).ready(function() {
+    initializePartnerLedger();
+});
+
+// Export functions
+function exportToExcel() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = '{% url "partner_ledger:export_excel" %}?' + params.toString();
+}
+
+function exportToPDF() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = '{% url "partner_ledger:export_pdf" %}?' + params.toString();
+}
+
+// Quick filter function
+function setQuickFilter(filterType) {
+    $.ajax({
+        url: '{% url "partner_ledger:ajax_quick_filter" %}',
+        data: { filter_type: filterType },
+        success: function(response) {
+            if (response.success) {
+                $('#id_date_from').val(response.date_from);
+                $('#id_date_to').val(response.date_to);
+            }
+        }
+    });
+}
+
+// Reset filters
+function resetFilters() {
+    $('#filterForm')[0].reset();
+    $('#id_customer').val('').trigger('change');
+}
+</script>
+{% endblock %}

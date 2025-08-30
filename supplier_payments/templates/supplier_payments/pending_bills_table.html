@@ -1,0 +1,342 @@
+{% load static %}
+
+<div class="pending-bills-section">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-file-text text-warning"></i>
+                Pending Supplier/Vendor Bills
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if bills %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover pending-bills-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="5%">
+                                    <input type="checkbox" id="select-all-bills" class="form-check-input">
+                                </th>
+                                <th width="15%">Bill Number</th>
+                                <th width="12%">Bill Date</th>
+                                <th width="12%">Due Date</th>
+                                <th width="20%">Supplier</th>
+                                <th width="10%">Amount</th>
+                                <th width="8%">Status</th>
+                                <th width="10%">Days Overdue</th>
+                                <th width="8%">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in bills %}
+                                <tr class="bill-row" data-bill-id="{{ bill.id }}" data-bill-number="{% if bill.invoice_number %}{{ bill.invoice_number }}{% else %}{{ bill.number }}{% endif %}" data-amount="{{ bill.amount }}">
+                                    <td>
+                                        <input type="checkbox" 
+                                               class="form-check-input bill-checkbox" 
+                                               data-bill-id="{{ bill.id }}"
+                                               data-bill-number="{% if bill.invoice_number %}{{ bill.invoice_number }}{% else %}{{ bill.number }}{% endif %}"
+                                               data-amount="{{ bill.amount }}"
+                                               value="{% if bill.invoice_number %}{{ bill.invoice_number }}{% else %}{{ bill.number }}{% endif %}">
+                                    </td>
+                                    <td>
+                                        <strong class="text-primary">
+                                            {% if bill.invoice_number %}
+                                                {{ bill.invoice_number }} <small class="text-muted">(Invoice)</small>
+                                            {% else %}
+                                                {{ bill.number }} <small class="text-muted">(Bill)</small>
+                                            {% endif %}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ bill.bill_date|date:"M d, Y" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ bill.due_date|date:"M d, Y" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-medium">
+                            {% if bill.supplier %}
+                                {{ bill.supplier }}
+                            {% elif bill.vendor %}
+                                {% if bill.vendor.customer_name %}
+                                    {{ bill.vendor.customer_name }}
+                                {% else %}
+                                    {{ bill.vendor }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">{% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ bill.amount|floatformat:2 }}</span>
+                                    </td>
+                                    <td>
+                                         {% if bill.payment_status %}
+                                             {% if bill.payment_status == 'fully_paid' %}
+                                                 <span class="badge bg-success">Fully Paid</span>
+                                                 <br><small class="text-muted">Paid: {% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ bill.total_paid|floatformat:2 }}</small>
+                                             {% elif bill.payment_status == 'partially_paid' %}
+                                                 <span class="badge bg-warning">Partially Paid</span>
+                                                 <br><small class="text-muted">Paid: {% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ bill.total_paid|floatformat:2 }} / {% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ bill.amount|floatformat:2 }}</small>
+                                             {% else %}
+                                                 <span class="badge bg-danger">Unpaid</span>
+                                             {% endif %}
+                                         {% else %}
+                                             <span class="badge bg-danger">Unpaid</span>
+                                         {% endif %}
+                                         <br>
+                                         <small class="text-muted">
+                                            {% if bill.status == 'draft' %}
+                                                Draft
+                                            {% elif bill.status == 'sent' %}
+                                                Sent
+                                            {% elif bill.status == 'overdue' %}
+                                                Overdue
+                                            {% else %}
+                                                {{ bill.status|title }}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if bill.is_overdue %}
+                                            <span class="text-danger fw-bold">{{ bill.days_overdue }} days</span>
+                                        {% else %}
+                                            <span class="text-success">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" 
+                                                    class="btn btn-outline-info btn-sm view-bill-details" 
+                                                    data-bill-id="{{ bill.id }}"
+                                                    title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Bill Selection Summary -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Selected Bills:</strong> <span id="selected-bills-count">0</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-success">
+                            <i class="fas fa-dollar-sign"></i>
+                            <strong>Total Amount:</strong> AED <span id="selected-bills-total">0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" id="clear-selection">
+                            <i class="fas fa-times"></i> Clear Selection
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-primary" id="proceed-payment" disabled>
+                            <i class="fas fa-credit-card"></i> Proceed to Payment
+                        </button>
+                    </div>
+                </div>
+                
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-file-text fa-3x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted">No Pending Bills Found</h5>
+                    <p class="text-muted">There are no pending supplier bills for the selected supplier.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bill Details Modal -->
+<div class="modal fade" id="billDetailsModal" tabindex="-1" aria-labelledby="billDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="billDetailsModalLabel">
+                    <i class="fas fa-file-text"></i> Bill Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="billDetailsContent">
+                <!-- Bill details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.pending-bills-table {
+    font-size: 0.9rem;
+}
+
+.bill-row:hover {
+    background-color: #f8f9fa;
+}
+
+.bill-row.selected {
+    background-color: #e3f2fd;
+}
+
+.pending-bills-section .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.pending-bills-section .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.alert {
+    margin-bottom: 0;
+    padding: 0.75rem 1rem;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+@media (max-width: 768px) {
+    .pending-bills-table {
+        font-size: 0.8rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+    }
+}
+</style>
+
+<script>
+// Wait for jQuery to be available
+function waitForJQuery(callback) {
+    if (typeof $ !== 'undefined') {
+        callback();
+    } else {
+        setTimeout(function() {
+            waitForJQuery(callback);
+        }, 100);
+    }
+}
+
+waitForJQuery(function() {
+$(document).ready(function() {
+    // Select all bills functionality
+    $('#select-all-bills').change(function() {
+        $('.bill-checkbox').prop('checked', this.checked);
+        updateBillSelection();
+    });
+    
+    // Individual bill selection
+    $('.bill-checkbox').change(function() {
+        updateBillSelection();
+        
+        // Update select all checkbox state
+        var totalCheckboxes = $('.bill-checkbox').length;
+        var checkedCheckboxes = $('.bill-checkbox:checked').length;
+        $('#select-all-bills').prop('checked', totalCheckboxes === checkedCheckboxes);
+    });
+    
+    // Clear selection
+    $('#clear-selection').click(function() {
+        $('.bill-checkbox').prop('checked', false);
+        $('#select-all-bills').prop('checked', false);
+        updateBillSelection();
+    });
+    
+    // View bill details
+    $('.view-bill-details').click(function() {
+        var billId = $(this).data('bill-id');
+        loadBillDetails(billId);
+    });
+    
+    // Proceed to payment
+    $('#proceed-payment').click(function() {
+        var selectedBills = [];
+        $('.bill-checkbox:checked').each(function() {
+            selectedBills.push({
+                id: $(this).data('bill-id'),
+                number: $(this).data('bill-number'),
+                amount: $(this).data('amount')
+            });
+        });
+        
+        if (selectedBills.length > 0) {
+            // Redirect to payment form with selected bills
+            var billNumbers = selectedBills.map(bill => bill.number).join(',');
+            window.location.href = '{% url "supplier_payments:supplier_payment_create" %}?bills=' + encodeURIComponent(billNumbers);
+        }
+    });
+    
+    function updateBillSelection() {
+        var selectedCount = $('.bill-checkbox:checked').length;
+        var totalAmount = 0;
+        
+        $('.bill-checkbox:checked').each(function() {
+            var amount = parseFloat($(this).data('amount')) || 0;
+            totalAmount += amount;
+            $(this).closest('tr').addClass('selected');
+        });
+        
+        $('.bill-checkbox:not(:checked)').each(function() {
+            $(this).closest('tr').removeClass('selected');
+        });
+        
+        $('#selected-bills-count').text(selectedCount);
+        $('#selected-bills-total').text(totalAmount.toFixed(2));
+        
+        // Enable/disable proceed button
+        $('#proceed-payment').prop('disabled', selectedCount === 0);
+    }
+    
+    function loadBillDetails(billId) {
+        $('#billDetailsContent').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
+        $('#billDetailsModal').modal('show');
+        
+        $.ajax({
+            url: '/supplier-bills/ajax/bill-details/' + billId + '/',
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    $('#billDetailsContent').html(response.html);
+                } else {
+                    $('#billDetailsContent').html('<div class="alert alert-danger">Error loading bill details.</div>');
+                }
+            },
+            error: function() {
+                $('#billDetailsContent').html('<div class="alert alert-danger">Error loading bill details.</div>');
+            }
+        });
+    }
+    
+    // Initialize selection state
+    updateBillSelection();
+});
+}); // Close waitForJQuery function
+</script>

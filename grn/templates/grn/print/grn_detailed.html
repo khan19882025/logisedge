@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRN Detailed - {{ grn.grn_number }}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 6px;
+        }
+        
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .company-details {
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .document-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+            text-align: center;
+        }
+        
+        .grn-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .grn-details {
+            flex: 1;
+        }
+        
+        .grn-number {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 6px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 2px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            width: 80px;
+        }
+        
+        .info-value {
+            flex: 1;
+        }
+        
+        .section {
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            padding: 6px;
+        }
+        
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            background-color: #f8f9fa;
+            padding: 3px;
+            margin: -6px -6px 6px -6px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 8px;
+        }
+        
+        .items-table th,
+        .items-table td {
+            border: 1px solid #ddd;
+            padding: 2px;
+            text-align: left;
+        }
+        
+        .items-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            font-size: 8px;
+        }
+        
+        .totals-section {
+            margin-top: 12px;
+            border: 1px solid #ddd;
+            padding: 6px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+        
+        .total-label {
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 6px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-draft { background-color: #6c757d; color: white; }
+        .status-pending { background-color: #ffc107; color: #212529; }
+        .status-received { background-color: #17a2b8; color: white; }
+        .status-completed { background-color: #28a745; color: white; }
+        .status-cancelled { background-color: #dc3545; color: white; }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .priority-low { background-color: #28a745; color: white; }
+        .priority-medium { background-color: #ffc107; color: #212529; }
+        .priority-high { background-color: #fd7e14; color: white; }
+        .priority-urgent { background-color: #dc3545; color: white; }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .three-column {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .column {
+            flex: 1;
+        }
+        
+        .two-column {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="text-align: left; max-width: 60%;">
+                {% if company %}
+                    <div class="company-name">{{ company.name }}</div>
+                    <div class="company-details">
+                        {{ company.address }}<br>
+                        Tel: {{ company.phone }} | Email: {{ company.email }}
+                        {% if company.website %}<br>Web: {{ company.website }}{% endif %}
+                        {% if company.tax_number or company.registration_number %}
+                            <br>
+                            {% if company.tax_number %}Tax: {{ company.tax_number }}{% endif %}
+                            {% if company.tax_number and company.registration_number %} | {% endif %}
+                            {% if company.registration_number %}Reg: {{ company.registration_number }}{% endif %}
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <div style="text-align: right; max-width: 35%;">
+                <div class="document-title">GOODS RECEIVED NOTE - DETAILED</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRN Information -->
+    <div class="grn-info">
+        <div class="grn-details">
+            <div class="grn-number">GRN: {{ grn.grn_number }}</div>
+            <div class="info-row">
+                <span class="info-label">Date:</span>
+                <span class="info-value">{{ grn.grn_date|date:"d/m/Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span class="info-value">
+                    <span class="status-badge status-{{ grn.status }}">
+                        {{ grn.get_status_display }}
+                    </span>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Priority:</span>
+                <span class="info-value">
+                    <span class="priority-badge priority-{{ grn.priority }}">
+                        {{ grn.get_priority_display }}
+                    </span>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Mode:</span>
+                <span class="info-value">{{ grn.get_mode_display }}</span>
+            </div>
+        </div>
+        
+        <div class="grn-details">
+            <div class="info-row">
+                <span class="info-label">Job Ref:</span>
+                <span class="info-value">{{ grn.job_ref.job_code|default:"Not specified" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Customer Ref:</span>
+                <span class="info-value">{{ grn.customer_ref|default:"Not specified" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">BL Number:</span>
+                <span class="info-value">{{ grn.bl_number|default:"Not specified" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Container:</span>
+                <span class="info-value">{{ grn.container_number|default:"Not specified" }}</span>
+            </div>
+        </div>
+        
+        <div class="grn-details">
+            <div class="info-row">
+                <span class="info-label">Facility:</span>
+                <span class="info-value">{{ grn.facility.facility_name|default:"Not specified" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Assigned To:</span>
+                <span class="info-value">
+                    {% if grn.assigned_to %}
+                        {{ grn.assigned_to.get_full_name|default:grn.assigned_to.salesman_code }}
+                    {% else %}
+                        Not assigned
+                    {% endif %}
+                </span>
+            </div>
+            {% if grn.expected_date %}
+            <div class="info-row">
+                <span class="info-label">Expected Date:</span>
+                <span class="info-value">{{ grn.expected_date|date:"d/m/Y" }}</span>
+            </div>
+            {% endif %}
+            {% if grn.received_date %}
+            <div class="info-row">
+                <span class="info-label">Received Date:</span>
+                <span class="info-value">{{ grn.received_date|date:"d/m/Y" }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Customer, Supplier, and Shipping Information -->
+    <div class="three-column">
+        <div class="column">
+            <div class="section">
+                <div class="section-title">Customer Information</div>
+                <div class="info-row">
+                    <span class="info-label">Customer:</span>
+                    <span class="info-value">{{ grn.customer.customer_name }}</span>
+                </div>
+                {% if grn.customer.email %}
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ grn.customer.email }}</span>
+                </div>
+                {% endif %}
+                {% if grn.customer.phone %}
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ grn.customer.phone }}</span>
+                </div>
+                {% endif %}
+                {% if grn.customer.address %}
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value">{{ grn.customer.address }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="column">
+            {% if grn.supplier_name %}
+            <div class="section">
+                <div class="section-title">Supplier Information</div>
+                <div class="info-row">
+                    <span class="info-label">Supplier:</span>
+                    <span class="info-value">{{ grn.supplier_name }}</span>
+                </div>
+                {% if grn.supplier_phone %}
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ grn.supplier_phone }}</span>
+                </div>
+                {% endif %}
+                {% if grn.supplier_email %}
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ grn.supplier_email }}</span>
+                </div>
+                {% endif %}
+                {% if grn.supplier_address %}
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value">{{ grn.supplier_address }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="column">
+            {% if grn.vessel or grn.voyage or grn.driver_name %}
+            <div class="section">
+                <div class="section-title">Shipping Information</div>
+                {% if grn.vessel %}
+                <div class="info-row">
+                    <span class="info-label">Vessel:</span>
+                    <span class="info-value">{{ grn.vessel }}</span>
+                </div>
+                {% endif %}
+                {% if grn.voyage %}
+                <div class="info-row">
+                    <span class="info-label">Voyage:</span>
+                    <span class="info-value">{{ grn.voyage }}</span>
+                </div>
+                {% endif %}
+                {% if grn.driver_name %}
+                <div class="info-row">
+                    <span class="info-label">Driver:</span>
+                    <span class="info-value">{{ grn.driver_name }}</span>
+                </div>
+                {% endif %}
+                {% if grn.contact_no %}
+                <div class="info-row">
+                    <span class="info-label">Contact:</span>
+                    <span class="info-value">{{ grn.contact_no }}</span>
+                </div>
+                {% endif %}
+                {% if grn.vehicle_no %}
+                <div class="info-row">
+                    <span class="info-label">Vehicle:</span>
+                    <span class="info-value">{{ grn.vehicle_no }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Detailed Items Table -->
+    {% if grn_items %}
+    <div class="section">
+        <div class="section-title">Detailed Items</div>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Sr</th>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>HS Code</th>
+                    <th>COO</th>
+                    <th>Unit</th>
+                    <th>Exp Qty</th>
+                    <th>Rec Qty</th>
+                    <th>Dam Qty</th>
+                    <th>Short Qty</th>
+                    <th>G-Weight</th>
+                    <th>N-Weight</th>
+                    <th>CBM</th>
+                    <th>P-Date</th>
+                    <th>E-Date</th>
+                    <th>Color</th>
+                    <th>Size</th>
+                    <th>Batch No</th>
+                    <th>ED</th>
+                    <th>CTNR</th>
+                    <th>Remark</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in grn_items %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.item_code|default:"-" }}</td>
+                    <td>{{ item.item_name|default:"-" }}</td>
+                    <td>{{ item.hs_code|default:"-" }}</td>
+                    <td>{{ item.coo|default:"-" }}</td>
+                    <td>{{ item.unit|default:"-" }}</td>
+                    <td>{{ item.expected_qty|default:"-" }}</td>
+                    <td>{{ item.received_qty|default:"-" }}</td>
+                    <td>{{ item.damaged_qty|default:"0" }}</td>
+                    <td>{{ item.short_qty|default:"0" }}</td>
+                    <td>{{ item.gross_weight|default:"-" }}</td>
+                    <td>{{ item.net_weight|default:"-" }}</td>
+                    <td>{{ item.volume|default:"-" }}</td>
+                    <td>{{ item.p_date|date:"d/m/Y"|default:"-" }}</td>
+                    <td>{{ item.expiry_date|date:"d/m/Y"|default:"-" }}</td>
+                    <td>{{ item.color|default:"-" }}</td>
+                    <td>{{ item.size|default:"-" }}</td>
+                    <td>{{ item.batch_number|default:"-" }}</td>
+                    <td>{{ item.ed|default:"-" }}</td>
+                    <td>{{ item.ctnr|default:"-" }}</td>
+                    <td>{{ item.remark|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Pallet Details -->
+    {% if grn_pallets %}
+    <div class="section">
+        <div class="section-title">Pallet Details</div>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Pallet No</th>
+                    <th>Item Code</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Weight (KGS)</th>
+                    <th>Volume (CBM)</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pallet in grn_pallets %}
+                <tr>
+                    <td>{{ pallet.pallet_no }}</td>
+                    <td>{{ pallet.item.item_code|default:"-" }}</td>
+                    <td>{{ pallet.description|default:"-" }}</td>
+                    <td>{{ pallet.quantity|default:"-" }}</td>
+                    <td>{{ pallet.weight|default:"-" }}</td>
+                    <td>{{ pallet.volume|default:"-" }}</td>
+                    <td>{{ pallet.location|default:"-" }}</td>
+                    <td>
+                        <span class="status-badge 
+                            {% if pallet.status == 'received' %}status-completed
+                            {% elif pallet.status == 'pending' %}status-pending
+                            {% elif pallet.status == 'in_transit' %}status-received
+                            {% elif pallet.status == 'stored' %}status-completed
+                            {% else %}status-draft{% endif %}">
+                            {{ pallet.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ pallet.remark|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Totals and Notes -->
+    <div class="two-column">
+        <div class="column">
+            <div class="totals-section">
+                <div class="section-title">Totals</div>
+                {% if grn.total_packages %}
+                <div class="total-row">
+                    <span class="total-label">Total Packages:</span>
+                    <span>{{ grn.total_packages }}</span>
+                </div>
+                {% endif %}
+                {% if grn.total_weight %}
+                <div class="total-row">
+                    <span class="total-label">Total Weight:</span>
+                    <span>{{ grn.total_weight }} KGS</span>
+                </div>
+                {% endif %}
+                {% if grn.total_volume %}
+                <div class="total-row">
+                    <span class="total-label">Total Volume:</span>
+                    <span>{{ grn.total_volume }} CBM</span>
+                </div>
+                {% endif %}
+                {% if grn.total_qty %}
+                <div class="total-row">
+                    <span class="total-label">Total Quantity:</span>
+                    <span>{{ grn.total_qty }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="column">
+            {% if grn.notes or grn.special_instructions %}
+            <div class="section">
+                <div class="section-title">Notes & Instructions</div>
+                {% if grn.notes %}
+                <div class="info-row">
+                    <span class="info-label">Notes:</span>
+                    <span class="info-value">{{ grn.notes }}</span>
+                </div>
+                {% endif %}
+                {% if grn.special_instructions %}
+                <div class="info-row">
+                    <span class="info-label">Special Instructions:</span>
+                    <span class="info-value">{{ grn.special_instructions }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Audit Information -->
+    <div class="section">
+        <div class="section-title">Audit Information</div>
+        <div class="three-column">
+            <div class="column">
+                <div class="info-row">
+                    <span class="info-label">Created By:</span>
+                    <span class="info-value">{{ grn.created_by.get_full_name|default:grn.created_by.username }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Created At:</span>
+                    <span class="info-value">{{ grn.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+            <div class="column">
+                <div class="info-row">
+                    <span class="info-label">Last Updated:</span>
+                    <span class="info-value">{{ grn.updated_at|date:"d/m/Y H:i" }}</span>
+                </div>
+                {% if grn.received_date %}
+                <div class="info-row">
+                    <span class="info-label">Received Date:</span>
+                    <span class="info-value">{{ grn.received_date|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="column">
+                <div class="info-row">
+                    <span class="info-label">Seal Number:</span>
+                    <span class="info-value">{{ grn.seal_number|default:"Not specified" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Total Items:</span>
+                    <span class="info-value">{{ grn_items|length }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Generated on {{ grn.created_at|date:"d/m/Y H:i" }} by {{ grn.created_by.get_full_name|default:grn.created_by.username }}</p>
+        <p>This is a computer-generated document. No signature required.</p>
+    </div>
+</body>
+</html> 

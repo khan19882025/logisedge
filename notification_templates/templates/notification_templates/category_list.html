@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load notification_template_filters %}
+
+{% block title %}Template Categories - Notification Templates{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-folder fa-fw"></i> Template Categories
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'notification_templates:category_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> New Category
+            </a>
+            <a href="{% url 'notification_templates:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-fw"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Categories List -->
+    {% if categories %}
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-folder fa-fw"></i> {{ category.name }}
+                        </h6>
+                        <div class="dropdown">
+                            <button class="btn btn-link btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'notification_templates:category_edit' category.pk %}">
+                                    <i class="fas fa-edit fa-fw"></i> Edit
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'notification_templates:template_create' %}?category={{ category.pk }}">
+                                    <i class="fas fa-plus fa-fw"></i> Add Template
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="confirmDelete('{{ category.pk }}', '{{ category.name }}')">
+                                    <i class="fas fa-trash fa-fw"></i> Delete
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Category Color -->
+                        <div class="mb-3">
+                            <span class="badge" style="background-color: {{ category.color }}; color: white;">
+                                {{ category.color }}
+                            </span>
+                        </div>
+                        
+                        <!-- Description -->
+                        {% if category.description %}
+                            <p class="text-muted small mb-3">{{ category.description|truncatechars:100 }}</p>
+                        {% endif %}
+                        
+                        <!-- Template Count -->
+                        <div class="mb-3">
+                            <strong>{{ category.templates.count }}</strong> templates
+                        </div>
+                        
+                        <!-- Icon -->
+                        {% if category.icon %}
+                            <div class="text-center mb-3">
+                                <i class="{{ category.icon }} fa-2x text-gray-300"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Metadata -->
+                        <div class="small text-muted">
+                            <div class="mb-1">
+                                <i class="fas fa-calendar fa-fw"></i> {{ category.created_at|date:"M d, Y" }}
+                            </div>
+                            {% if category.is_active %}
+                                <div class="mb-1">
+                                    <i class="fas fa-check-circle fa-fw text-success"></i> Active
+                                </div>
+                            {% else %}
+                                <div class="mb-1">
+                                    <i class="fas fa-times-circle fa-fw text-secondary"></i> Inactive
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <a href="{% url 'notification_templates:category_edit' category.pk %}" 
+                               class="btn btn-outline-warning">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="{% url 'notification_templates:template_create' %}?category={{ category.pk }}" 
+                               class="btn btn-outline-primary">
+                                <i class="fas fa-plus"></i> Add Template
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- No Categories Found -->
+        <div class="text-center py-5">
+            <i class="fas fa-folder fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No categories found</h4>
+            <p class="text-muted">Create your first template category to get started.</p>
+            <a href="{% url 'notification_templates:category_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus fa-fw"></i> Create Your First Category
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the category "<strong id="categoryName"></strong>"?</p>
+                <p class="text-danger">This action cannot be undone and will affect all templates in this category.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Category</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(categoryId, categoryName) {
+    document.getElementById('categoryName').textContent = categoryName;
+    document.getElementById('deleteForm').action = `/utilities/notification-templates/categories/${categoryId}/delete/`;
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Budget Planning{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+<style>
+    .form-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+    
+    .alert-preview {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .alert-preview h3 {
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .preview-stat {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .preview-stat .number {
+        font-size: 2rem;
+        font-weight: bold;
+        display: block;
+    }
+    
+    .preview-stat .label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-bell mr-2"></i>{{ title }}
+        </h1>
+        <div>
+            <a href="{% url 'budget_planning:budget_variance_alerts' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Alerts
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-cog mr-2"></i>Alert Configuration
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h5><i class="fas fa-info-circle mr-2"></i>Basic Information</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.alert_name.id_for_label }}">
+                                    {{ form.alert_name.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.alert_name }}
+                                {% if form.alert_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.alert_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.alert_type.id_for_label }}">
+                                    {{ form.alert_type.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.alert_type }}
+                                {% if form.alert_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.alert_type.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.severity.id_for_label }}">
+                                    {{ form.severity.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.severity }}
+                                {% if form.severity.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.severity.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="d-block">Status</label>
+                                <div class="custom-control custom-switch">
+                                    {{ form.is_active }}
+                                    <label class="custom-control-label" for="{{ form.is_active.id_for_label }}">
+                                        Active Alert
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Threshold Configuration -->
+                <div class="form-section">
+                    <h5><i class="fas fa-chart-line mr-2"></i>Threshold Configuration</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.threshold_percentage.id_for_label }}">
+                                    {{ form.threshold_percentage.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.threshold_percentage }}
+                                <small class="form-text text-muted">
+                                    Percentage threshold for variance alerts (e.g., 10.00 for 10%)
+                                </small>
+                                {% if form.threshold_percentage.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.threshold_percentage.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.threshold_amount.id_for_label }}">
+                                    {{ form.threshold_amount.label }}
+                                </label>
+                                {{ form.threshold_amount }}
+                                <small class="form-text text-muted">
+                                    Amount threshold for variance alerts (e.g., 1000.00)
+                                </small>
+                                {% if form.threshold_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.threshold_amount.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scope Configuration -->
+                <div class="form-section">
+                    <h5><i class="fas fa-filter mr-2"></i>Scope Configuration</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.department.id_for_label }}">
+                                    {{ form.department.label }}
+                                </label>
+                                {{ form.department }}
+                                <small class="form-text text-muted">
+                                    Leave blank to apply to all departments
+                                </small>
+                                {% if form.department.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.department.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.cost_center.id_for_label }}">
+                                    {{ form.cost_center.label }}
+                                </label>
+                                {{ form.cost_center }}
+                                <small class="form-text text-muted">
+                                    Leave blank to apply to all cost centers
+                                </small>
+                                {% if form.cost_center.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.cost_center.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Configuration -->
+                <div class="form-section">
+                    <h5><i class="fas fa-envelope mr-2"></i>Notification Configuration</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                    {{ form.notify_finance_managers }}
+                                    <label class="custom-control-label" for="{{ form.notify_finance_managers.id_for_label }}">
+                                        Notify Finance Managers
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Send notifications to finance managers
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                    {{ form.notify_department_heads }}
+                                    <label class="custom-control-label" for="{{ form.notify_department_heads.id_for_label }}">
+                                        Notify Department Heads
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Send notifications to department heads
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.notify_users.id_for_label }}">
+                                    {{ form.notify_users.label }}
+                                </label>
+                                {{ form.notify_users }}
+                                <small class="form-text text-muted">
+                                    Select specific users to notify
+                                </small>
+                                {% if form.notify_users.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.notify_users.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit buttons -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save mr-2"></i>{% if alert %}Update Alert{% else %}Create Alert{% endif %}
+                    </button>
+                    <a href="{% url 'budget_planning:budget_variance_alerts' %}" class="btn btn-secondary btn-lg ml-2">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alert Preview -->
+    {% if form.is_bound and form.is_valid %}
+    <div class="alert-preview">
+        <h3><i class="fas fa-eye mr-2"></i>Alert Preview</h3>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="preview-stat">
+                    <span class="number">{{ form.cleaned_data.alert_name|default:"Alert Name" }}</span>
+                    <span class="label">Alert Name</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="preview-stat">
+                    <span class="number">{{ form.cleaned_data.alert_type|default:"Type"|title }}</span>
+                    <span class="label">Alert Type</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="preview-stat">
+                    <span class="number">{{ form.cleaned_data.severity|default:"Medium"|title }}</span>
+                    <span class="label">Severity</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="preview-stat">
+                    <span class="number">{{ form.cleaned_data.threshold_percentage|default:"0" }}%</span>
+                    <span class="label">Threshold %</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize form validation
+    $('.needs-validation').on('submit', function(event) {
+        if (!this.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        $(this).addClass('was-validated');
+    });
+
+    // Dynamic form interactions
+    $('#id_department').change(function() {
+        const departmentId = $(this).val();
+        const costCenterSelect = $('#id_cost_center');
+        
+        if (departmentId) {
+            // Load cost centers for the selected department
+            $.get(`{% url 'budget_planning:get_cost_centers_by_department' %}?department_id=${departmentId}`)
+                .done(function(data) {
+                    costCenterSelect.empty();
+                    costCenterSelect.append('<option value="">All Cost Centers</option>');
+                    
+                    data.cost_centers.forEach(function(costCenter) {
+                        costCenterSelect.append(
+                            `<option value="${costCenter.id}">${costCenter.code} - ${costCenter.name}</option>`
+                        );
+                    });
+                });
+        } else {
+            // Reset cost center options
+            costCenterSelect.empty();
+            costCenterSelect.append('<option value="">All Cost Centers</option>');
+        }
+    });
+
+    // Initialize select2 for multiple select
+    $('#id_notify_users').select2({
+        placeholder: 'Select users to notify',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Real-time preview updates
+    $('#id_alert_name').on('input', function() {
+        updatePreview();
+    });
+
+    $('#id_alert_type').change(function() {
+        updatePreview();
+    });
+
+    $('#id_severity').change(function() {
+        updatePreview();
+    });
+
+    $('#id_threshold_percentage').on('input', function() {
+        updatePreview();
+    });
+});
+
+function updatePreview() {
+    // Update preview section if it exists
+    const alertName = $('#id_alert_name').val() || 'Alert Name';
+    const alertType = $('#id_alert_type option:selected').text() || 'Type';
+    const severity = $('#id_severity option:selected').text() || 'Medium';
+    const threshold = $('#id_threshold_percentage').val() || '0';
+    
+    // Update preview values if preview section exists
+    if ($('.alert-preview').length) {
+        $('.alert-preview .preview-stat:nth-child(1) .number').text(alertName);
+        $('.alert-preview .preview-stat:nth-child(2) .number').text(alertType);
+        $('.alert-preview .preview-stat:nth-child(3) .number').text(severity);
+        $('.alert-preview .preview-stat:nth-child(4) .number').text(threshold + '%');
+    }
+}
+</script>
+{% endblock %}

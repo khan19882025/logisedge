@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'general_ledger_report/css/report.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">
+                            <i class="fas fa-chart-line text-white me-2"></i>
+                            General Ledger Reports
+                        </h1>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Reports</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="header-actions">
+                        <a href="{% url 'general_ledger_report:report_quick' %}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-bolt me-1"></i>Quick Report
+                        </a>
+                        <a href="{% url 'general_ledger_report:report_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Create Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Cards -->
+    <div class="row mb-5 g-4">
+        <div class="col-md-4">
+            <div class="card action-card">
+                <div class="card-body text-center">
+                    <div class="action-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h5 class="card-title">Quick Report</h5>
+                    <p class="card-text">Generate a report with basic filters for immediate use. Perfect for quick analysis and daily operations.</p>
+                    <a href="{% url 'general_ledger_report:report_quick' %}" class="btn btn-outline-dark">
+                        <i class="fas fa-play me-1"></i>Start Quick Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card action-card">
+                <div class="card-body text-center">
+                    <div class="action-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <h5 class="card-title">Advanced Report</h5>
+                    <p class="card-text">Create a detailed report with advanced filtering options. Customize every aspect of your report.</p>
+                    <a href="{% url 'general_ledger_report:report_create' %}" class="btn btn-dark">
+                        <i class="fas fa-plus me-1"></i>Create Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card action-card">
+                <div class="card-body text-center">
+                    <div class="action-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h5 class="card-title">Templates</h5>
+                    <p class="card-text">Use predefined templates for common report configurations. Save time with pre-built formats.</p>
+                    <a href="{% url 'general_ledger_report:template_list' %}" class="btn btn-outline-dark">
+                        <i class="fas fa-folder me-1"></i>View Templates
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Reports -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-save me-2"></i>Saved Reports
+                        </h5>
+                        <div class="header-actions">
+                            <button class="btn btn-sm btn-outline-dark" onclick="refreshReports()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Report Name</th>
+                                    <th>Type</th>
+                                    <th>Date Range</th>
+                                    <th>Account</th>
+                                    <th>Created</th>
+                                    <th>Last Generated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                <tr>
+                                    <td>
+                                        <div class="report-name">
+                                            <strong>{{ report.name }}</strong>
+                                            {% if report.description %}
+                                            <small class="text-muted d-block">{{ report.description }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ report.get_report_type_display }}</span>
+                                    </td>
+                                    <td>{{ report.date_range_display }}</td>
+                                    <td>
+                                        {% if report.account %}
+                                            <span class="text-dark">{{ report.account.account_code }}</span>
+                                            <br><small class="text-muted">{{ report.account.name }}</small>
+                                        {% else %}
+                                            <span class="text-muted">All Accounts</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ report.created_at|date:"d/m/Y H:i" }}</small>
+                                        <br><small class="text-muted">by {{ report.created_by.get_full_name|default:report.created_by.username }}</small>
+                                    </td>
+                                    <td>
+                                        {% if report.last_generated %}
+                                            <small>{{ report.last_generated|date:"d/m/Y H:i" }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Never</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'general_ledger_report:report_detail' report.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="View Report">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                        data-bs-toggle="dropdown" title="Export">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="{% url 'general_ledger_report:report_export' report.pk %}?format=PDF">
+                                                        <i class="fas fa-file-pdf me-2"></i>PDF
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'general_ledger_report:report_export' report.pk %}?format=EXCEL">
+                                                        <i class="fas fa-file-excel me-2"></i>Excel
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'general_ledger_report:report_export' report.pk %}?format=CSV">
+                                                        <i class="fas fa-file-csv me-2"></i>CSV
+                                                    </a></li>
+                                                </ul>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger delete-report-btn" 
+                                                    data-report-id="{{ report.pk }}" data-report-name="{{ report.name }}" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Report pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">&laquo; First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No saved reports</h5>
+                        <p class="text-muted">You haven't saved any reports yet. Create your first report to get started.</p>
+                        <div class="mt-3">
+                            <a href="{% url 'general_ledger_report:report_quick' %}" class="btn btn-warning me-2">
+                                <i class="fas fa-bolt me-1"></i>Quick Report
+                            </a>
+                            <a href="{% url 'general_ledger_report:report_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Create Report
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the report "<strong id="reportNameToDelete"></strong>"?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="deleteForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Report</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'general_ledger_report/js/report.js' %}"></script>
+<script>
+function deleteReport(reportId, reportName) {
+    document.getElementById('reportNameToDelete').textContent = reportName;
+    document.getElementById('deleteForm').action = '/reports/general-ledger/' + reportId + '/delete/';
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+function refreshReports() {
+    window.location.reload();
+}
+
+// Add loading state to action buttons and handle delete buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const actionButtons = document.querySelectorAll('.btn-group .btn');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            if (!this.classList.contains('dropdown-toggle')) {
+                addLoadingState(this);
+            }
+        });
+    });
+    
+    // Handle delete report buttons
+    const deleteButtons = document.querySelectorAll('.delete-report-btn');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const reportId = this.getAttribute('data-report-id');
+            const reportName = this.getAttribute('data-report-name');
+            deleteReport(reportId, reportName);
+        });
+    });
+});
+</script>
+{% endblock %}

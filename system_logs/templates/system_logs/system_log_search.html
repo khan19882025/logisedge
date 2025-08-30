@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search System Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-search"></i> Search System Logs
+                </h1>
+                <p class="page-subtitle">Advanced search and filtering for system logs</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter"></i> Search Criteria
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-3">
+                            <label for="log_type" class="form-label">Log Type</label>
+                            <select name="log_type" id="log_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="ERROR" {% if form.log_type.value == 'ERROR' %}selected{% endif %}>Error</option>
+                                <option value="WARNING" {% if form.log_type.value == 'WARNING' %}selected{% endif %}>Warning</option>
+                                <option value="INFO" {% if form.log_type.value == 'INFO' %}selected{% endif %}>Info</option>
+                                <option value="DEBUG" {% if form.log_type.value == 'DEBUG' %}selected{% endif %}>Debug</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="severity" class="form-label">Severity</label>
+                            <select name="severity" id="severity" class="form-select">
+                                <option value="">All Severities</option>
+                                <option value="LOW" {% if form.severity.value == 'LOW' %}selected{% endif %}>Low</option>
+                                <option value="MEDIUM" {% if form.severity.value == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                                <option value="HIGH" {% if form.severity.value == 'HIGH' %}selected{% endif %}>High</option>
+                                <option value="CRITICAL" {% if form.severity.value == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                                <option value="FATAL" {% if form.severity.value == 'FATAL' %}selected{% endif %}>Fatal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="PENDING" {% if form.status.value == 'PENDING' %}selected{% endif %}>Pending</option>
+                                <option value="IN_PROGRESS" {% if form.status.value == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                                <option value="RESOLVED" {% if form.status.value == 'RESOLVED' %}selected{% endif %}>Resolved</option>
+                                <option value="IGNORED" {% if form.status.value == 'IGNORED' %}selected{% endif %}>Ignored</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="module" class="form-label">Module</label>
+                            <input type="text" name="module" id="module" class="form-control" 
+                                   value="{{ form.module.value|default:'' }}" placeholder="Enter module name">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="function" class="form-label">Function</label>
+                            <input type="text" name="function" id="function" class="form-control" 
+                                   value="{{ form.function.value|default:'' }}" placeholder="Enter function name">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="user" class="form-label">User</label>
+                            <input type="text" name="user" id="user" class="form-control" 
+                                   value="{{ form.user.value|default:'' }}" placeholder="Enter username">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="environment" class="form-label">Environment</label>
+                            <select name="environment" id="environment" class="form-select">
+                                <option value="">All Environments</option>
+                                <option value="development" {% if form.environment.value == 'development' %}selected{% endif %}>Development</option>
+                                <option value="staging" {% if form.environment.value == 'staging' %}selected{% endif %}>Staging</option>
+                                <option value="production" {% if form.environment.value == 'production' %}selected{% endif %}>Production</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">Date From</label>
+                            <input type="date" name="date_from" id="date_from" class="form-control" 
+                                   value="{{ form.date_from.value|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">Date To</label>
+                            <input type="date" name="date_to" id="date_to" class="form-control" 
+                                   value="{{ form.date_to.value|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="search" class="form-label">Search Text</label>
+                            <input type="text" name="search" id="search" class="form-control" 
+                                   value="{{ form.search.value|default:'' }}" placeholder="Search in error messages, stack traces, etc.">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="has_stack_trace" class="form-label">Has Stack Trace</label>
+                            <select name="has_stack_trace" id="has_stack_trace" class="form-select">
+                                <option value="">Any</option>
+                                <option value="true" {% if form.has_stack_trace.value == 'true' %}selected{% endif %}>Yes</option>
+                                <option value="false" {% if form.has_stack_trace.value == 'false' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="has_context_data" class="form-label">Has Context Data</label>
+                            <select name="has_context_data" id="has_context_data" class="form-select">
+                                <option value="">Any</option>
+                                <option value="true" {% if form.has_context_data.value == 'true' %}selected{% endif %}>Yes</option>
+                                <option value="false" {% if form.has_context_data.value == 'false' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <a href="{% url 'system_logs:system_log_search' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                            <a href="{% url 'system_logs:system_log_list' %}" class="btn btn-info">
+                                <i class="fas fa-list"></i> View All Logs
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if logs %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table"></i> Search Results ({{ logs.count }} found)
+                    </h5>
+                    <div>
+                        <a href="{% url 'system_logs:system_log_export' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm">
+                            <i class="fas fa-download"></i> Export Results
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Type</th>
+                                    <th>Severity</th>
+                                    <th>Module</th>
+                                    <th>Function</th>
+                                    <th>Message</th>
+                                    <th>User</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if log.log_type == 'ERROR' %}danger{% elif log.log_type == 'WARNING' %}warning{% elif log.log_type == 'INFO' %}info{% else %}secondary{% endif %}">
+                                            {{ log.log_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if log.severity == 'CRITICAL' or log.severity == 'FATAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                                            {{ log.severity }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.module|default:"-" }}</td>
+                                    <td>{{ log.function|default:"-" }}</td>
+                                    <td>
+                                        <span title="{{ log.error_message }}">
+                                            {{ log.error_message|truncatechars:50 }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.user.username|default:"-" }}</td>
+                                    <td>
+                                        <a href="{% url 'system_logs:system_log_detail' log.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif request.GET %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No logs found</h5>
+                    <p class="text-muted">No system logs match your search criteria.</p>
+                    <a href="{% url 'system_logs:system_log_search' %}" class="btn btn-primary">
+                        <i class="fas fa-refresh"></i> Modify Search
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

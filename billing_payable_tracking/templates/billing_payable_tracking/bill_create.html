@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create New Bill{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px 15px 0 0;
+        margin: -30px -30px 30px -30px;
+    }
+    .required-field {
+        color: #dc3545;
+    }
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:bill_list' %}">Bills</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create New Bill</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Create New Bill</h2>
+                    <p class="mb-0 opacity-75">Add a new bill to the system</p>
+                </div>
+
+                <form id="bill-form" method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bill_no" class="form-label">
+                                    Bill Number <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="bill_no" name="bill_no" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vendor" class="form-label">
+                                    Vendor <span class="required-field">*</span>
+                                </label>
+                                <select class="form-select" id="vendor" name="vendor" required>
+                                    <option value="">Select Vendor</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">
+                                    Amount <span class="required-field">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><img src="/static/img/dirham-symbol.png" alt="AED" style="width: 12px; height: 12px;"></span>
+                                    <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0" required>
+                                </div>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="currency" class="form-label">Currency</label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="AED" selected>AED</option>
+                <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="GBP">GBP</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bill_date" class="form-label">
+                                    Bill Date <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="bill_date" name="bill_date" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">
+                                    Due Date <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="due_date" name="due_date" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter bill description or notes..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="payment_terms" class="form-label">Payment Terms</label>
+                                <select class="form-select" id="payment_terms" name="payment_terms">
+                                    <option value="">Select Payment Terms</option>
+                                    <option value="net_30">Net 30</option>
+                                    <option value="net_15">Net 15</option>
+                                    <option value="net_7">Net 7</option>
+                                    <option value="due_on_receipt">Due on Receipt</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="pending" selected>Pending</option>
+                                    <option value="paid">Paid</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'billing_payable_tracking:bill_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Bills
+                        </a>
+                        <div>
+                            <button type="button" class="btn btn-outline-primary me-2" onclick="resetForm()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Create Bill
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class BillCreateForm {
+    constructor() {
+        this.apiBaseUrl = '/accounting/billing-payable-tracking/api';
+        this.init();
+    }
+
+    async init() {
+        await this.loadVendors();
+        this.setupFormValidation();
+        this.setDefaultDates();
+    }
+
+    async loadVendors() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/vendors/`);
+            const data = await response.json();
+            const vendors = data.results || data;
+            
+            const vendorSelect = document.getElementById('vendor');
+            vendors.forEach(vendor => {
+                const option = document.createElement('option');
+                option.value = vendor.id;
+                option.textContent = vendor.name;
+                vendorSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading vendors:', error);
+        }
+    }
+
+    setDefaultDates() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('bill_date').value = today;
+        
+        // Set due date to 30 days from today
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+        document.getElementById('due_date').value = dueDate.toISOString().split('T')[0];
+    }
+
+    setupFormValidation() {
+        const form = document.getElementById('bill-form');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.submitForm();
+        });
+
+        // Real-time validation
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('blur', () => this.validateField(input));
+            input.addEventListener('input', () => this.clearFieldError(input));
+        });
+
+        // Date validation
+        document.getElementById('due_date').addEventListener('change', () => {
+            this.validateDates();
+        });
+        
+        document.getElementById('bill_date').addEventListener('change', () => {
+            this.validateDates();
+        });
+    }
+
+    validateField(field) {
+        const value = field.value.trim();
+        let isValid = true;
+        let errorMessage = '';
+
+        // Required field validation
+        if (field.hasAttribute('required') && !value) {
+            isValid = false;
+            errorMessage = 'This field is required.';
+        }
+
+        // Specific field validations
+        switch (field.id) {
+            case 'amount':
+                if (value && (isNaN(value) || parseFloat(value) <= 0)) {
+                    isValid = false;
+                    errorMessage = 'Amount must be a positive number.';
+                }
+                break;
+            case 'bill_no':
+                if (value && value.length < 3) {
+                    isValid = false;
+                    errorMessage = 'Bill number must be at least 3 characters.';
+                }
+                break;
+        }
+
+        this.setFieldValidation(field, isValid, errorMessage);
+        return isValid;
+    }
+
+    validateDates() {
+        const billDate = new Date(document.getElementById('bill_date').value);
+        const dueDate = new Date(document.getElementById('due_date').value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+        
+        // Check if due date is in the past
+        if (dueDate && dueDate < today) {
+            this.setFieldValidation(
+                document.getElementById('due_date'),
+                false,
+                'Due date cannot be in the past.'
+            );
+            return false;
+        }
+        
+        // Check if due date is earlier than bill date
+        if (billDate && dueDate && dueDate < billDate) {
+            this.setFieldValidation(
+                document.getElementById('due_date'),
+                false,
+                'Due date cannot be earlier than bill date.'
+            );
+            return false;
+        }
+        
+        this.clearFieldError(document.getElementById('due_date'));
+        return true;
+    }
+
+    setFieldValidation(field, isValid, errorMessage) {
+        const feedbackElement = field.parentNode.querySelector('.invalid-feedback');
+        
+        if (isValid) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+            if (feedbackElement) feedbackElement.textContent = '';
+        } else {
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+            if (feedbackElement) feedbackElement.textContent = errorMessage;
+        }
+    }
+
+    clearFieldError(field) {
+        field.classList.remove('is-invalid', 'is-valid');
+        const feedbackElement = field.parentNode.querySelector('.invalid-feedback');
+        if (feedbackElement) feedbackElement.textContent = '';
+    }
+
+    async submitForm() {
+        const form = document.getElementById('bill-form');
+        const formData = new FormData(form);
+        
+        // Validate all fields
+        const inputs = form.querySelectorAll('input[required], select[required]');
+        let isFormValid = true;
+        
+        inputs.forEach(input => {
+            if (!this.validateField(input)) {
+                isFormValid = false;
+            }
+        });
+        
+        if (!this.validateDates()) {
+            isFormValid = false;
+        }
+        
+        if (!isFormValid) {
+            this.showError('Please fix the validation errors before submitting.');
+            return;
+        }
+
+        try {
+            const billData = {
+                bill_no: formData.get('bill_no'),
+                vendor: formData.get('vendor'),
+                amount: parseFloat(formData.get('amount')),
+                bill_date: formData.get('bill_date'),
+                due_date: formData.get('due_date'),
+                notes: formData.get('description') || '',
+                status: formData.get('status') || 'pending'
+            };
+
+            const response = await fetch(`${this.apiBaseUrl}/bills/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify(billData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.showSuccess('Bill created successfully!');
+                setTimeout(() => {
+                    window.location.href = `/accounting/billing-payable-tracking/bills/${result.id}/`;
+                }, 1500);
+            } else {
+                const errorData = await response.json();
+                this.handleServerErrors(errorData);
+            }
+        } catch (error) {
+            console.error('Error creating bill:', error);
+            this.showError('Failed to create bill. Please try again.');
+        }
+    }
+
+    handleServerErrors(errorData) {
+        // Handle field-specific errors
+        Object.keys(errorData).forEach(fieldName => {
+            const field = document.getElementById(fieldName);
+            if (field) {
+                const errors = Array.isArray(errorData[fieldName]) 
+                    ? errorData[fieldName] 
+                    : [errorData[fieldName]];
+                this.setFieldValidation(field, false, errors.join(', '));
+            }
+        });
+        
+        this.showError('Please fix the errors and try again.');
+    }
+
+    showSuccess(message) {
+        // You can implement toast notifications here
+        alert(message);
+    }
+
+    showError(message) {
+        // You can implement toast notifications here
+        alert(message);
+    }
+
+    getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+}
+
+// Global functions
+function resetForm() {
+    document.getElementById('bill-form').reset();
+    const inputs = document.querySelectorAll('.is-valid, .is-invalid');
+    inputs.forEach(input => {
+        input.classList.remove('is-valid', 'is-invalid');
+    });
+    billCreateForm.setDefaultDates();
+}
+
+// Initialize form when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.billCreateForm = new BillCreateForm();
+});
+</script>
+{% endblock %}

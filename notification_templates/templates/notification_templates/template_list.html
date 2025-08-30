@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load notification_template_filters %}
+
+{% block title %}Notification Templates - List{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt fa-fw"></i> Notification Templates
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'notification_templates:template_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> New Template
+            </a>
+            <a href="{% url 'notification_templates:template_import' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-download fa-fw"></i> Import
+            </a>
+            <a href="{% url 'notification_templates:template_export' %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-upload fa-fw"></i> Export
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-search fa-fw"></i> Search & Filter Templates
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="search-filter-form">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="{{ search_form.search_query.id_for_label }}" class="form-label">Search Query</label>
+                        {{ search_form.search_query }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ search_form.search_field.id_for_label }}" class="form-label">Search In</label>
+                        {{ search_form.search_field }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ search_form.template_type.id_for_label }}" class="form-label">Template Type</label>
+                        {{ search_form.template_type }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ search_form.language.id_for_label }}" class="form-label">Language</label>
+                        {{ search_form.language }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="{{ search_form.category.id_for_label }}" class="form-label">Category</label>
+                        {{ search_form.category }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ search_form.status.id_for_label }}" class="form-label">Status</label>
+                        {{ search_form.status }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ search_form.created_after.id_for_label }}" class="form-label">Created After</label>
+                        {{ search_form.created_after }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ search_form.created_before.id_for_label }}" class="form-label">Created Before</label>
+                        {{ search_form.created_before }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="{{ search_form.tags.id_for_label }}" class="form-label">Tags</label>
+                        {{ search_form.tags }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ search_form.sort_by.id_for_label }}" class="form-label">Sort By</label>
+                        {{ search_form.sort_by }}
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-search fa-fw"></i> Search
+                        </button>
+                        <button type="button" class="btn btn-secondary clear-filters">
+                            <i class="fas fa-times fa-fw"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ total_count }} templates</span>
+        </div>
+        <div>
+            <span class="badge badge-primary">{{ page_obj.paginator.num_pages }} pages</span>
+        </div>
+    </div>
+
+    <!-- Templates List -->
+    {% if page_obj %}
+        <div class="row">
+            {% for template in page_obj %}
+            <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-file-alt fa-fw"></i> {{ template.name|truncatechars:30 }}
+                        </h6>
+                        <div class="dropdown">
+                            <button class="btn btn-link btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'notification_templates:template_detail' template.pk %}">
+                                    <i class="fas fa-eye fa-fw"></i> View
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'notification_templates:template_edit' template.pk %}">
+                                    <i class="fas fa-edit fa-fw"></i> Edit
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'notification_templates:template_test' template.pk %}">
+                                    <i class="fas fa-play fa-fw"></i> Test
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'notification_templates:template_preview' template.pk %}">
+                                    <i class="fas fa-eye fa-fw"></i> Preview
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="confirmDelete('{{ template.pk }}', '{{ template.name }}')">
+                                    <i class="fas fa-trash fa-fw"></i> Delete
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Template Type Badge -->
+                        <div class="mb-2">
+                            <span class="badge badge-{{ template.template_type }}">
+                                {{ template.get_template_type_display }}
+                            </span>
+                            {% if template.language != 'en' %}
+                                <span class="badge badge-info">{{ template.get_language_display }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Description -->
+                        {% if template.description %}
+                            <p class="text-muted small mb-2">{{ template.description|truncatechars:100 }}</p>
+                        {% endif %}
+                        
+                        <!-- Category -->
+                        {% if template.category %}
+                            <div class="mb-2">
+                                <span class="badge" style="background-color: {{ template.category.color }}; color: white;">
+                                    {{ template.category.name }}
+                                </span>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Status -->
+                        <div class="mb-2">
+                            {% if template.is_active %}
+                                <span class="badge badge-success">Active</span>
+                            {% else %}
+                                <span class="badge badge-secondary">Inactive</span>
+                            {% endif %}
+                            
+                            {% if template.requires_approval %}
+                                {% if template.is_approved %}
+                                    <span class="badge badge-success">Approved</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Pending Approval</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Metadata -->
+                        <div class="small text-muted">
+                            <div class="mb-1">
+                                <i class="fas fa-user fa-fw"></i> {{ template.created_by.get_full_name|default:template.created_by.username }}
+                            </div>
+                            <div class="mb-1">
+                                <i class="fas fa-calendar fa-fw"></i> {{ template.created_at|date:"M d, Y" }}
+                            </div>
+                            <div class="mb-1">
+                                <i class="fas fa-code-branch fa-fw"></i> v{{ template.version }}
+                            </div>
+                            {% if template.tags %}
+                                <div class="mb-1">
+                                    <i class="fas fa-tags fa-fw"></i> 
+                                    {% for tag in template.tags|slice:":3" %}
+                                        <span class="badge badge-light">{{ tag }}</span>
+                                    {% endfor %}
+                                    {% if template.tags|length > 3 %}
+                                        <span class="badge badge-light">+{{ template.tags|length|add:"-3" }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <a href="{% url 'notification_templates:template_detail' template.pk %}" 
+                               class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{% url 'notification_templates:template_edit' template.pk %}" 
+                               class="btn btn-outline-warning">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="{% url 'notification_templates:template_test' template.pk %}" 
+                               class="btn btn-outline-info">
+                                <i class="fas fa-play"></i> Test
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Template pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+        
+    {% else %}
+        <!-- No Templates Found -->
+        <div class="text-center py-5">
+            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No templates found</h4>
+            <p class="text-muted">No notification templates match your search criteria.</p>
+            <a href="{% url 'notification_templates:template_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus fa-fw"></i> Create Your First Template
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the template "<strong id="templateName"></strong>"?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Template</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(templateId, templateName) {
+    document.getElementById('templateName').textContent = templateName;
+    document.getElementById('deleteForm').action = `/utilities/notification-templates/templates/${templateId}/delete/`;
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

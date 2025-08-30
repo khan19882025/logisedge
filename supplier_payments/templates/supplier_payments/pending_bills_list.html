@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pending Supplier Bills - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/supplier_payments/supplier_payments.css' %}" rel="stylesheet">
+<style>
+.filter-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1.5rem;
+}
+
+.stats-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stats-card .stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.stats-card .stats-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.page-header {
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.btn-filter {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.btn-filter:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h2 class="mb-0">
+                <i class="fas fa-file-text"></i>
+                Pending Supplier/Vendor Bills
+            </h2>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number">{{ total_bills }}</div>
+                <div class="stats-label">Total Pending Bills</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number">AED {{ total_amount|floatformat:2 }}</div>
+                <div class="stats-label">Total Amount</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number">{{ bills|length }}</div>
+                <div class="stats-label">Bills on This Page</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number">{{ suppliers.count }}</div>
+                <div class="stats-label">Active Suppliers</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="search" 
+                           name="search" 
+                           value="{{ search_query }}"
+                           placeholder="Bill number or supplier name...">
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="supplier" class="form-label">Supplier</label>
+                    <select class="form-select" id="supplier" name="supplier">
+                        <option value="">All Suppliers</option>
+                        {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}" 
+                                    {% if supplier.id|stringformat:"s" == selected_supplier %}selected{% endif %}>
+                                {{ supplier.customer_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="draft" {% if selected_status == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="sent" {% if selected_status == 'sent' %}selected{% endif %}>Sent</option>
+                        <option value="overdue" {% if selected_status == 'overdue' %}selected{% endif %}>Overdue</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" 
+                           class="form-control" 
+                           id="date_from" 
+                           name="date_from" 
+                           value="{{ date_from }}">
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" 
+                           class="form-control" 
+                           id="date_to" 
+                           name="date_to" 
+                           value="{{ date_to }}">
+                </div>
+                
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-filter">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="{% url 'supplier_payments:supplier_payment_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Payments
+            </a>
+        </div>
+        <div>
+            <button type="button" class="btn btn-success" id="bulk-payment-btn" disabled>
+                <i class="fas fa-credit-card"></i> Create Bulk Payment
+            </button>
+        </div>
+    </div>
+
+    <!-- Pending Bills Table -->
+    {% include 'supplier_payments/pending_bills_table.html' %}
+
+    <!-- Pagination -->
+    {% if bills.has_other_pages %}
+        <nav aria-label="Bills pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if bills.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_supplier %}supplier={{ selected_supplier }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ bills.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in bills.paginator.page_range %}
+                    {% if bills.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > bills.number|add:'-3' and num < bills.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_supplier %}supplier={{ selected_supplier }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if bills.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_supplier %}supplier={{ selected_supplier }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ bills.next_page_number }}">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Wait for jQuery to be available
+function waitForJQuery(callback) {
+    if (typeof $ !== 'undefined') {
+        callback();
+    } else {
+        setTimeout(function() {
+            waitForJQuery(callback);
+        }, 100);
+    }
+}
+
+waitForJQuery(function() {
+$(document).ready(function() {
+    // Enable bulk payment button when bills are selected
+    $(document).on('change', '.bill-checkbox', function() {
+        var selectedCount = $('.bill-checkbox:checked').length;
+        $('#bulk-payment-btn').prop('disabled', selectedCount === 0);
+    });
+    
+    // Handle bulk payment creation
+    $('#bulk-payment-btn').click(function() {
+        var selectedBills = [];
+        $('.bill-checkbox:checked').each(function() {
+            selectedBills.push({
+                id: $(this).data('bill-id'),
+                number: $(this).data('bill-number'),
+                amount: $(this).data('amount')
+            });
+        });
+        
+        if (selectedBills.length > 0) {
+            // Group bills by supplier
+            var billsBySupplier = {};
+            selectedBills.forEach(function(bill) {
+                var supplierRow = $(`.bill-checkbox[data-bill-id="${bill.id}"]`).closest('tr');
+                var supplierName = supplierRow.find('td:nth-child(5)').text().trim();
+                
+                if (!billsBySupplier[supplierName]) {
+                    billsBySupplier[supplierName] = [];
+                }
+                billsBySupplier[supplierName].push(bill);
+            });
+            
+            // If multiple suppliers, show selection modal
+            if (Object.keys(billsBySupplier).length > 1) {
+                showSupplierSelectionModal(billsBySupplier);
+            } else {
+                // Single supplier, proceed directly
+                var billNumbers = selectedBills.map(bill => bill.number).join(',');
+                window.location.href = '{% url "supplier_payments:supplier_payment_create" %}?bills=' + encodeURIComponent(billNumbers);
+            }
+        }
+    });
+    
+    function showSupplierSelectionModal(billsBySupplier) {
+        var modalHtml = `
+            <div class="modal fade" id="supplierSelectionModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Select Supplier for Payment</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>You have selected bills from multiple suppliers. Please choose which supplier to create payment for:</p>
+                            <div class="list-group">
+        `;
+        
+        Object.keys(billsBySupplier).forEach(function(supplier) {
+            var bills = billsBySupplier[supplier];
+            var totalAmount = bills.reduce((sum, bill) => sum + parseFloat(bill.amount), 0);
+            
+            modalHtml += `
+                <a href="#" class="list-group-item list-group-item-action supplier-option" 
+                   data-supplier="${supplier}" data-bills="${bills.map(b => b.number).join(',')}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${supplier}</h6>
+                        <small>$${totalAmount.toFixed(2)}</small>
+                    </div>
+                    <p class="mb-1">${bills.length} bill(s) selected</p>
+                </a>
+            `;
+        });
+        
+        modalHtml += `
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('body').append(modalHtml);
+        $('#supplierSelectionModal').modal('show');
+        
+        $('.supplier-option').click(function(e) {
+            e.preventDefault();
+            var billNumbers = $(this).data('bills');
+            window.location.href = '{% url "supplier_payments:supplier_payment_create" %}?bills=' + encodeURIComponent(billNumbers);
+        });
+        
+        $('#supplierSelectionModal').on('hidden.bs.modal', function() {
+            $(this).remove();
+        });    
+    }
+});
+}); // Close waitForJQuery function
+</script>
+{% endblock %}

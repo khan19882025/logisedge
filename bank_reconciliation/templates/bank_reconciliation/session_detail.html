@@ -1,0 +1,920 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ session.session_name }} - Bank Reconciliation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_reconciliation/css/bank_reconciliation.css' %}">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    .reconciliation-container {
+        display: flex;
+        height: calc(100vh - 200px);
+        gap: 1rem;
+    }
+    
+    .panel {
+        flex: 1;
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .panel-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f8fafc;
+        border-radius: 0.75rem 0.75rem 0 0;
+    }
+    
+    .panel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    
+    .transaction-row {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .transaction-row:hover {
+        background: #f8fafc;
+        border-color: #667eea;
+    }
+    
+    .transaction-row.matched {
+        background: #d1fae5;
+        border-color: #10b981;
+    }
+    
+    .transaction-row.selected {
+        background: #dbeafe;
+        border-color: #3b82f6;
+    }
+    
+    .transaction-info {
+        flex: 1;
+    }
+    
+    .transaction-amount {
+        font-weight: 600;
+        text-align: right;
+        min-width: 120px;
+    }
+    
+    .transaction-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: 1rem;
+    }
+    
+    .match-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        margin-right: 0.5rem;
+    }
+    
+    .balance-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .balance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .balance-item {
+        text-align: center;
+    }
+    
+    .balance-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+    }
+    
+    .balance-amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    .difference-amount {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .difference-amount.balanced {
+        color: #10b981;
+    }
+    
+    .difference-amount.unbalanced {
+        color: #ef4444;
+    }
+    
+    .filters-section {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .matching-toolbar {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .progress-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #f3f4f6;
+        border-radius: 0.5rem;
+    }
+    
+    .progress-bar {
+        width: 100px;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #059669);
+        transition: width 0.3s ease;
+    }
+    
+    @media (max-width: 1200px) {
+        .reconciliation-container {
+            flex-direction: column;
+            height: auto;
+        }
+        
+        .panel {
+            min-height: 400px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" 
+     data-matched-count="{{ session.matched_entries_count|default:0 }}"
+     data-total-count="{{ session.erp_entries.count }}"
+     data-session-id="{{ session.pk }}"
+     data-manual-match-url="{% url 'bank_reconciliation:manual_match' session.pk %}"
+     data-bulk-match-url="{% url 'bank_reconciliation:bulk_match' session.pk %}"
+     data-unmatch-url="/accounting/bank-reconciliation/ajax/unmatch/{type}/{entryId}/">
+    <!-- Header -->
+    <div class="reconciliation-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-university"></i> {{ session.session_name }}</h2>
+                <p class="subtitle">
+                    {{ session.bank_account.bank_name }} - {{ session.reconciliation_date|date:"F d, Y" }}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group">
+                    <a href="{% url 'bank_reconciliation:session_list' %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    {% if session.status in 'open,in_progress' %}
+                    <a href="{% url 'bank_reconciliation:session_edit' session.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'bank_reconciliation:generate_report' session.pk %}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-bar"></i> Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance Summary -->
+    <div class="balance-summary">
+        <div class="balance-grid">
+            <div class="balance-item">
+                <div class="balance-label">Opening Balance (ERP)</div>
+                <div class="balance-amount">{{ session.opening_balance_erp|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Opening Balance (Bank)</div>
+                <div class="balance-amount">{{ session.opening_balance_bank|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Total ERP Credits</div>
+                <div class="balance-amount">{{ total_erp_credits|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Total ERP Debits</div>
+                <div class="balance-amount">{{ total_erp_debits|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Total Bank Credits</div>
+                <div class="balance-amount">{{ total_bank_credits|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Total Bank Debits</div>
+                <div class="balance-amount">{{ total_bank_debits|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Closing Balance (ERP)</div>
+                <div class="balance-amount">{{ session.closing_balance_erp|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Closing Balance (Bank)</div>
+                <div class="balance-amount">{{ session.closing_balance_bank|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Difference</div>
+                <div class="difference-amount {% if session.is_balanced %}balanced{% else %}unbalanced{% endif %}">
+                    {{ session.difference_amount|floatformat:2 }}
+                    {% if session.is_balanced %}
+                        <i class="fas fa-check-circle"></i>
+                    {% else %}
+                        <i class="fas fa-exclamation-circle"></i>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Start Date</label>
+                {{ filter_form.start_date }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">End Date</label>
+                {{ filter_form.end_date }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                {{ filter_form.search_term }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Match Status</label>
+                {{ filter_form.match_status }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Transaction Type</label>
+                {{ filter_form.transaction_type }}
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Matching Toolbar -->
+    <div class="matching-toolbar">
+        <div class="progress-indicator">
+            <span>Progress:</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="progressText">{{ session.matched_entries_count|default:0 }} / {{ session.erp_entries.count }} matched</span>
+        </div>
+        
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary" onclick="performAutoMatch()">
+                <i class="fas fa-magic"></i> Auto Match
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="showManualMatchModal()">
+                <i class="fas fa-link"></i> Manual Match
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="showBulkMatchModal()">
+                <i class="fas fa-tasks"></i> Bulk Match
+            </button>
+        </div>
+        
+        <div class="btn-group">
+            <a href="{% url 'bank_reconciliation:import_statement' session.pk %}" class="btn btn-outline-success">
+                <i class="fas fa-upload"></i> Import Statement
+            </a>
+            <a href="{% url 'bank_reconciliation:add_bank_entry' session.pk %}" class="btn btn-outline-warning">
+                <i class="fas fa-plus"></i> Add Entry
+            </a>
+        </div>
+    </div>
+
+    <!-- Reconciliation Panels -->
+    <div class="reconciliation-container">
+        <!-- ERP Transactions Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h5><i class="fas fa-book"></i> ERP Transactions</h5>
+                <small>{{ erp_page_obj.paginator.count }} entries</small>
+            </div>
+            <div class="panel-content">
+                {% for entry in erp_page_obj %}
+                <div class="transaction-row {% if entry.is_matched %}matched{% endif %}" 
+                     data-id="{{ entry.id }}" data-type="erp" data-amount="{{ entry.amount }}">
+                    {% if entry.is_matched %}
+                    <div class="match-indicator"></div>
+                    {% endif %}
+                    <div class="transaction-info">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ entry.description }}</strong>
+                                {% if entry.reference_number %}
+                                <br><small class="text-muted">Ref: {{ entry.reference_number }}</small>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ entry.transaction_date|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                    <div class="transaction-amount">
+                        {% if entry.credit_amount > 0 %}
+                            <span class="text-success">+{{ entry.credit_amount|floatformat:2 }}</span>
+                        {% else %}
+                            <span class="text-danger">-{{ entry.debit_amount|floatformat:2 }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="transaction-actions">
+                        {% if entry.is_matched %}
+                        <button type="button" class="btn btn-sm btn-outline-danger unmatch-btn" 
+                                data-action="unmatch" data-entry-type="erp" data-entry-id="{{ entry.id }}">
+                            <i class="fas fa-unlink"></i>
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-primary select-btn" 
+                                data-action="select" data-entry-type="erp" data-entry-id="{{ entry.id }}">
+                            <i class="fas fa-link"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>No ERP transactions found</p>
+                </div>
+                {% endfor %}
+                
+                <!-- ERP Pagination -->
+                {% if erp_page_obj.has_other_pages %}
+                <nav aria-label="ERP transactions pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if erp_page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?erp_page={{ erp_page_obj.previous_page_number }}&bank_page={{ bank_page_obj.number }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in erp_page_obj.paginator.page_range %}
+                        <li class="page-item {% if erp_page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?erp_page={{ num }}&bank_page={{ bank_page_obj.number }}">{{ num }}</a>
+                        </li>
+                        {% endfor %}
+                        
+                        {% if erp_page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?erp_page={{ erp_page_obj.next_page_number }}&bank_page={{ bank_page_obj.number }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bank Statement Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h5><i class="fas fa-university"></i> Bank Statement Entries</h5>
+                <small>{{ bank_page_obj.paginator.count }} entries</small>
+            </div>
+            <div class="panel-content">
+                {% for entry in bank_page_obj %}
+                <div class="transaction-row {% if entry.is_matched %}matched{% endif %}" 
+                     data-id="{{ entry.id }}" data-type="bank" data-amount="{{ entry.amount }}">
+                    {% if entry.is_matched %}
+                    <div class="match-indicator"></div>
+                    {% endif %}
+                    <div class="transaction-info">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ entry.description }}</strong>
+                                {% if entry.reference_number %}
+                                <br><small class="text-muted">Ref: {{ entry.reference_number }}</small>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ entry.transaction_date|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                    <div class="transaction-amount">
+                        {% if entry.credit_amount > 0 %}
+                            <span class="text-success">+{{ entry.credit_amount|floatformat:2 }}</span>
+                        {% else %}
+                            <span class="text-danger">-{{ entry.debit_amount|floatformat:2 }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="transaction-actions">
+                        {% if entry.is_matched %}
+                        <button type="button" class="btn btn-sm btn-outline-danger unmatch-btn" 
+                                data-action="unmatch" data-entry-type="bank" data-entry-id="{{ entry.id }}">
+                            <i class="fas fa-unlink"></i>
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-primary select-btn" 
+                                data-action="select" data-entry-type="bank" data-entry-id="{{ entry.id }}">
+                            <i class="fas fa-link"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>No bank statement entries found</p>
+                    <a href="{% url 'bank_reconciliation:import_statement' session.pk %}" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Import Statement
+                    </a>
+                </div>
+                {% endfor %}
+                
+                <!-- Bank Pagination -->
+                {% if bank_page_obj.has_other_pages %}
+                <nav aria-label="Bank entries pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if bank_page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?bank_page={{ bank_page_obj.previous_page_number }}&erp_page={{ erp_page_obj.number }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in bank_page_obj.paginator.page_range %}
+                        <li class="page-item {% if bank_page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?bank_page={{ num }}&erp_page={{ erp_page_obj.number }}">{{ num }}</a>
+                        </li>
+                        {% endfor %}
+                        
+                        {% if bank_page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?bank_page={{ bank_page_obj.next_page_number }}&erp_page={{ erp_page_obj.number }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Match Modal -->
+<div class="modal fade" id="manualMatchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-link"></i> Manual Match Entries
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="manualMatchForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">ERP Transaction</label>
+                                <select class="form-select" name="erp_entry" id="erpEntrySelect">
+                                    <option value="">Select ERP transaction...</option>
+                                    {% for entry in session.erp_entries.all %}
+                                    {% if not entry.is_matched %}
+                                    <option value="{{ entry.id }}" data-amount="{{ entry.amount }}">
+                                        {{ entry.description }} - {{ entry.amount }}
+                                    </option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Bank Statement Entry</label>
+                                <select class="form-select" name="bank_entry" id="bankEntrySelect">
+                                    <option value="">Select bank entry...</option>
+                                    {% for entry in session.bank_entries.all %}
+                                    {% if not entry.is_matched %}
+                                    <option value="{{ entry.id }}" data-amount="{{ entry.amount }}">
+                                        {{ entry.description }} - {{ entry.amount }}
+                                    </option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Match Type</label>
+                                <select class="form-select" name="match_type">
+                                    <option value="exact">Exact Match</option>
+                                    <option value="partial">Partial Match</option>
+                                    <option value="manual">Manual Match</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Difference Amount</label>
+                                <input type="text" class="form-control" id="differenceAmount" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="3" 
+                                  placeholder="Add notes about this match (optional)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="performManualMatchBtn">
+                    <i class="fas fa-link"></i> Match Entries
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Match Modal -->
+<div class="modal fade" id="bulkMatchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-tasks"></i> Bulk Match Entries
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkMatchForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Match Criteria</label>
+                                <select class="form-select" name="match_criteria">
+                                    <option value="amount_date">Amount + Date</option>
+                                    <option value="amount_only">Amount Only</option>
+                                    <option value="reference">Reference Number</option>
+                                    <option value="description">Description Similarity</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Date Tolerance (days)</label>
+                                <input type="number" class="form-control" name="date_tolerance" 
+                                       value="3" min="0" max="30">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Amount Tolerance</label>
+                                <input type="number" class="form-control" name="amount_tolerance" 
+                                       value="0.01" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Description Similarity (%)</label>
+                                <input type="number" class="form-control" name="description_similarity" 
+                                       value="80" min="50" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="auto_confirm_matches" id="autoConfirm">
+                            <label class="form-check-label" for="autoConfirm">
+                                Automatically confirm matches without manual review
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="performBulkMatchBtn">
+                    <i class="fas fa-magic"></i> Find Matches
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_reconciliation/js/bank_reconciliation.js' %}"></script>
+<script>
+let selectedErpEntry = null;
+let selectedBankEntry = null;
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Get data from data attributes
+    const sessionData = {
+        matchedCount: parseInt(document.querySelector('[data-matched-count]').getAttribute('data-matched-count') || '0'),
+        totalCount: parseInt(document.querySelector('[data-total-count]').getAttribute('data-total-count') || '0'),
+        sessionId: document.querySelector('[data-session-id]').getAttribute('data-session-id'),
+        manualMatchUrl: document.querySelector('[data-manual-match-url]').getAttribute('data-manual-match-url'),
+        bulkMatchUrl: document.querySelector('[data-bulk-match-url]').getAttribute('data-bulk-match-url'),
+        unmatchUrl: document.querySelector('[data-unmatch-url]').getAttribute('data-unmatch-url')
+    };
+    
+    // Calculate and set progress
+    const progressPercent = sessionData.totalCount > 0 ? (sessionData.matchedCount / sessionData.totalCount) * 100 : 0;
+    
+    document.getElementById('progressFill').style.width = progressPercent + '%';
+    document.getElementById('progressText').textContent = sessionData.matchedCount + ' / ' + sessionData.totalCount + ' matched';
+    
+    // Event listeners for transaction buttons
+    setupTransactionEventListeners();
+    
+    // Event listeners for modal buttons
+    setupModalEventListeners();
+    
+    // Event listeners for select dropdowns
+    setupSelectEventListeners();
+    
+    // Store session data globally
+    window.sessionData = sessionData;
+});
+
+function setupTransactionEventListeners() {
+    // Unmatch buttons
+    document.querySelectorAll('.unmatch-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const entryType = this.getAttribute('data-entry-type');
+            const entryId = this.getAttribute('data-entry-id');
+            unmatchEntry(entryType, entryId);
+        });
+    });
+    
+    // Select buttons
+    document.querySelectorAll('.select-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const entryType = this.getAttribute('data-entry-type');
+            const entryId = this.getAttribute('data-entry-id');
+            selectForMatching(entryType, entryId);
+        });
+    });
+}
+
+function setupModalEventListeners() {
+    // Manual match button
+    const manualMatchBtn = document.getElementById('performManualMatchBtn');
+    if (manualMatchBtn) {
+        manualMatchBtn.addEventListener('click', performManualMatch);
+    }
+    
+    // Bulk match button
+    const bulkMatchBtn = document.getElementById('performBulkMatchBtn');
+    if (bulkMatchBtn) {
+        bulkMatchBtn.addEventListener('click', performBulkMatch);
+    }
+}
+
+function setupSelectEventListeners() {
+    // ERP and Bank entry selects for difference calculation
+    const erpSelect = document.getElementById('erpEntrySelect');
+    const bankSelect = document.getElementById('bankEntrySelect');
+    
+    if (erpSelect && bankSelect) {
+        erpSelect.addEventListener('change', calculateDifference);
+        bankSelect.addEventListener('change', calculateDifference);
+    }
+}
+
+function selectForMatching(type, entryId) {
+    if (type === 'erp') {
+        selectedErpEntry = entryId;
+        document.querySelectorAll('.transaction-row[data-type="erp"]').forEach(row => row.classList.remove('selected'));
+        document.querySelector(`.transaction-row[data-type="erp"][data-id="${entryId}"]`).classList.add('selected');
+    } else {
+        selectedBankEntry = entryId;
+        document.querySelectorAll('.transaction-row[data-type="bank"]').forEach(row => row.classList.remove('selected'));
+        document.querySelector(`.transaction-row[data-type="bank"][data-id="${entryId}"]`).classList.add('selected');
+    }
+    
+    // If both are selected, show match button
+    if (selectedErpEntry && selectedBankEntry) {
+        showQuickMatchButton();
+    }
+}
+
+function showQuickMatchButton() {
+    // Remove existing quick match button
+    const existingBtn = document.querySelector('.quick-match-button');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+    
+    // Add quick match button
+    const button = document.createElement('button');
+    button.className = 'btn btn-success quick-match-button';
+    button.innerHTML = '<i class="fas fa-link"></i> Match Selected Entries';
+    button.addEventListener('click', performQuickMatch);
+    
+    document.querySelector('.matching-toolbar').appendChild(button);
+}
+
+function performQuickMatch() {
+    if (selectedErpEntry && selectedBankEntry) {
+        fetch(window.sessionData.manualMatchUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                erp_entry: selectedErpEntry,
+                bank_entry: selectedBankEntry,
+                match_type: 'manual',
+                notes: 'Quick matched'
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to match entries');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to match entries');
+        });
+    }
+}
+
+function unmatchEntry(type, entryId) {
+    if (confirm('Are you sure you want to unmatch this entry?')) {
+        fetch(window.sessionData.unmatchUrl.replace('{type}', type).replace('{entryId}', entryId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to unmatch entry');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to unmatch entry');
+        });
+    }
+}
+
+function showManualMatchModal() {
+    const modal = new bootstrap.Modal(document.getElementById('manualMatchModal'));
+    modal.show();
+}
+
+function showBulkMatchModal() {
+    const modal = new bootstrap.Modal(document.getElementById('bulkMatchModal'));
+    modal.show();
+}
+
+function performManualMatch() {
+    const formData = new FormData(document.getElementById('manualMatchForm'));
+    
+    fetch(window.sessionData.manualMatchUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            document.getElementById('manualMatchModal').querySelector('.btn-close').click();
+            location.reload();
+        } else {
+            alert('Failed to match entries');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to match entries');
+    });
+}
+
+function performBulkMatch() {
+    const formData = new FormData(document.getElementById('bulkMatchForm'));
+    
+    fetch(window.sessionData.bulkMatchUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            document.getElementById('bulkMatchModal').querySelector('.btn-close').click();
+            location.reload();
+        } else {
+            alert('Failed to perform bulk match');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to perform bulk match');
+    });
+}
+
+function performAutoMatch() {
+    if (confirm('This will attempt to automatically match entries based on amount and date. Continue?')) {
+        const formData = new FormData();
+        formData.append('match_criteria', 'amount_date');
+        formData.append('date_tolerance', '3');
+        formData.append('amount_tolerance', '0.01');
+        formData.append('auto_confirm_matches', 'true');
+        
+        fetch(window.sessionData.bulkMatchUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Failed to perform auto match');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to perform auto match');
+        });
+    }
+}
+
+function calculateDifference() {
+    const erpSelect = document.getElementById('erpEntrySelect');
+    const bankSelect = document.getElementById('bankEntrySelect');
+    const differenceInput = document.getElementById('differenceAmount');
+    
+    if (erpSelect && bankSelect && differenceInput) {
+        const erpAmount = parseFloat(erpSelect.selectedOptions[0]?.dataset.amount || 0);
+        const bankAmount = parseFloat(bankSelect.selectedOptions[0]?.dataset.amount || 0);
+        const difference = Math.abs(erpAmount - bankAmount);
+        
+        differenceInput.value = difference.toFixed(2);
+    }
+}
+
+// Global functions for toolbar buttons
+window.showManualMatchModal = showManualMatchModal;
+window.showBulkMatchModal = showBulkMatchModal;
+window.performAutoMatch = performAutoMatch;
+</script>
+{% endblock %} 

@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Restore Execution Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .execution-header {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .execution-status {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-running { background: #cce5ff; color: #004085; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-cancelled { background: #e2e3e5; color: #383d41; }
+    .status-rolled_back { background: #fff3cd; color: #856404; }
+    
+    .execution-info {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    
+    .info-value {
+        font-size: 1rem;
+        color: #212529;
+        font-weight: 500;
+    }
+    
+    .progress-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .progress-bar {
+        height: 12px;
+        border-radius: 6px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+    
+    .logs-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .log-entry {
+        padding: 1rem;
+        border-left: 4px solid #e9ecef;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .log-entry.level-info { border-left-color: #17a2b8; }
+    .log-entry.level-warning { border-left-color: #ffc107; }
+    .log-entry.level-error { border-left-color: #dc3545; }
+    .log-entry.level-critical { border-left-color: #721c24; }
+    
+    .log-timestamp {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .log-message {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .log-user {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1.5rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .error-alert {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    
+    .success-alert {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-arrow-clockwise me-2"></i>
+                    Restore Execution Details
+                </h1>
+                <div>
+                    <a href="{% url 'backup_scheduler:restore_execution_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to List
+                    </a>
+                    <a href="{% url 'backup_scheduler:restore_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2 me-1"></i>
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Execution Header -->
+            <div class="execution-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="h4 mb-2">
+                            Execution #{{ execution.execution_id|slice:":8" }}
+                        </h2>
+                        <p class="text-muted mb-2">
+                            Request: <strong>{{ execution.restore_request.title }}</strong>
+                        </p>
+                        <p class="text-muted mb-0">
+                            Created: {{ execution.created_at|date:"F d, Y \a\t H:i" }}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <span class="execution-status status-{{ execution.status }}">
+                            {{ execution.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution Information -->
+            <div class="execution-info">
+                <h4 class="h5 mb-3">Execution Details</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Executed By</span>
+                        <span class="info-value">{{ execution.executed_by.get_full_name|default:execution.executed_by.username }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Started At</span>
+                        <span class="info-value">
+                            {% if execution.started_at %}
+                                {{ execution.started_at|date:"M d, Y H:i:s" }}
+                            {% else %}
+                                Not started
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Completed At</span>
+                        <span class="info-value">
+                            {% if execution.completed_at %}
+                                {{ execution.completed_at|date:"M d, Y H:i:s" }}
+                            {% else %}
+                                Not completed
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Duration</span>
+                        <span class="info-value">
+                            {% if execution.duration_seconds %}
+                                {{ execution.duration_seconds|floatformat:0 }} seconds
+                            {% else %}
+                                -
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Steps</span>
+                        <span class="info-value">{{ execution.total_steps|default:"-" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Current Step</span>
+                        <span class="info-value">{{ execution.current_step|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            {% if execution.total_steps > 0 %}
+            <div class="progress-section">
+                <h4 class="h5 mb-3">Progress</h4>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {% if execution.total_steps > 0 %}{{ execution.current_step_number|floatformat:0|div:execution.total_steps|mul:100 }}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <span class="h5">
+                            {% if execution.total_steps > 0 %}
+                                {{ execution.current_step_number }}/{{ execution.total_steps }}
+                            {% else %}
+                                0/0
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% if execution.current_step %}
+                <p class="text-muted mt-2 mb-0">Current: {{ execution.current_step }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Results Section -->
+            {% if execution.restored_records or execution.data_integrity_score or execution.restored_tables %}
+            <div class="execution-info">
+                <h4 class="h5 mb-3">Restore Results</h4>
+                <div class="info-grid">
+                    {% if execution.restored_records %}
+                    <div class="info-item">
+                        <span class="info-label">Records Restored</span>
+                        <span class="info-value">{{ execution.restored_records }}</span>
+                    </div>
+                    {% endif %}
+                    {% if execution.data_integrity_score %}
+                    <div class="info-item">
+                        <span class="info-label">Data Integrity Score</span>
+                        <span class="info-value">{{ execution.data_integrity_score }}%</span>
+                    </div>
+                    {% endif %}
+                    {% if execution.restored_tables %}
+                    <div class="info-item">
+                        <span class="info-label">Tables Restored</span>
+                        <span class="info-value">{{ execution.restored_tables|length }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if execution.restored_tables %}
+                <div class="mt-3">
+                    <span class="info-label">Restored Tables:</span>
+                    <div class="mt-2">
+                        {% for table in execution.restored_tables %}
+                        <span class="badge bg-success me-1">{{ table }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Error Section -->
+            {% if execution.error_message %}
+            <div class="error-alert">
+                <h5 class="h6 mb-2">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error Details
+                </h5>
+                <p class="mb-2"><strong>Error Message:</strong> {{ execution.error_message }}</p>
+                {% if execution.error_step %}
+                <p class="mb-0"><strong>Failed at step:</strong> {{ execution.error_step }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Rollback Information -->
+            {% if execution.rollback_executed %}
+            <div class="success-alert">
+                <h5 class="h6 mb-2">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>
+                    Rollback Executed
+                </h5>
+                <p class="mb-0">
+                    <strong>Reason:</strong> {{ execution.rollback_reason|default:"Rollback was executed for this failed restore." }}
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                {% if execution.status == 'pending' or execution.status == 'running' %}
+                <form method="post" action="{% url 'backup_scheduler:restore_execution_cancel' execution.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning btn-lg" onclick="return confirm('Are you sure you want to cancel this execution?')">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Cancel Execution
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if execution.status == 'failed' and execution.rollback_executed == False %}
+                <button class="btn btn-danger btn-lg" onclick="confirmRollback('{{ execution.pk }}')">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                    Execute Rollback
+                </button>
+                {% endif %}
+                
+                <a href="{% url 'backup_scheduler:restore_request_detail' execution.restore_request.pk %}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-file-text me-1"></i>
+                    View Request Details
+                </a>
+            </div>
+
+            <!-- Logs Section -->
+            <div class="logs-section">
+                <h4 class="h5 mb-3">
+                    <i class="bi bi-journal-text me-2"></i>
+                    Execution Logs
+                </h4>
+                
+                {% if logs %}
+                    {% for log in logs %}
+                    <div class="log-entry level-{{ log.level }}">
+                        <div class="log-timestamp">
+                            {{ log.timestamp|date:"M d, Y H:i:s" }}
+                            {% if log.user %}
+                                by {{ log.user.get_full_name|default:log.user.username }}
+                            {% endif %}
+                            {% if log.ip_address %}
+                                ({{ log.ip_address }})
+                            {% endif %}
+                        </div>
+                        <div class="log-message">{{ log.message }}</div>
+                        {% if log.additional_data %}
+                        <div class="log-user">
+                            <small>Additional Data: {{ log.additional_data|pprint }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-journal-text" style="font-size: 2rem; opacity: 0.5;"></i>
+                        <p class="mt-2">No logs available for this execution.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmRollback(executionId) {
+    if (confirm('Are you sure you want to execute a rollback for this failed restore? This action cannot be undone and will attempt to restore the system to its previous state.')) {
+        // Implement rollback functionality
+        console.log('Rollback requested for execution:', executionId);
+        // You can add AJAX call here to trigger the rollback
+        alert('Rollback functionality needs to be implemented.');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if auto_print_rule %}Edit Auto-Print Rule{% else %}Create Auto-Print Rule{% endif %} - Print Queue Management
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="fas fa-magic"></i>
+                        {% if auto_print_rule %}Edit Auto-Print Rule{% else %}Create New Auto-Print Rule{% endif %}
+                    </h4>
+                    <div class="card-tools">
+                        <a href="{% url 'print_queue_management:auto_print_rule_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Rules
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.name.id_for_label }}">Rule Name *</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.erp_event.id_for_label }}">ERP Event *</label>
+                                    {{ form.erp_event }}
+                                    {% if form.erp_event.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.erp_event.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.description.id_for_label }}">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.print_template.id_for_label }}">Print Template *</label>
+                                    {{ form.print_template }}
+                                    {% if form.print_template.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.print_template.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.priority.id_for_label }}">Priority</label>
+                                    {{ form.priority }}
+                                    {% if form.priority.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.priority.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.printer.id_for_label }}">Printer</label>
+                                    {{ form.printer }}
+                                    <small class="form-text text-muted">Select either a printer OR a printer group, not both</small>
+                                    {% if form.printer.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.printer.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.printer_group.id_for_label }}">Printer Group</label>
+                                    {{ form.printer_group }}
+                                    <small class="form-text text-muted">Select either a printer OR a printer group, not both</small>
+                                    {% if form.printer_group.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.printer_group.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.conditions.id_for_label }}">Printing Conditions (JSON)</label>
+                            {{ form.conditions }}
+                            <small class="form-text text-muted">
+                                Enter JSON conditions for printing. Example: {"warehouse": "Main", "customer_type": "VIP", "department": "Sales"}
+                            </small>
+                            {% if form.conditions.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.conditions.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.batch_printing.id_for_label }}">Batch Printing</label>
+                                    <div class="custom-control custom-checkbox">
+                                        {{ form.batch_printing }}
+                                        <label class="custom-control-label" for="{{ form.batch_printing.id_for_label }}">
+                                            Enable batch printing
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.preview_required.id_for_label }}">Preview Required</label>
+                                    <div class="custom-control custom-checkbox">
+                                        {{ form.preview_required }}
+                                        <label class="custom-control-label" for="{{ form.preview_required.id_for_label }}">
+                                            Show preview before printing
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.auto_print.id_for_label }}">Auto-Print</label>
+                                    <div class="custom-control custom-checkbox">
+                                        {{ form.auto_print }}
+                                        <label class="custom-control-label" for="{{ form.auto_print.id_for_label }}">
+                                            Print automatically
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.batch_schedule.id_for_label }}">Batch Schedule (Cron)</label>
+                                    {{ form.batch_schedule }}
+                                    <small class="form-text text-muted">
+                                        Cron expression for batch schedule (e.g., "0 9 * * 1" for every Monday at 9 AM)
+                                    </small>
+                                    {% if form.batch_schedule.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.batch_schedule.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.retry_count.id_for_label }}">Retry Count</label>
+                                    {{ form.retry_count }}
+                                    {% if form.retry_count.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.retry_count.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.retry_delay.id_for_label }}">Retry Delay (seconds)</label>
+                            {{ form.retry_delay }}
+                            {% if form.retry_delay.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.retry_delay.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.is_active.id_for_label }}">Active</label>
+                            <div class="custom-control custom-checkbox">
+                                {{ form.is_active }}
+                                <label class="custom-control-label" for="{{ form.is_active.id_for_label }}">
+                                    Enable this rule
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                {% if auto_print_rule %}Update Rule{% else %}Create Rule{% endif %}
+                            </button>
+                            <a href="{% url 'print_queue_management:auto_print_rule_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Ensure only one of printer or printer_group is selected
+document.addEventListener('DOMContentLoaded', function() {
+    const printerSelect = document.getElementById('{{ form.printer.id_for_label }}');
+    const printerGroupSelect = document.getElementById('{{ form.printer_group.id_for_label }}');
+    
+    function updatePrinterSelections() {
+        if (printerSelect.value && printerGroupSelect.value) {
+            // If both are selected, clear the other one
+            if (printerSelect.value) {
+                printerGroupSelect.value = '';
+            } else {
+                printerSelect.value = '';
+            }
+        }
+    }
+    
+    printerSelect.addEventListener('change', updatePrinterSelections);
+    printerGroupSelect.addEventListener('change', updatePrinterSelections);
+});
+</script>
+
+<style>
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-control, .form-select {
+    border-radius: 0.375rem;
+}
+
+.custom-control {
+    padding-left: 1.5rem;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.btn {
+    margin-right: 0.5rem;
+}
+</style>
+{% endblock %}

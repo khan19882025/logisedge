@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load shipment_filters %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shipment_tracking/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-search fa-fw"></i> Search Results
+            {% if search_query %}
+                <small class="text-muted">for "{{ search_query }}"</small>
+            {% endif %}
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'shipment_tracking:shipment_search' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Search
+            </a>
+            <a href="{% url 'shipment_tracking:dashboard' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="card-title text-primary">
+                                <i class="fas fa-info-circle"></i> Search Summary
+                            </h6>
+                            <p class="mb-0">
+                                Found <strong>{{ results_count }}</strong> shipment{{ results_count|pluralize }}
+                                {% if search_query %}matching "{{ search_query }}"{% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <a href="{% url 'shipment_tracking:export_shipments' %}?{{ request.GET.urlencode }}" 
+                               class="btn btn-success btn-sm">
+                                <i class="fas fa-download"></i> Export Results
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Form (Collapsible) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" id="searchFormHeader">
+                    <h6 class="mb-0">
+                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#searchForm" aria-expanded="false" aria-controls="searchForm">
+                            <i class="fas fa-search"></i> Modify Search
+                        </button>
+                    </h6>
+                </div>
+                <div id="searchForm" class="collapse" aria-labelledby="searchFormHeader">
+                    <div class="card-body">
+                        <form method="get" action="{% url 'shipment_tracking:shipment_search' %}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.search_query.id_for_label }}">Search Query</label>
+                                        {{ form.search_query }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.search_type.id_for_label }}">Search Type</label>
+                                        {{ form.search_type }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.status_filter.id_for_label }}">Status Filter</label>
+                                        {{ form.status_filter }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.date_from.id_for_label }}">Date From</label>
+                                        {{ form.date_from }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.date_to.id_for_label }}">Date To</label>
+                                        {{ form.date_to }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-right">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Search Results</h6>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Shipment ID</th>
+                                        <th>Container/Booking</th>
+                                        <th>Customer</th>
+                                        <th>Route</th>
+                                        <th>Status</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for shipment in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ shipment.shipment_id }}</strong>
+                                            {% if shipment.hbl_number %}
+                                                <br><small class="text-muted">HBL: {{ shipment.hbl_number }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if shipment.container_number %}
+                                                <span class="badge badge-info">{{ shipment.container_number }}</span>
+                                            {% endif %}
+                                            {% if shipment.booking_id %}
+                                                <br><small class="text-muted">Booking: {{ shipment.booking_id }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ shipment.customer_name }}</strong>
+                                            {% if shipment.customer_reference %}
+                                                <br><small class="text-muted">Ref: {{ shipment.customer_reference }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>
+                                                <strong>{{ shipment.origin_port }}</strong>
+                                                <i class="fas fa-arrow-right mx-1"></i>
+                                                <strong>{{ shipment.destination_port }}</strong>
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ shipment.current_status|status_badge_color }}">
+                                                {{ shipment.current_status|status_display }}
+                                            </span>
+                                            {% if shipment.current_location %}
+                                                <br><small class="text-muted">{{ shipment.current_location }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ shipment.last_updated|date:"M d, Y H:i" }}</small>
+                                            {% if shipment.is_delayed %}
+                                                <br><span class="badge badge-warning">Delayed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'shipment_tracking:shipment_detail' shipment.pk %}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if user.is_staff %}
+                                                <a href="{% url 'shipment_tracking:shipment_update' shipment.pk %}" 
+                                                   class="btn btn-outline-secondary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Search results pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{{ request.GET.urlencode }}&page=1">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.paginator.num_pages }}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No shipments found</h5>
+                            <p class="text-muted">Try adjusting your search criteria or browse all shipments.</p>
+                            <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-primary">
+                                <i class="fas fa-list"></i> View All Shipments
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'shipment_tracking/js/dashboard.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SMS Messages{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .filter-section h6 {
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .status-pending { background-color: #ffc107; color: #212529; }
+    .status-sent { background-color: #17a2b8; color: white; }
+    .status-delivered { background-color: #28a745; color: white; }
+    .status-failed { background-color: #dc3545; color: white; }
+    .status-expired { background-color: #6c757d; color: white; }
+    .status-rejected { background-color: #fd7e14; color: white; }
+    
+    .priority-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .priority-low { background-color: #6c757d; color: white; }
+    .priority-normal { background-color: #17a2b8; color: white; }
+    .priority-high { background-color: #ffc107; color: #212529; }
+    .priority-urgent { background-color: #dc3545; color: white; }
+    
+    .message-preview {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        border-top: none;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-sms fa-fw"></i> SMS Messages
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'sms_gateway:send_message' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> Send New Message
+            </a>
+            <a href="{% url 'sms_gateway:dashboard' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-tachometer-alt fa-fw"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filter-section">
+        <h6><i class="fas fa-filter"></i> Filter Messages</h6>
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="gateway" class="form-label">Gateway</label>
+                <input type="text" class="form-control" id="gateway" name="gateway" 
+                       value="{{ gateway_filter }}" placeholder="Search by gateway name">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Delivery Status</label>
+                <select class="form-control" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="priority" class="form-label">Priority</label>
+                <select class="form-control" id="priority" name="priority">
+                    <option value="">All Priorities</option>
+                    {% for value, label in priority_choices %}
+                    <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+                <a href="{% url 'sms_gateway:messages_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Messages Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list"></i> Message List
+                {% if page_obj %}
+                <span class="badge badge-primary ms-2">{{ page_obj.paginator.count }} messages</span>
+                {% endif %}
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Recipient</th>
+                            <th>Message</th>
+                            <th>Gateway</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for message in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ message.recipient_number }}</strong>
+                                {% if message.sender_id %}
+                                <br><small class="text-muted">From: {{ message.sender_id }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="message-preview" title="{{ message.message_content }}">
+                                    {{ message.message_content|truncatechars:50 }}
+                                </div>
+                                {% if message.category %}
+                                <br><small class="text-muted">{{ message.category }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-info">{{ message.gateway.name }}</span>
+                                <br><small class="text-muted">{{ message.gateway.gateway_type }}</small>
+                            </td>
+                            <td>
+                                <span class="badge status-{{ message.delivery_status }} status-badge">
+                                    {{ message.get_delivery_status_display }}
+                                </span>
+                                {% if message.delivery_status == 'sent' and message.sent_at %}
+                                <br><small class="text-muted">{{ message.sent_at|date:"M d, H:i" }}</small>
+                                {% endif %}
+                                {% if message.delivery_status == 'delivered' and message.delivered_at %}
+                                <br><small class="text-muted">{{ message.delivered_at|date:"M d, H:i" }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge priority-{{ message.priority }} priority-badge">
+                                    {{ message.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ message.created_at|date:"M d, Y" }}
+                                <br><small class="text-muted">{{ message.created_at|time:"H:i" }}</small>
+                                {% if message.created_by %}
+                                <br><small class="text-muted">by {{ message.created_by.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical btn-group-sm">
+                                    <a href="{% url 'sms_gateway:message_detail' message.pk %}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if message.delivery_status == 'failed' %}
+                                    <button class="btn btn-outline-warning btn-sm" title="Retry" disabled>
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Messages pagination">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="pagination-info">
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} messages
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if gateway_filter %}&gateway={{ gateway_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- No Messages -->
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No SMS messages found</h5>
+                <p class="text-muted">
+                    {% if gateway_filter or status_filter or priority_filter %}
+                    Try adjusting your filters or 
+                    <a href="{% url 'sms_gateway:messages_list' %}">clear all filters</a>
+                    {% else %}
+                    Get started by sending your first SMS message.
+                    {% endif %}
+                </p>
+                {% if not gateway_filter and not status_filter and not priority_filter %}
+                <a href="{% url 'sms_gateway:send_message' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Send First Message
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when filters change
+    const filterSelects = document.querySelectorAll('select[name="status"], select[name="priority"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+    
+    // Add loading state to filter button
+    const filterForm = document.querySelector('form[method="get"]');
+    const filterBtn = filterForm.querySelector('button[type="submit"]');
+    
+    filterForm.addEventListener('submit', function() {
+        filterBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Filtering...';
+        filterBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

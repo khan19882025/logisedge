@@ -1,0 +1,675 @@
+{% extends 'delivery_order/base.html' %}
+{% load static %}
+
+{% block delivery_order_content %}
+<div class="delivery-order-detail-container" style="color: black;" 
+     data-do-number="{{ delivery_order.do_number }}"
+     data-customer-name="{{ delivery_order.customer.customer_name }}"
+     data-customer-email="{{ delivery_order.customer.email|default:'' }}"
+     data-delivery-email="{{ delivery_order.delivery_email|default:'' }}">
+    <!-- Page Header -->
+    <div class="page-header" style="background: white; color: black; border: 1px solid #dee2e6;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="page-title" style="color: black;">
+                <i class="bi bi-truck me-2"></i>
+                Delivery Order {{ delivery_order.do_number }}
+            </h1>
+            <div class="page-actions">
+                <div class="btn-group me-2" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="printDeliveryOrder()">
+                        <i class="bi bi-printer me-1"></i> Print
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="emailDeliveryOrder()">
+                        <i class="bi bi-envelope me-1"></i> Email
+                    </button>
+                </div>
+                <a href="{% url 'delivery_order:delivery_order_edit' delivery_order.pk %}" class="btn btn-warning me-2">
+                    <i class="bi bi-pencil me-1"></i> Edit
+                </a>
+                <a href="{% url 'delivery_order:delivery_order_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status and Priority Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="status-card" style="background: white; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.5rem;">
+                <h6 style="color: black;">Status</h6>
+                <span class="badge status-badge status-{{ delivery_order.status }}" style="background: #f8f9fa; color: black; border: 1px solid #dee2e6;">
+                    {{ delivery_order.get_status_display }}
+                </span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="priority-card" style="background: white; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.5rem;">
+                <h6 style="color: black;">Priority</h6>
+                <span class="badge priority-badge priority-{{ delivery_order.priority }}" style="background: #f8f9fa; color: black; border: 1px solid #dee2e6;">
+                    {{ delivery_order.get_priority_display }}
+                </span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="date-card" style="background: white; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.5rem;">
+                <h6 style="color: black;">DO Date</h6>
+                <span style="color: black;">{{ delivery_order.do_date|date:"M d, Y" }}</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="expected-card" style="background: white; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.5rem;">
+                <h6 style="color: black;">Requested Date</h6>
+                <span style="color: black;">
+                    {% if delivery_order.requested_date %}
+                        {{ delivery_order.requested_date|date:"M d, Y" }}
+                        {% if delivery_order.is_overdue %}
+                            <span class="badge bg-danger ms-1" style="background: #dc3545 !important; color: white;">Overdue</span>
+                        {% endif %}
+                    {% else %}
+                        Not set
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Information Layout - Two Columns -->
+    <div class="row">
+        <!-- Left Column - Basic Information -->
+        <div class="col-md-6">
+            <!-- Basic Information Card -->
+            <div class="card mb-4" style="background: white; border: 1px solid #dee2e6;">
+                <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; color: black;">
+                    <h5 class="mb-0" style="color: black;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Basic Information
+                    </h5>
+                </div>
+                <div class="card-body" style="color: black;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-person me-1"></i>Customer</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.customer.customer_name }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-tag me-1"></i>Customer Ref</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.customer_ref|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-building me-1"></i>Facility</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.facility.facility_name|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-file-earmark-text me-1"></i>Related GRN</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.grn.grn_number|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-calendar me-1"></i>DO Date</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.do_date|date:"M d, Y" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-calendar-check me-1"></i>Requested Date</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.requested_date|date:"M d, Y"|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-person-badge me-1"></i>Assigned To</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.assigned_to.salesman_name|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-circle me-1"></i>Status</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.get_status_display }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Card -->
+            <div class="card mb-4" style="background: white; border: 1px solid #dee2e6;">
+                <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; color: black;">
+                    <h5 class="mb-0" style="color: black;">
+                        <i class="bi bi-sticky me-2"></i>
+                        Notes & Instructions
+                    </h5>
+                </div>
+                <div class="card-body" style="color: black;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;">Notes</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.notes|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;">Special Instructions</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.special_instructions|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Information Card -->
+            <div class="card mb-4" style="background: white; border: 1px solid #dee2e6;">
+                <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; color: black;">
+                    <h5 class="mb-0" style="color: black;">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Audit Information
+                    </h5>
+                </div>
+                <div class="card-body" style="color: black;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;">Created By</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.created_by.get_full_name|default:delivery_order.created_by.username }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;">Created At</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.created_at|date:"M d, Y H:i" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;">Last Updated</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.updated_at|date:"M d, Y H:i" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;">Actual Delivery Date</label>
+                        <div class="form-control-plaintext" style="color: black;">
+                            {% if delivery_order.actual_delivery_date %}
+                                {{ delivery_order.actual_delivery_date|date:"M d, Y" }}
+                            {% else %}
+                                Not delivered yet
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Delivery Information -->
+        <div class="col-md-6">
+            <!-- Delivery Information Card -->
+            <div class="card mb-4" style="background: white; border: 1px solid #dee2e6;">
+                <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; color: black;">
+                    <h5 class="mb-0" style="color: black;">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        Delivery Information
+                    </h5>
+                </div>
+                <div class="card-body" style="color: black;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-calendar me-1"></i>Date</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.date|date:"d/m/Y"|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-credit-card me-1"></i>Payment Mode</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.payment_mode|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-file-text me-1"></i>Delivery Terms</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.delivery_terms|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-person me-1"></i>Contact</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.delivery_contact|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-telephone me-1"></i>Phone</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.delivery_phone|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-envelope me-1"></i>Email</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.delivery_email|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-geo-alt me-1"></i>Delivery Address</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.delivery_address|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Information Card -->
+            <div class="card mb-4" style="background: white; border: 1px solid #dee2e6;">
+                <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; color: black;">
+                    <h5 class="mb-0" style="color: black;">
+                        <i class="bi bi-ship me-2"></i>
+                        Shipping Information
+                    </h5>
+                </div>
+                <div class="card-body" style="color: black;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-box me-1"></i>Container</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.container|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-upc-scan me-1"></i>BL Number</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.bl_number|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-file-earmark-text me-1"></i>BOE</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.boe|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-geo-alt me-1"></i>Exit Point</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.exit_point|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-geo me-1"></i>Destination</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.destination|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-ship me-1"></i>Ship Mode</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.ship_mode|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-calendar-event me-1"></i>Ship Date</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.ship_date|date:"d/m/Y"|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-water me-1"></i>Vessel</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.vessel|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-arrow-right me-1"></i>Voyage</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.voyage|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Details Card -->
+            <div class="card mb-4" style="background: white; border: 1px solid #dee2e6;">
+                <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; color: black;">
+                    <h5 class="mb-0" style="color: black;">
+                        <i class="bi bi-calendar-event me-2"></i>
+                        Delivery Details
+                    </h5>
+                </div>
+                <div class="card-body" style="color: black;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-truck me-1"></i>Shipping Method</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.shipping_method|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-upc-scan me-1"></i>Tracking Number</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.tracking_number|default:"-" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: black;"><i class="bi bi-building me-1"></i>Carrier</label>
+                        <div class="form-control-plaintext" style="color: black;">{{ delivery_order.carrier|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Table - Full Width -->
+    <div class="card mb-4" style="background: white; border: 1px solid #dee2e6;">
+        <div class="card-header" style="background: white; border-bottom: 1px solid #dee2e6; color: black;">
+            <h5 class="mb-0" style="color: black;">
+                <i class="bi bi-box me-2"></i>
+                Delivery Items
+            </h5>
+        </div>
+        <div class="card-body" style="color: black;">
+            {% if grn_items_data %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" style="color: black; font-size: 0.875rem;">
+                    <thead style="background: white; color: black; border: 1px solid #dee2e6;">
+                        <tr>
+                            <th style="color: black;">GRN No</th>
+                            <th style="color: black;">Item Code</th>
+                            <th style="color: black;">Item</th>
+                            <th style="color: black;">HS Code</th>
+                            <th style="color: black;">Unit</th>
+                            <th style="color: black;">QTY</th>
+                            <th style="color: black;">COO</th>
+                            <th style="color: black;">N-weight</th>
+                            <th style="color: black;">G-weight</th>
+                            <th style="color: black;">CBM</th>
+                            <th style="color: black;">P-Date</th>
+                            <th style="color: black;">E-Date</th>
+                            <th style="color: black;">Color</th>
+                            <th style="color: black;">Size</th>
+                            <th style="color: black;">Barcode</th>
+                            <th style="color: black;">Rate</th>
+                            <th style="color: black;">Amount</th>
+                            <th style="color: black;">ED</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color: black;">
+                        {% for item in grn_items_data %}
+                        <tr style="background: white; color: black;">
+                            <td style="color: black;">{{ item.grn_number }}</td>
+                            <td style="color: black;">{{ item.item_code|default:"-" }}</td>
+                            <td style="color: black;">{{ item.item_name|default:"-" }}</td>
+                            <td style="color: black;">{{ item.hs_code|default:"-" }}</td>
+                            <td style="color: black;">{{ item.unit|default:"-" }}</td>
+                            <td style="color: black;">{{ item.quantity }}</td>
+                            <td style="color: black;">{{ item.coo|default:"-" }}</td>
+                            <td style="color: black;">{{ item.n_weight|floatformat:2|default:"-" }}</td>
+                            <td style="color: black;">{{ item.g_weight|floatformat:2|default:"-" }}</td>
+                            <td style="color: black;">{{ item.volume|floatformat:2|default:"-" }}</td>
+                            <td style="color: black;">{{ item.p_date|date:"d/m/Y"|default:"-" }}</td>
+                            <td style="color: black;">{{ item.expiry_date|date:"d/m/Y"|default:"-" }}</td>
+                            <td style="color: black;">{{ item.color|default:"-" }}</td>
+                            <td style="color: black;">{{ item.size|default:"-" }}</td>
+                            <td style="color: black;">{{ item.barcode|default:"-" }}</td>
+                            <td style="color: black;">{{ item.rate|floatformat:2|default:"-" }}</td>
+                            <td style="color: black;">{{ item.amount|floatformat:2|default:"-" }}</td>
+                            <td style="color: black;">{{ item.ed|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% elif delivery_order.items.all %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" style="color: black;">
+                    <thead style="background: white; color: black; border: 1px solid #dee2e6;">
+                        <tr>
+                            <th style="color: black;">Item</th>
+                            <th style="color: black;">Requested Qty</th>
+                            <th style="color: black;">Shipped Qty</th>
+                            <th style="color: black;">Delivered Qty</th>
+                            <th style="color: black;">Source Location</th>
+                            <th style="color: black;">Unit Price</th>
+                            <th style="color: black;">Total Price</th>
+                            <th style="color: black;">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody style="color: black;">
+                        {% for item in delivery_order.items.all %}
+                        <tr style="background: white; color: black;">
+                            <td style="color: black;">{{ item.item.item_name }}</td>
+                            <td style="color: black;">{{ item.requested_qty }}</td>
+                            <td style="color: black;">{{ item.shipped_qty }}</td>
+                            <td style="color: black;">{{ item.delivered_qty }}</td>
+                            <td style="color: black;">{{ item.source_location.location_name|default:"-" }}</td>
+                            <td style="color: black;">{{ item.unit_price|default:"-" }}</td>
+                            <td style="color: black;">{{ item.total_price|default:"-" }}</td>
+                            <td style="color: black;">{{ item.notes|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4" style="color: black;">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                <h5 style="color: black;">No items found</h5>
+                <p style="color: black;">This delivery order doesn't have any items yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailModalLabel">
+                    <i class="bi bi-envelope me-2"></i>Send Delivery Order via Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="emailForm" method="post" action="{% url 'delivery_order:send_email' delivery_order.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="recipient_email" class="form-label">Recipient Email *</label>
+                                <input type="email" class="form-control" id="recipient_email" name="recipient_email" 
+                                       value="{{ delivery_order.delivery_email|default:delivery_order.customer.email|default:'' }}" required>
+                                <div class="form-text">Primary recipient email address</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="cc_email" class="form-label">CC Email</label>
+                                <input type="email" class="form-control" id="cc_email" name="cc_email" 
+                                       placeholder="cc@example.com">
+                                <div class="form-text">Additional recipients (optional)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email_subject" class="form-label">Subject *</label>
+                        <input type="text" class="form-control" id="email_subject" name="email_subject" 
+                               value="Delivery Order {{ delivery_order.do_number }} - {{ delivery_order.customer.customer_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email_message" class="form-label">Message</label>
+                        <textarea class="form-control" id="email_message" name="email_message" rows="4" 
+                                  placeholder="Enter your message here...">Dear {{ delivery_order.customer.customer_name }},
+
+Please find attached the Delivery Order {{ delivery_order.do_number }} for your reference.
+
+{% if delivery_order.notes %}
+Notes: {{ delivery_order.notes }}
+{% endif %}
+
+Best regards,
+{{ request.user.get_full_name|default:request.user.username }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include_pdf" name="include_pdf" checked>
+                            <label class="form-check-label" for="include_pdf">
+                                Include PDF attachment
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-1"></i>Send Email
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style id="printStyles" media="print">
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .delivery-order-detail-container, .delivery-order-detail-container * {
+            visibility: visible;
+        }
+        .delivery-order-detail-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .page-actions, .btn, .modal {
+            display: none !important;
+        }
+        .card {
+            border: 1px solid #000 !important;
+            break-inside: avoid;
+        }
+        .table {
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            border: 1px solid #000 !important;
+        }
+        .page-header {
+            border-bottom: 2px solid #000 !important;
+            margin-bottom: 20px !important;
+        }
+        .page-title {
+            font-size: 24px !important;
+            font-weight: bold !important;
+        }
+        .card-header {
+            background-color: #f8f9fa !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        .card-header h5 {
+            font-weight: bold !important;
+        }
+        .form-label {
+            font-weight: bold !important;
+        }
+        .badge {
+            border: 1px solid #000 !important;
+        }
+    }
+</style>
+
+<script>
+// Print functionality
+function printDeliveryOrder() {
+    // Show loading indicator
+    const printBtn = event.target.closest('button');
+    const originalText = printBtn.innerHTML;
+    printBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Generating PDF...';
+    printBtn.disabled = true;
+    
+    // Use fetch to trigger PDF download
+    fetch(`{% url 'delivery_order:delivery_order_print' delivery_order.pk %}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Check if response is PDF
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/pdf')) {
+                // Create blob and download
+                return response.blob();
+            } else {
+                // If not PDF, show HTML version
+                return response.text().then(html => {
+                    showAlert('warning', 'PDF generation failed. Opening HTML version.');
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write(html);
+                    newWindow.document.close();
+                    throw new Error('HTML response');
+                });
+            }
+        })
+        .then(blob => {
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `Delivery_Order_{{ delivery_order.do_number }}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showAlert('success', 'PDF downloaded successfully!');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (error.message !== 'HTML response') {
+                showAlert('danger', 'Failed to generate PDF. Please try again.');
+            }
+        })
+        .finally(() => {
+            // Restore button state
+            printBtn.innerHTML = originalText;
+            printBtn.disabled = false;
+        });
+}
+
+// Email functionality
+function emailDeliveryOrder() {
+    const emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+    emailModal.show();
+}
+
+// Email form submission
+document.getElementById('emailForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Sending...';
+    submitBtn.disabled = true;
+    
+    // Get form data
+    const formData = new FormData(this);
+    
+    // Send AJAX request
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showAlert('success', 'Email sent successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('emailModal')).hide();
+        } else {
+            // Show error message
+            showAlert('danger', data.error || 'Failed to send email. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'An error occurred while sending the email.');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Alert function
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the container
+    const container = document.querySelector('.delivery-order-detail-container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Auto-fill email fields based on delivery order data
+document.addEventListener('DOMContentLoaded', function() {
+    const recipientEmail = document.getElementById('recipient_email');
+    const emailSubject = document.getElementById('email_subject');
+    const emailMessage = document.getElementById('email_message');
+    
+    if (recipientEmail && !recipientEmail.value) {
+        // Try to get email from customer or delivery contact
+        const customerEmail = '{{ delivery_order.customer.email|default:"" }}';
+        const deliveryEmail = '{{ delivery_order.delivery_email|default:"" }}';
+        
+        if (deliveryEmail) {
+            recipientEmail.value = deliveryEmail;
+        } else if (customerEmail) {
+            recipientEmail.value = customerEmail;
+        }
+    }
+    
+    // Update subject line with current date
+    if (emailSubject) {
+        const currentDate = new Date().toLocaleDateString();
+        const doNumber = '{{ delivery_order.do_number }}';
+        const customerName = '{{ delivery_order.customer.customer_name }}';
+        emailSubject.value = `Delivery Order ${doNumber} - ${customerName} (${currentDate})`;
+    }
+});
+</script>
+{% endblock %} 

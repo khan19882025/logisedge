@@ -1,0 +1,448 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Automated Cleaning Schedules{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        Automated Cleaning Schedules
+                    </h1>
+                    <p class="text-muted mb-0">Manage automated data cleaning schedules and recurring jobs</p>
+                </div>
+                <div>
+                    <a href="{% url 'data_cleaning_tool:schedule_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Schedule
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="id_frequency" class="form-label">Frequency</label>
+                            <select class="form-select" id="id_frequency" name="frequency">
+                                <option value="">All Frequencies</option>
+                                <option value="daily" {% if request.GET.frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                <option value="weekly" {% if request.GET.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                <option value="monthly" {% if request.GET.frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                                <option value="quarterly" {% if request.GET.frequency == 'quarterly' %}selected{% endif %}>Quarterly</option>
+                                <option value="yearly" {% if request.GET.frequency == 'yearly' %}selected{% endif %}>Yearly</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_status" class="form-label">Status</label>
+                            <select class="form-select" id="id_status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                <option value="paused" {% if request.GET.status == 'paused' %}selected{% endif %}>Paused</option>
+                                <option value="error" {% if request.GET.status == 'error' %}selected{% endif %}>Error</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_cleaning_type" class="form-label">Cleaning Type</label>
+                            <select class="form-select" id="id_cleaning_type" name="cleaning_type">
+                                <option value="">All Types</option>
+                                <option value="master" {% if request.GET.cleaning_type == 'master' %}selected{% endif %}>Master Data</option>
+                                <option value="transactional" {% if request.GET.cleaning_type == 'transactional' %}selected{% endif %}>Transactional Data</option>
+                                <option value="financial" {% if request.GET.cleaning_type == 'financial' %}selected{% endif %}>Financial Data</option>
+                                <option value="comprehensive" {% if request.GET.cleaning_type == 'comprehensive' %}selected{% endif %}>Comprehensive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="id_search" name="search" value="{{ request.GET.search }}" placeholder="Schedule name or description">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-search me-2"></i>Apply Filters
+                            </button>
+                            <a href="{% url 'data_cleaning_tool:schedule_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Clear Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Schedules List -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Schedules ({{ schedules.count }})
+                        </h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-2"></i>Export
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="?export=csv"><i class="fas fa-file-csv me-2"></i>CSV</a></li>
+                                <li><a class="dropdown-item" href="?export=excel"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                                <li><a class="dropdown-item" href="?export=pdf"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if schedules %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Schedule Name</th>
+                                        <th>Frequency</th>
+                                        <th>Next Run</th>
+                                        <th>Status</th>
+                                        <th>Last Run</th>
+                                        <th>Cleaning Type</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for schedule in schedules %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="schedule-icon me-3">
+                                                    {% if schedule.frequency == 'daily' %}
+                                                        <i class="fas fa-calendar-day text-primary"></i>
+                                                    {% elif schedule.frequency == 'weekly' %}
+                                                        <i class="fas fa-calendar-week text-success"></i>
+                                                    {% elif schedule.frequency == 'monthly' %}
+                                                        <i class="fas fa-calendar-alt text-info"></i>
+                                                    {% elif schedule.frequency == 'quarterly' %}
+                                                        <i class="fas fa-calendar text-warning"></i>
+                                                    {% elif schedule.frequency == 'yearly' %}
+                                                        <i class="fas fa-calendar text-secondary"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ schedule.name }}</h6>
+                                                    <small class="text-muted">{{ schedule.description|truncatechars:50 }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if schedule.frequency == 'daily' %}primary{% elif schedule.frequency == 'weekly' %}success{% elif schedule.frequency == 'monthly' %}info{% elif schedule.frequency == 'quarterly' %}warning{% elif schedule.frequency == 'yearly' %}secondary{% endif %}">
+                                                {{ schedule.get_frequency_display }}
+                                            </span>
+                                            {% if schedule.specific_time %}
+                                                <br><small class="text-muted">{{ schedule.specific_time|time:"H:i" }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if schedule.next_run %}
+                                                <div class="text-nowrap">
+                                                    <strong>{{ schedule.next_run|date:"M d, Y" }}</strong>
+                                                    <br><small class="text-muted">{{ schedule.next_run|time:"H:i" }}</small>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">Not scheduled</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if schedule.status == 'active' %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% elif schedule.status == 'inactive' %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% elif schedule.status == 'paused' %}
+                                                <span class="badge bg-warning">Paused</span>
+                                            {% elif schedule.status == 'error' %}
+                                                <span class="badge bg-danger">Error</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if schedule.last_run %}
+                                                <div class="text-nowrap">
+                                                    <small class="text-muted">{{ schedule.last_run|date:"M d, Y" }}</small>
+                                                    <br><small class="text-muted">{{ schedule.last_run|time:"H:i" }}</small>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">Never</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ schedule.get_cleaning_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'data_cleaning_tool:schedule_edit' schedule.id %}" class="btn btn-outline-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-info" title="View Details" onclick="viewScheduleDetails({{ schedule.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% if schedule.status == 'active' %}
+                                                    <button type="button" class="btn btn-outline-warning" title="Pause" onclick="pauseSchedule({{ schedule.id }})">
+                                                        <i class="fas fa-pause"></i>
+                                                    </button>
+                                                {% elif schedule.status == 'paused' %}
+                                                    <button type="button" class="btn btn-outline-success" title="Resume" onclick="resumeSchedule({{ schedule.id }})">
+                                                        <i class="fas fa-play"></i>
+                                                    </button>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-outline-danger" title="Delete" onclick="deleteSchedule({{ schedule.id }}, '{{ schedule.name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <div class="card-footer">
+                            <nav aria-label="Schedules pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cleaning_type %}&cleaning_type={{ request.GET.cleaning_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cleaning_type %}&cleaning_type={{ request.GET.cleaning_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cleaning_type %}&cleaning_type={{ request.GET.cleaning_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cleaning_type %}&cleaning_type={{ request.GET.cleaning_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cleaning_type %}&cleaning_type={{ request.GET.cleaning_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-double-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No schedules found</h5>
+                            <p class="text-muted">Create your first automated cleaning schedule to get started.</p>
+                            <a href="{% url 'data_cleaning_tool:schedule_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Schedule
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-play-circle fa-2x text-success mb-3"></i>
+                            <h6>Run Now</h6>
+                            <p class="small text-muted">Execute a cleaning session immediately without waiting for the schedule</p>
+                            <a href="{% url 'data_cleaning_tool:quick_clean' %}" class="btn btn-outline-success btn-sm">
+                                Quick Clean
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-chart-line fa-2x text-info mb-3"></i>
+                            <h6>Monitor Progress</h6>
+                            <p class="small text-muted">Track the progress of running cleaning sessions and view results</p>
+                            <a href="{% url 'data_cleaning_tool:session_list' %}" class="btn btn-outline-info btn-sm">
+                                View Sessions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-file-alt fa-2x text-warning mb-3"></i>
+                            <h6>Reports</h6>
+                            <p class="small text-muted">Generate and view detailed reports on cleaning activities and data quality</p>
+                            <a href="{% url 'data_cleaning_tool:reports' %}" class="btn btn-outline-warning btn-sm">
+                                View Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Details Modal -->
+<div class="modal fade" id="scheduleDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Schedule Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="scheduleDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteScheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the schedule "<strong id="scheduleNameToDelete"></strong>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="deleteScheduleForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Schedule</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewScheduleDetails(scheduleId) {
+    // Load schedule details via AJAX
+    fetch(`/utilities/data-cleaning/schedules/${scheduleId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('scheduleDetailsContent').innerHTML = data.html;
+            new bootstrap.Modal(document.getElementById('scheduleDetailsModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading schedule details:', error);
+            alert('Error loading schedule details');
+        });
+}
+
+function pauseSchedule(scheduleId) {
+    if (confirm('Are you sure you want to pause this schedule?')) {
+        fetch(`/utilities/data-cleaning/schedules/${scheduleId}/pause/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error pausing schedule: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error pausing schedule:', error);
+            alert('Error pausing schedule');
+        });
+    }
+}
+
+function resumeSchedule(scheduleId) {
+    if (confirm('Are you sure you want to resume this schedule?')) {
+        fetch(`/utilities/data-cleaning/schedules/${scheduleId}/resume/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error resuming schedule: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error resuming schedule:', error);
+            alert('Error resuming schedule');
+        });
+    }
+}
+
+function deleteSchedule(scheduleId, scheduleName) {
+    document.getElementById('scheduleNameToDelete').textContent = scheduleName;
+    document.getElementById('deleteScheduleForm').action = `/utilities/data-cleaning/schedules/${scheduleId}/delete/`;
+    new bootstrap.Modal(document.getElementById('deleteScheduleModal')).show();
+}
+</script>
+
+<style>
+.schedule-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: rgba(0,0,0,0.05);
+}
+
+.table > tbody > tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.text-nowrap {
+    white-space: nowrap;
+}
+</style>
+{% endblock %}

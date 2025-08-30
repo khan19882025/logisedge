@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Export Transactions{% endblock %}
+
+{% block extra_css %}
+<style>
+    .export-form-container {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+    
+    .format-selection {
+        background: #e3f2fd;
+        border: 2px solid #2196f3;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .format-option {
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .format-option:hover {
+        border-color: #2196f3;
+        background-color: #f3f8ff;
+    }
+    
+    .format-option.selected {
+        border-color: #2196f3;
+        background-color: #e3f2fd;
+    }
+    
+    .format-option input[type="radio"] {
+        display: none;
+    }
+    
+    .format-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #2196f3;
+    }
+    
+    .filter-preview {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Export Transactions
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'bulk_export:dashboard' %}">Bulk Export</a></li>
+                        <li class="breadcrumb-item active">Transactions</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="export-form-container">
+                <form method="post" id="transactionExportForm">
+                    {% csrf_token %}
+                    
+                    <!-- Export Format Selection -->
+                    <div class="format-selection">
+                        <h5 class="mb-3">
+                            <i class="fas fa-file-export me-2"></i>Select Export Format
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="format-option" for="id_export_format_0">
+                                    <input type="radio" name="export_format" value="excel" id="id_export_format_0" checked>
+                                    <div class="format-icon">
+                                        <i class="fas fa-file-excel"></i>
+                                    </div>
+                                    <h6>Excel (.xlsx)</h6>
+                                    <small class="text-muted">Best for data analysis and reporting</small>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="format-option" for="id_export_format_1">
+                                    <input type="radio" name="export_format" value="csv" id="id_export_format_1">
+                                    <div class="format-icon">
+                                        <i class="fas fa-file-csv"></i>
+                                    </div>
+                                    <h6>CSV (.csv)</h6>
+                                    <small class="text-muted">Universal format for data import</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Filters -->
+                    <div class="form-section">
+                        <h5>
+                            <i class="fas fa-filter me-2"></i>Transaction Filters
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.transaction_type.id_for_label }}" class="form-label">
+                                        Transaction Type
+                                    </label>
+                                    {{ form.transaction_type }}
+                                    {% if form.transaction_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.transaction_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.payment_status.id_for_label }}" class="form-label">
+                                        Payment Status
+                                    </label>
+                                    {{ form.payment_status }}
+                                    {% if form.payment_status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.payment_status.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.date_from.id_for_label }}" class="form-label">
+                                        Date From
+                                    </label>
+                                    {{ form.date_from }}
+                                    {% if form.date_from.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.date_from.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.date_to.id_for_label }}" class="form-label">
+                                        Date To
+                                    </label>
+                                    {{ form.date_to }}
+                                    {% if form.date_to.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.date_to.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                        Customer
+                                    </label>
+                                    {{ form.customer }}
+                                    {% if form.customer.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.item.id_for_label }}" class="form-label">
+                                        Item
+                                    </label>
+                                    {{ form.item }}
+                                    {% if form.item.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.item.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label">
+                                        Location/Branch
+                                    </label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.location.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Preview -->
+                    <div class="filter-preview" id="filterPreview" style="display: none;">
+                        <h6 class="mb-2">
+                            <i class="fas fa-eye me-2"></i>Applied Filters Preview
+                        </h6>
+                        <div id="filterSummary"></div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'bulk_export:dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-download me-2"></i>Export Transactions
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Format selection handling
+    document.querySelectorAll('.format-option').forEach(option => {
+        option.addEventListener('click', function() {
+            // Remove selected class from all options
+            document.querySelectorAll('.format-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            // Add selected class to clicked option
+            this.classList.add('selected');
+            // Check the radio button
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+        });
+    });
+
+    // Initialize selected format
+    document.querySelector('.format-option input[type="radio"]:checked').closest('.format-option').classList.add('selected');
+
+    // Filter preview functionality
+    function updateFilterPreview() {
+        const form = document.getElementById('transactionExportForm');
+        const formData = new FormData(form);
+        const filters = {};
+        let hasFilters = false;
+
+        // Collect non-empty filter values
+        for (let [key, value] of formData.entries()) {
+            if (value && key !== 'csrfmiddlewaretoken' && key !== 'export_format') {
+                filters[key] = value;
+                hasFilters = true;
+            }
+        }
+
+        const preview = document.getElementById('filterPreview');
+        const summary = document.getElementById('filterSummary');
+
+        if (hasFilters) {
+            let summaryHtml = '<div class="row">';
+            for (let [key, value] of Object.entries(filters)) {
+                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                summaryHtml += `
+                    <div class="col-md-6 mb-2">
+                        <strong>${label}:</strong> ${value}
+                    </div>
+                `;
+            }
+            summaryHtml += '</div>';
+            summary.innerHTML = summaryHtml;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    // Update preview on form changes
+    document.querySelectorAll('#transactionExportForm input, #transactionExportForm select').forEach(input => {
+        input.addEventListener('change', updateFilterPreview);
+        input.addEventListener('keyup', updateFilterPreview);
+    });
+
+    // Initial preview update
+    updateFilterPreview();
+
+    // Form validation
+    document.getElementById('transactionExportForm').addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,574 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ document.title }} - Document Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">
+                            <i class="fas fa-file-pdf text-primary"></i>
+                            {{ document.title }}
+                        </h1>
+                        <p class="page-subtitle">
+                            {{ document.document_type.get_category_display }} - {{ document.document_type.name }}
+                        </p>
+                    </div>
+                    <div class="header-actions">
+                        <a href="{% url 'pdf_preview_tool:document_preview' document.id %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-eye"></i> Preview Document
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Information -->
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-xl-8 col-lg-7">
+            <!-- Document Details Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Document Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Title:</strong></td>
+                                    <td>{{ document.title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>
+                                        <span class="badge badge-info">
+                                            {{ document.document_type.get_category_display }} - {{ document.document_type.name }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if document.status == 'approved' %}
+                                            <span class="badge badge-success">Approved</span>
+                                        {% elif document.status == 'pending' %}
+                                            <span class="badge badge-warning">Pending Approval</span>
+                                        {% elif document.status == 'draft' %}
+                                            <span class="badge badge-secondary">Draft</span>
+                                        {% else %}
+                                            <span class="badge badge-dark">{{ document.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ document.created_at|date:"F d, Y \a\t g:i A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created By:</strong></td>
+                                    <td>{{ document.created_by.get_full_name|default:document.created_by.username }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>File Size:</strong></td>
+                                    <td>{{ document.file_size|filesizeformat }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Pages:</strong></td>
+                                    <td>{{ document.page_count }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>File Type:</strong></td>
+                                    <td>{{ document.get_file_extension|upper }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Updated:</strong></td>
+                                    <td>{{ document.updated_at|date:"F d, Y \a\t g:i A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Updated By:</strong></td>
+                                    <td>{{ document.updated_by.get_full_name|default:document.updated_by.username }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if document.description %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6><strong>Description:</strong></h6>
+                            <p class="text-muted">{{ document.description }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if document.erp_reference or document.erp_module %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6><strong>ERP Integration:</strong></h6>
+                            <div class="row">
+                                {% if document.erp_reference %}
+                                <div class="col-md-6">
+                                    <strong>Reference:</strong> {{ document.erp_reference }}
+                                </div>
+                                {% endif %}
+                                {% if document.erp_module %}
+                                <div class="col-md-6">
+                                    <strong>Module:</strong> {{ document.erp_module }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if document.tags %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6><strong>Tags:</strong></h6>
+                            <div class="tags-container">
+                                {% for tag in document.tags %}
+                                    <span class="badge badge-secondary me-2">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Document Actions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tools"></i> Document Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_preview' document.id %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-eye"></i> Preview
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="#" class="btn btn-success btn-block" onclick="downloadDocument()">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="#" class="btn btn-info btn-block" onclick="printDocument()">
+                                <i class="fas fa-print"></i> Print
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:email_document' document.id %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-envelope"></i> Email
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {% if user == document.created_by or user.is_staff %}
+                    <div class="row mt-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_update' document.id %}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <button class="btn btn-outline-danger btn-block" onclick="deleteDocument()">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Access Control Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-lock"></i> Access Control
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Visibility:</strong>
+                        {% if document.is_public %}
+                            <span class="badge badge-success">Public</span>
+                        {% else %}
+                            <span class="badge badge-warning">Private</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if document.allowed_users.exists %}
+                    <div class="mb-3">
+                        <strong>Allowed Users:</strong>
+                        <div class="mt-2">
+                            {% for user in document.allowed_users.all %}
+                                <span class="badge badge-info me-1">{{ user.get_full_name|default:user.username }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if document.allowed_roles %}
+                    <div class="mb-3">
+                        <strong>Allowed Roles:</strong>
+                        <div class="mt-2">
+                            {% for role in document.allowed_roles %}
+                                <span class="badge badge-secondary me-1">{{ role }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Preview Sessions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history"></i> Recent Preview Sessions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_sessions %}
+                        {% for session in recent_sessions %}
+                        <div class="session-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <small class="text-muted">
+                                        {{ session.started_at|timesince }} ago
+                                    </small>
+                                </div>
+                                {% if session.duration %}
+                                    <span class="badge badge-info">{{ session.duration }}s</span>
+                                {% endif %}
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> Started: {{ session.started_at|date:"M d, g:i A" }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No preview sessions yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Document Metadata -->
+            {% if document.metadata %}
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-database"></i> Additional Metadata
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="metadata-container">
+                        {% for key, value in document.metadata.items %}
+                        <div class="mb-2">
+                            <strong>{{ key|title }}:</strong>
+                            <span class="text-muted">{{ value }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<strong>{{ document.title }}</strong>"?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'pdf_preview_tool:document_delete' document.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Document</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Preview Modal -->
+<div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfPreviewModalLabel">PDF Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="pdfPreviewContainer" class="text-center">
+                    <p class="text-muted">Loading PDF preview...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadPdf">
+                    <i class="fas fa-download"></i> Download
+                </button>
+                <button type="button" class="btn btn-success" id="printPdf">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.page-subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.metadata-container {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.document-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fc;
+    border-radius: 50%;
+}
+
+.session-item {
+    transition: all 0.3s ease;
+}
+
+.session-item:hover {
+    background-color: #f8f9fc;
+    transform: translateY(-2px);
+}
+
+.activity-item {
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background-color: #f8f9fc;
+}
+
+.border-start {
+    border-left-width: 3px !important;
+}
+
+.border-primary {
+    border-color: #4e73df !important;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+.me-3 {
+    margin-right: 1rem !important;
+}
+
+.mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.mt-2 {
+    margin-top: 0.5rem !important;
+}
+
+.mt-1 {
+    margin-top: 0.25rem !important;
+}
+
+.py-4 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+}
+
+.py-3 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+
+.py-2 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+.p-3 {
+    padding: 1rem !important;
+}
+
+.p-2 {
+    padding: 0.5rem !important;
+}
+
+.px-3 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+.badge-sm {
+    font-size: 0.75em;
+    padding: 0.25em 0.6em;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // PDF Preview functionality
+    function openPdfPreview(documentId) {
+        const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+        modal.show();
+        
+        // Load PDF preview
+        loadPdfPreview(documentId);
+    }
+
+    function loadPdfPreview(documentId) {
+        const container = document.getElementById('pdfPreviewContainer');
+        container.innerHTML = '<p class="text-muted">Loading PDF preview...</p>';
+        
+        // Here you would implement the actual PDF loading logic
+        // For now, we'll show a placeholder
+        setTimeout(() => {
+            container.innerHTML = `
+                <div class="pdf-placeholder">
+                    <i class="fas fa-file-pdf fa-5x text-danger mb-3"></i>
+                    <h5>PDF Preview</h5>
+                    <p class="text-muted">PDF preview functionality will be implemented here</p>
+                    <p class="text-muted">Document ID: ${documentId}</p>
+                </div>
+            `;
+        }, 1000);
+    }
+
+    // Download PDF functionality
+    document.getElementById('downloadPdf').addEventListener('click', function() {
+        // Implement download logic
+        alert('Download functionality will be implemented here');
+    });
+
+    // Print PDF functionality
+    document.getElementById('printPdf').addEventListener('click', function() {
+        // Implement print logic
+        alert('Print functionality will be implemented here');
+    });
+
+    // Add click handlers for preview buttons
+    document.querySelectorAll('.btn-outline-success').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const documentId = this.closest('tr').querySelector('a[href*="/documents/"]').href.split('/').slice(-2)[0];
+            openPdfPreview(documentId);
+        });
+    });
+
+    // Document action functions
+    window.downloadDocument = function() {
+        // Implement download functionality
+        alert('Download functionality will be implemented here');
+    };
+
+    window.printDocument = function() {
+        // Implement print functionality
+        alert('Print functionality will be implemented here');
+    };
+
+    window.deleteDocument = function() {
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        deleteModal.show();
+    };
+});
+</script>
+{% endblock %}

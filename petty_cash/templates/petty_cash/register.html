@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Petty Cash Register - {{ selected_date|date:"F d, Y" }} - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/petty_cash/petty_cash.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="petty-cash-register">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="register-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="bi bi-wallet2 text-primary me-3"></i>
+                        Petty Cash Register
+                    </h1>
+                    <p class="text-muted mb-0 fs-5">Professional expense tracking and management</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'petty_cash:quick' %}" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Quick Entry
+                        </a>
+                        <a href="{% url 'petty_cash:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> View All Days
+                        </a>
+                        <button class="btn btn-primary print-btn">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date Selector -->
+        <div class="date-selector-section">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-3">
+                        <i class="bi bi-calendar-event text-primary me-2"></i>
+                        Select Date
+                    </h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <label for="id_entry_date" class="form-label mb-0 fw-semibold">
+                            Entry Date:
+                        </label>
+                        {{ day_form.entry_date }}
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        {% if recent_days %}
+                        <button class="btn btn-outline-secondary nav-prev">
+                            <i class="bi bi-chevron-left"></i> Previous Day
+                        </button>
+                        {% endif %}
+                        
+                        {% if next_day %}
+                        <button class="btn btn-outline-secondary nav-next">
+                            Next Day <i class="bi bi-chevron-right"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ledger Information -->
+        <div class="ledger-info">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-2">
+                        <i class="bi bi-bank me-2"></i>
+                        1000 Petty Cash Ledger
+                    </h4>
+                    <p class="mb-0 opacity-75">{{ selected_date|date:"F d, Y" }} - Daily Transaction Summary</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="running-balance" id="runningBalance">
+                        {{ actual_ledger_balance|floatformat:2 }} {% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %}
+                    </div>
+                    <small class="opacity-75">Running Balance</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <form method="post" enctype="multipart/form-data" id="pettyCashForm">
+            {% csrf_token %}
+            <input type="hidden" id="pettyCashDayId" value="{{ petty_cash_day.pk }}">
+            <input type="hidden" id="openingBalance" value="{{ petty_cash_day.opening_balance }}">
+            <input type="hidden" id="actualLedgerBalance" value="{{ actual_ledger_balance }}">
+            
+            <!-- Opening Balance Section -->
+            <div class="opening-balance-section mb-4">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-wallet2 me-2"></i>
+                            Opening Balance
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label for="{{ day_form.opening_balance.id_for_label }}" class="form-label">
+                                    <i class="bi bi-cash-stack me-1"></i> Opening Balance ({% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %})
+                                </label>
+                                {{ day_form.opening_balance }}
+                                {% if day_form.opening_balance.errors %}
+                                    <div class="invalid-feedback d-block">{{ day_form.opening_balance.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Previous Day Balance:</strong> {{ previous_balance|floatformat:2 }} {% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %}
+                                    <br><small class="text-muted">Current ledger balance - Use this as your opening balance</small>
+                                    {% if previous_day_balance != previous_balance %}
+                                        <br><small class="text-warning">Note: Previous day calculated balance was {{ previous_day_balance|floatformat:2 }} {% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Journal Entries Section -->
+            {% if journal_entries %}
+            <div class="journal-entries-section mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-journal-text text-info me-2"></i>
+                        General Journal Entries (Affecting Petty Cash)
+                    </h5>
+                    <span class="badge bg-info">{{ journal_entries|length }} entries</span>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 15%">Journal No.</th>
+                                <th style="width: 35%">Description</th>
+                                <th style="width: 15%">Account</th>
+                                <th style="width: 12%">Debit</th>
+                                <th style="width: 12%">Credit</th>
+                                <th style="width: 11%">Created By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in journal_entries %}
+                            <tr class="journal-entry-row">
+                                <td><span class="badge bg-secondary">{{ entry.journal_number }}</span></td>
+                                <td>{{ entry.description }}</td>
+                                <td><small>{{ entry.account.account_code }} - {{ entry.account.name }}</small></td>
+                                <td class="text-end">
+                                    {% if entry.debit_amount %}
+                                        <span class="text-success fw-bold">{{ entry.debit_amount|floatformat:2 }}</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if entry.credit_amount %}
+                                        <span class="text-danger fw-bold">{{ entry.credit_amount|floatformat:2 }}</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td><small>{{ entry.created_by.username }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Manual Entries Section -->
+            <div class="entries-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table text-primary me-2"></i>
+                        Manual Transaction Entries
+                    </h5>
+                    <button type="button" class="btn btn-success btn-sm" id="addNewEntryBtn">
+                        <i class="bi bi-plus-circle me-1"></i> Add New Entry
+                    </button>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="entries-table" id="entriesTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%">Sr.</th>
+                                <th style="width: 12%">Job No</th>
+                                <th style="width: 35%">Description</th>
+                                <th style="width: 12%">Debit</th>
+                                <th style="width: 20%">Remarks</th>
+                                <th style="width: 10%">Balance</th>
+                                <th style="width: 8%">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entriesTableBody">
+                            {{ entry_formset.management_form }}
+                            {% for form in entry_formset %}
+                            <tr class="entry-row" data-form-index="{{ forloop.counter0 }}">
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {{ form.job_no }}
+                                    {% if form.job_no.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.job_no.errors.0 }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ form.amount }}
+                                    {% if form.amount.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="balance-cell" data-balance="0.00">0.00</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-entry-btn" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {{ form.DELETE }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </form>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <div class="d-flex justify-content-center gap-3">
+                <button type="button" class="btn btn-success btn-professional" id="saveBtn">
+                    <i class="bi bi-check-lg me-2"></i>
+                    Save
+                </button>
+                <button type="button" class="btn btn-primary btn-professional" id="exportPdfBtn">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>
+                    Export PDF
+                </button>
+                <button type="button" class="btn btn-info btn-professional" id="exportExcelBtn">
+                    <i class="bi bi-file-earmark-excel me-2"></i>
+                    Export Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'petty_cash/js/petty_cash.js' %}?v={{ request.META.REQUEST_TIME|default:'1' }}"></script>
+<script>
+// Set currency symbol for JavaScript
+window.currencySymbol = '{% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %}';
+
+$(document).ready(function() {
+    initializePettyCashRegister();
+});
+</script>
+{% endblock %}

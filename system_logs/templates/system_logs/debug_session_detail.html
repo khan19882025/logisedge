@@ -1,0 +1,491 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Debug Session Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-bug"></i> Debug Session Detail
+                    </h1>
+                    <p class="page-subtitle">Detailed information about debug session: {{ session.name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'system_logs:debug_session_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Sessions
+                    </a>
+                    {% if session.is_active %}
+                    <a href="{% url 'system_logs:debug_session_update' session.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Session
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'system_logs:debug_session_delete' session.pk %}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Session
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Information -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Session Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Session ID:</th>
+                                    <td><code>{{ session.id }}</code></td>
+                                </tr>
+                                <tr>
+                                    <th>Name:</th>
+                                    <td><strong>{{ session.name }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Started By:</th>
+                                    <td>{{ session.started_by.username|default:"Unknown" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Started At:</th>
+                                    <td>{{ session.started_at|date:"M d, Y H:i:s"|default:"Unknown" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge badge-{% if session.is_active %}success{% else %}secondary{% endif %}">
+                                            {% if session.is_active %}Active{% else %}Completed{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Priority:</th>
+                                    <td>
+                                        <span class="badge badge-{% if session.priority == 'HIGH' %}danger{% elif session.priority == 'MEDIUM' %}warning{% else %}info{% endif %}">
+                                            {{ session.priority|default:"Not set" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Environment:</th>
+                                    <td>{{ session.environment|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Duration:</th>
+                                    <td>
+                                        {% if session.is_active %}
+                                            <span class="text-success">Active</span>
+                                        {% else %}
+                                            {{ session.duration|default:"Not calculated" }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Related Logs:</th>
+                                    <td>
+                                        <span class="badge badge-info">{{ session.related_logs.count|default:0 }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Tags:</th>
+                                    <td>
+                                        {% if session.tags %}
+                                            {% for tag in session.tags.all %}
+                                                <span class="badge badge-secondary mr-1">{{ tag }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">No tags</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description -->
+    {% if session.description %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt"></i> Description
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ session.description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Investigation Notes -->
+    {% if session.investigation_notes %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search"></i> Investigation Notes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="bg-light p-3 rounded">
+                        {{ session.investigation_notes|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Resolution Steps -->
+    {% if session.resolution_steps %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tools"></i> Resolution Steps
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="bg-light p-3 rounded">
+                        {{ session.resolution_steps|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Related Logs -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list"></i> Related Logs ({{ session.related_logs.count|default:0 }})
+                    </h5>
+                    <a href="{% url 'system_logs:system_log_search' %}?search={{ session.name }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-search"></i> Search All Logs
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if session.related_logs.all %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Type</th>
+                                        <th>Severity</th>
+                                        <th>Module</th>
+                                        <th>Function</th>
+                                        <th>Message</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in session.related_logs.all %}
+                                    <tr>
+                                        <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if log.log_type == 'ERROR' %}danger{% elif log.log_type == 'WARNING' %}warning{% elif log.log_type == 'INFO' %}info{% else %}secondary{% endif %}">
+                                                {{ log.log_type }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if log.severity == 'CRITICAL' or log.severity == 'FATAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                                                {{ log.severity }}
+                                            </span>
+                                        </td>
+                                        <td>{{ log.module|default:"-" }}</td>
+                                        <td>{{ log.function|default:"-" }}</td>
+                                        <td>
+                                            <span title="{{ log.error_message }}">
+                                                {{ log.error_message|truncatechars:50 }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'system_logs:system_log_detail' log.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">No related logs found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Timeline -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i> Session Timeline
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Session Started</h6>
+                                <p class="text-muted">{{ session.started_at|date:"M d, Y H:i:s" }}</p>
+                                <p>Debug session initiated by {{ session.started_by.username|default:"Unknown" }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if session.investigation_notes %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Investigation Notes Added</h6>
+                                <p class="text-muted">Investigation details recorded</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if session.resolution_steps %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Resolution Steps Defined</h6>
+                                <p class="text-muted">Resolution plan documented</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not session.is_active %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6>Session Completed</h6>
+                                <p class="text-muted">Debug session finished</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tools"></i> Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        {% if session.is_active %}
+                        <button type="button" class="btn btn-success" onclick="completeSession('{{ session.id }}')">
+                            <i class="fas fa-check"></i> Complete Session
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="pauseSession('{{ session.id }}')">
+                            <i class="fas fa-pause"></i> Pause Session
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-info" onclick="reactivateSession('{{ session.id }}')">
+                            <i class="fas fa-play"></i> Reactivate Session
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-primary" onclick="exportSessionData('{{ session.id }}')">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="createReport('{{ session.id }}')">
+                            <i class="fas fa-file-alt"></i> Create Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function completeSession(sessionId) {
+    if (confirm('Are you sure you want to complete this debug session?')) {
+        // TODO: Implement AJAX call to complete session
+        alert('Feature not implemented yet');
+    }
+}
+
+function pauseSession(sessionId) {
+    if (confirm('Pause this debug session?')) {
+        // TODO: Implement AJAX call to pause session
+        alert('Feature not implemented yet');
+    }
+}
+
+function reactivateSession(sessionId) {
+    if (confirm('Reactivate this debug session?')) {
+        // TODO: Implement AJAX call to reactivate session
+        alert('Feature not implemented yet');
+    }
+}
+
+function exportSessionData(sessionId) {
+    if (confirm('Export session data and related logs?')) {
+        // TODO: Implement AJAX call to export data
+        alert('Feature not implemented yet');
+    }
+}
+
+function createReport(sessionId) {
+    if (confirm('Create a debug session report?')) {
+        // TODO: Implement AJAX call to create report
+        alert('Feature not implemented yet');
+    }
+}
+</script>
+
+<style>
+.badge {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-info {
+    background-color: #17a2b8;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Timeline styling */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+}
+
+.timeline-content {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 0.375rem;
+    border-left: 3px solid #dee2e6;
+}
+
+.timeline-content h6 {
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.timeline-content p {
+    margin-bottom: 5px;
+}
+
+.bg-primary {
+    background-color: #007bff !important;
+}
+
+.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.bg-success {
+    background-color: #28a745 !important;
+}
+</style>
+{% endblock %}

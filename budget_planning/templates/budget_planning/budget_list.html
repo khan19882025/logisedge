@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Budget Plans{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-pie mr-2"></i>Budget Plans
+        </h1>
+        <div>
+            <a href="{% url 'budget_planning:budget_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Create Budget
+            </a>
+            <a href="{% url 'budget_planning:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-2">
+                    {{ search_form.budget_code.label_tag }}
+                    {{ search_form.budget_code }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.budget_name.label_tag }}
+                    {{ search_form.budget_name }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.fiscal_year.label_tag }}
+                    {{ search_form.fiscal_year }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.budget_period.label_tag }}
+                    {{ search_form.budget_period }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.status.label_tag }}
+                    {{ search_form.status }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.cost_center.label_tag }}
+                    {{ search_form.cost_center }}
+                </div>
+                <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search mr-1"></i>Search
+                    </button>
+                    <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times mr-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budgets List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Budget Plans</h6>
+            <div>
+                <span class="badge badge-primary">{{ page_obj.paginator.count }} Total Budgets</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Budget Code</th>
+                                <th>Budget Name</th>
+                                <th>Fiscal Year</th>
+                                <th>Period</th>
+                                <th>Date Range</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for budget in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ budget.budget_code }}</strong>
+                                </td>
+                                <td>
+                                    <a href="{% url 'budget_planning:budget_detail' budget.pk %}" class="text-primary">
+                                        {{ budget.budget_name }}
+                                    </a>
+                                </td>
+                                <td>{{ budget.fiscal_year }}</td>
+                                <td>
+                                    <span class="badge badge-info">{{ budget.get_budget_period_display }}</span>
+                                </td>
+                                <td>
+                                    {{ budget.start_date|date:"M d, Y" }} - {{ budget.end_date|date:"M d, Y" }}
+                                </td>
+                                <td>
+                                    <strong>AED {{ budget.total_budget_amount|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{% if budget.status == 'approved' %}success{% elif budget.status == 'draft' %}warning{% elif budget.status == 'submitted' %}info{% elif budget.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                        {{ budget.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ budget.created_at|date:"M d, Y" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'budget_planning:budget_detail' budget.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'budget_planning:budget_edit' budget.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if budget.status == 'draft' %}
+                                            <a href="{% url 'budget_planning:budget_approve' budget.pk %}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'budget_planning:budget_delete' budget.pk %}" 
+                                           class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Budget pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.budget_code %}&budget_code={{ request.GET.budget_code }}{% endif %}{% if request.GET.budget_name %}&budget_name={{ request.GET.budget_name }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_period %}&budget_period={{ request.GET.budget_period }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.budget_code %}&budget_code={{ request.GET.budget_code }}{% endif %}{% if request.GET.budget_name %}&budget_name={{ request.GET.budget_name }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_period %}&budget_period={{ request.GET.budget_period }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.budget_code %}&budget_code={{ request.GET.budget_code }}{% endif %}{% if request.GET.budget_name %}&budget_name={{ request.GET.budget_name }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_period %}&budget_period={{ request.GET.budget_period }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.budget_code %}&budget_code={{ request.GET.budget_code }}{% endif %}{% if request.GET.budget_name %}&budget_name={{ request.GET.budget_name }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_period %}&budget_period={{ request.GET.budget_period }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.budget_code %}&budget_code={{ request.GET.budget_code }}{% endif %}{% if request.GET.budget_name %}&budget_name={{ request.GET.budget_name }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_period %}&budget_period={{ request.GET.budget_period }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-pie fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">No budget plans found.</p>
+                    <a href="{% url 'budget_planning:budget_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus mr-1"></i>Create First Budget
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/budget_planning/script.js' %}"></script>
+{% endblock %}

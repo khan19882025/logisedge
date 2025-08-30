@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gateway Health Monitoring{% endblock %}
+
+{% block extra_css %}
+<!-- CSS linting disabled for Django template syntax -->
+<style>
+    .health-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .health-section h6 {
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .health-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    
+    .health-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .health-status {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    
+    .status-healthy { background-color: #d4edda; color: #155724; }
+    .status-warning { background-color: #fff3cd; color: #856404; }
+    .status-critical { background-color: #f8d7da; color: #721c24; }
+    .status-inactive { background-color: #e2e3e5; color: #383d41; }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #007bff;
+    }
+    
+    .metric-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .health-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    
+    .indicator-healthy { background-color: #28a745; }
+    .indicator-warning { background-color: #ffc107; }
+    .indicator-critical { background-color: #dc3545; }
+    .indicator-inactive { background-color: #6c757d; }
+    
+    .response-time {
+        font-family: monospace;
+        font-size: 0.875rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+        margin: 20px 0;
+    }
+    
+    .health-timeline {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .timeline-item {
+        border-left: 3px solid #e9ecef;
+        padding-left: 15px;
+        margin-bottom: 15px;
+        position: relative;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 5px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #007bff;
+    }
+    
+    .timeline-item.success::before {
+        background: #28a745;
+    }
+    
+    .timeline-item.error::before {
+        background: #dc3545;
+    }
+    
+    .timeline-item.warning::before {
+        background: #ffc107;
+    }
+    
+    /* Progress bar width will be set via JavaScript */
+    .progress-bar {
+        transition: width 0.6s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-heartbeat fa-fw"></i> Gateway Health Monitoring
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'sms_gateway:dashboard' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-tachometer-alt fa-fw"></i> Dashboard
+            </a>
+            <a href="{% url 'sms_gateway:gateway_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-server fa-fw"></i> Gateways
+            </a>
+        </div>
+    </div>
+
+    <!-- Overall Health Summary -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="health-card text-center">
+                <div class="metric-value">{{ overall_health }}%</div>
+                <div class="metric-label">Overall Health</div>
+                <div class="mt-2">
+                    <span class="health-status status-{% if overall_health >= 80 %}healthy{% elif overall_health >= 60 %}warning{% else %}critical{% endif %}">
+                        {% if overall_health >= 80 %}Healthy{% elif overall_health >= 60 %}Warning{% else %}Critical{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="health-card text-center">
+                <div class="metric-value">{{ total_gateways }}</div>
+                <div class="metric-label">Total Gateways</div>
+                <div class="mt-2">
+                    <small class="text-muted">Configured</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="health-card text-center">
+                <div class="metric-value">{{ healthy_gateways }}</div>
+                <div class="metric-label">Healthy Gateways</div>
+                <div class="mt-2">
+                    <small class="text-muted">Active & Responding</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="health-card text-center">
+                <div class="metric-value">{{ total_gateways|add:"-"|add:healthy_gateways }}</div>
+                <div class="metric-label">Issues Detected</div>
+                <div class="mt-2">
+                    <small class="text-muted">Requires Attention</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gateway Health Details -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="health-section">
+                <h6><i class="fas fa-server"></i> Gateway Health Status</h6>
+                {% for gateway in gateways %}
+                <div class="health-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <h6 class="mb-1">{{ gateway.name }}</h6>
+                            <small class="text-muted">{{ gateway.gateway_type }}</small>
+                            <br>
+                            <span class="health-status status-{% if gateway.is_healthy %}healthy{% elif gateway.is_active %}warning{% else %}inactive{% endif %}">
+                                {% if gateway.is_healthy %}Healthy{% elif gateway.is_active %}Warning{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="metric-value">{{ gateway.test_count|default:0 }}</div>
+                                    <div class="metric-label">Tests</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-value">{{ gateway.message_count|default:0 }}</div>
+                                    <div class="metric-label">Messages</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            {% if gateway.avg_response_time %}
+                            <div class="text-center">
+                                <div class="response-time">{{ gateway.avg_response_time|floatformat:2 }}s</div>
+                                <div class="metric-label">Avg Response</div>
+                            </div>
+                            {% else %}
+                            <div class="text-center">
+                                <div class="text-muted">No data</div>
+                                <div class="metric-label">Response Time</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if gateway.success_rate is not None %}
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Success Rate</span>
+                            <span class="font-weight-bold">{{ gateway.success_rate|floatformat:1 }}%</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 8px;">
+                            <div class="progress-bar {% if gateway.success_rate >= 80 %}bg-success{% elif gateway.success_rate >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                 data-width="{{ gateway.success_rate }}"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-server fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No gateways configured</h5>
+                    <p class="text-muted">Configure your first SMS gateway to start monitoring.</p>
+                    <a href="{% url 'sms_gateway:gateway_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Gateway
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Recent Health Records -->
+            <div class="health-section">
+                <h6><i class="fas fa-history"></i> Recent Health Records</h6>
+                <div class="health-timeline">
+                    {% for record in health_records %}
+                    <div class="timeline-item {% if record.status == 'success' %}success{% elif record.status == 'failed' %}error{% else %}warning{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ record.gateway.name }}</strong>
+                                <br><small class="text-muted">{{ record.get_status_display }}</small>
+                                {% if record.details %}
+                                <br><small class="text-muted">{{ record.details|truncatechars:50 }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="text-right">
+                                <small class="text-muted">{{ record.recorded_at|date:"M d, H:i" }}</small>
+                                {% if record.response_time %}
+                                <br><span class="response-time">{{ record.response_time|floatformat:2 }}s</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No health records yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Monitoring Actions -->
+    <div class="health-section">
+        <h6><i class="fas fa-tools"></i> Health Monitoring Actions</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="health-card">
+                    <h6><i class="fas fa-sync"></i> Manual Health Check</h6>
+                    <p class="text-muted">Run a manual health check on all active gateways to verify their current status.</p>
+                    <button class="btn btn-primary" id="runHealthCheck" disabled title="Health check functionality not implemented yet">
+                        <i class="fas fa-play"></i> Run Health Check
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="health-card">
+                    <h6><i class="fas fa-chart-line"></i> Health Reports</h6>
+                    <p class="text-muted">Generate detailed health reports and export them for analysis.</p>
+                    <button class="btn btn-secondary" id="generateReport" disabled title="Report generation not implemented yet">
+                        <i class="fas fa-download"></i> Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Configuration -->
+    <div class="health-section">
+        <h6><i class="fas fa-cog"></i> Health Monitoring Configuration</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="health-card">
+                    <h6>Monitoring Settings</h6>
+                    <div class="form-group">
+                        <label>Health Check Interval</label>
+                        <select class="form-control" disabled>
+                            <option>Every 5 minutes</option>
+                            <option>Every 15 minutes</option>
+                            <option>Every hour</option>
+                        </select>
+                        <small class="text-muted">Currently using default interval</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="health-card">
+                    <h6>Alert Settings</h6>
+                    <div class="form-group">
+                        <label>Alert Thresholds</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control" placeholder="Warning %" disabled>
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" placeholder="Critical %" disabled>
+                            </div>
+                        </div>
+                        <small class="text-muted">Configure when to send alerts</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any interactive functionality here
+    console.log('Gateway health monitoring page loaded');
+    
+    // Set progress bar widths from data attributes
+    const progressBars = document.querySelectorAll('.progress-bar[data-width]');
+    progressBars.forEach(bar => {
+        const width = bar.getAttribute('data-width');
+        if (width) {
+            bar.style.width = width + '%';
+        }
+    });
+    
+    // Example: Auto-refresh health data every 30 seconds
+    // setInterval(function() {
+    //     location.reload();
+    // }, 30000);
+});
+</script>
+{% endblock %}

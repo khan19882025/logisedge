@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} Freight Quotation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'freight_quotation/css/quotation.css' %}">
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid #007bff;
+    }
+    .form-section h5 {
+        color: #495057;
+        margin-bottom: 1rem;
+    }
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    .charge-row {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .charge-total {
+        font-weight: bold;
+        color: #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-invoice-dollar me-2"></i>
+            {% if form.instance.pk %}Edit{% else %}New{% endif %} Freight Quotation
+        </h1>
+        <div>
+            <a href="{% url 'freight_quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <form method="post" id="quotation-form">
+        {% csrf_token %}
+        
+        <!-- Basic Information Section -->
+        <div class="form-section">
+            <h5><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.customer.id_for_label }}" class="form-label required-field">
+                            Customer
+                        </label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.customer.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Select the customer for this quotation</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.quotation_date.id_for_label }}" class="form-label">
+                            Quotation Date
+                        </label>
+                        {{ form.quotation_date }}
+                        {% if form.quotation_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.quotation_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Date when quotation is prepared</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.validity_date.id_for_label }}" class="form-label required-field">
+                            Validity Date
+                        </label>
+                        {{ form.validity_date }}
+                        {% if form.validity_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.validity_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Until when this quotation is valid</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transport Details Section -->
+        <div class="form-section">
+            <h5><i class="fas fa-truck me-2"></i>Transport Details</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="{{ form.mode_of_transport.id_for_label }}" class="form-label required-field">
+                            Mode of Transport
+                        </label>
+                        {{ form.mode_of_transport }}
+                        {% if form.mode_of_transport.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.mode_of_transport.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Select transportation mode</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.origin.id_for_label }}" class="form-label required-field">
+                            Origin
+                        </label>
+                        {{ form.origin }}
+                        {% if form.origin.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.origin.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Shipment origin location</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.destination.id_for_label }}" class="form-label required-field">
+                            Destination
+                        </label>
+                        {{ form.destination }}
+                        {% if form.destination.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.destination.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Shipment destination location</div>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="form-group">
+                        <label for="{{ form.transit_time_estimate.id_for_label }}" class="form-label">
+                            Transit Time
+                        </label>
+                        {{ form.transit_time_estimate }}
+                        {% if form.transit_time_estimate.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.transit_time_estimate.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Estimated transit time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cargo Details Section -->
+        <div class="form-section">
+            <h5><i class="fas fa-box me-2"></i>Cargo Details</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="{{ form.cargo_type.id_for_label }}" class="form-label required-field">
+                            Cargo Type
+                        </label>
+                        {{ form.cargo_type }}
+                        {% if form.cargo_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cargo_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Type of cargo being shipped</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="{{ form.cargo_details.id_for_label }}" class="form-label required-field">
+                            Cargo Details
+                        </label>
+                        {{ form.cargo_details }}
+                        {% if form.cargo_details.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cargo_details.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Detailed description of the cargo</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.weight.id_for_label }}" class="form-label">
+                            Weight (kg)
+                        </label>
+                        {{ form.weight }}
+                        {% if form.weight.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.weight.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Total weight in kilograms</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.volume.id_for_label }}" class="form-label">
+                            Volume (CBM)
+                        </label>
+                        {{ form.volume }}
+                        {% if form.volume.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.volume.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Total volume in cubic meters</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="{{ form.packages.id_for_label }}" class="form-label">
+                            Number of Packages
+                        </label>
+                        {{ form.packages }}
+                        {% if form.packages.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.packages.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Total number of packages</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Section -->
+        <div class="form-section">
+            <h5><i class="fas fa-file-contract me-2"></i>Terms and Conditions</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="{{ form.incoterm.id_for_label }}" class="form-label">
+                            Incoterm
+                        </label>
+                        {{ form.incoterm }}
+                        {% if form.incoterm.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.incoterm.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">International commercial terms (optional)</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="{{ form.currency.id_for_label }}" class="form-label required-field">
+                            Currency
+                        </label>
+                        {{ form.currency }}
+                        {% if form.currency.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.currency.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">Currency for pricing</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="{{ form.vat_percentage.id_for_label }}" class="form-label">
+                            VAT Percentage
+                        </label>
+                        {{ form.vat_percentage }}
+                        {% if form.vat_percentage.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.vat_percentage.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="help-text">VAT percentage to be applied</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ form.remarks.id_for_label }}" class="form-label">
+                    Remarks / Special Instructions
+                </label>
+                {{ form.remarks }}
+                {% if form.remarks.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.remarks.errors.0 }}
+                    </div>
+                {% endif %}
+                <div class="help-text">Additional remarks or special instructions for the customer</div>
+            </div>
+            <div class="form-group">
+                <label for="{{ form.internal_notes.id_for_label }}" class="form-label">
+                    Internal Notes
+                </label>
+                {{ form.internal_notes }}
+                {% if form.internal_notes.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.internal_notes.errors.0 }}
+                    </div>
+                {% endif %}
+                <div class="help-text">Internal notes (not visible to customer)</div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'freight_quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+            <div>
+                <button type="submit" name="save_draft" value="draft" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-save me-2"></i>Save as Draft
+                </button>
+                <button type="submit" name="save_final" value="final" class="btn btn-primary">
+                    <i class="fas fa-check me-2"></i>
+                    {% if form.instance.pk %}Update{% else %}Create{% endif %} Quotation
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'freight_quotation/js/quotation.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-fill customer details when customer is selected
+    const customerSelect = document.getElementById('{{ form.customer.id_for_label }}');
+    if (customerSelect) {
+        customerSelect.addEventListener('change', function() {
+            const customerId = this.value;
+            if (customerId) {
+                fetch(`/freight-quotation/ajax/customer/${customerId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // You can use customer data here if needed
+                        console.log('Customer details:', data);
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        });
+    }
+
+    // Form validation
+    const form = document.getElementById('quotation-form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('.required-field');
+        let isValid = true;
+
+        requiredFields.forEach(field => {
+            const input = document.getElementById(field.getAttribute('for'));
+            if (!input.value.trim()) {
+                isValid = false;
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+});
+</script>
+{% endblock %} 

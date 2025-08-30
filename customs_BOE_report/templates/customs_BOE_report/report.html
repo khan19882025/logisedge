@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load customs_filters %}
+
+{% block title %}Customs BOE Stock Report{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-responsive {
+        overflow-x: auto;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    .table {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+    }
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+        border: 1px solid #dee2e6;
+        padding: 12px 8px;
+        font-size: 0.85rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .table td {
+        vertical-align: middle;
+        white-space: nowrap;
+        border: 1px solid #dee2e6;
+        padding: 10px 8px;
+        font-size: 0.85rem;
+    }
+    .table tbody tr:hover {
+        background-color: #f5f5f5;
+        transition: background-color 0.2s ease;
+    }
+    .numeric {
+        text-align: right;
+        font-family: 'Courier New', monospace;
+        font-weight: 500;
+    }
+    .section-header {
+        background-color: #e9ecef !important;
+        font-weight: bold;
+        color: #495057 !important;
+        border-bottom: 2px solid #007bff !important;
+    }
+    .sub-header {
+        background-color: #f1f3f4 !important;
+        font-size: 0.8rem;
+        color: #6c757d !important;
+    }
+    .export-buttons {
+        margin-bottom: 20px;
+    }
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .company-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .card {
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    .card-header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 15px 20px;
+    }
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0,123,255,0.05);
+    }
+    .table-striped tbody tr:nth-of-type(even) {
+        background-color: #ffffff;
+    }
+    /* Column width optimization */
+    .table th:nth-child(1), .table td:nth-child(1) { width: 3%; }
+    .table th:nth-child(2), .table td:nth-child(2) { width: 8%; }
+    .table th:nth-child(3), .table td:nth-child(3) { width: 8%; }
+    .table th:nth-child(4), .table td:nth-child(4) { width: 6%; }
+    .table th:nth-child(5), .table td:nth-child(5) { width: 6%; }
+    .table th:nth-child(6), .table td:nth-child(6) { width: 15%; }
+    .table th:nth-child(7), .table td:nth-child(7) { width: 4%; }
+    .table th:nth-child(8), .table td:nth-child(8) { width: 6%; }
+    /* Numeric columns */
+    .table th:nth-child(n+9), .table td:nth-child(n+9) { width: 4%; }
+    
+    /* Badge styling */
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .table {
+            font-size: 0.8rem;
+        }
+        .table th, .table td {
+            padding: 8px 4px;
+        }
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.25em 0.5em;
+        }
+    }
+    
+    /* Loading animation */
+    .table tbody tr {
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Highlight important values */
+    .text-danger {
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Company Header -->
+    <div class="company-header">
+        <h4>CODE NO: AE-1153161 | COMPANY NAME: ADIRAI FREIGHT SERVICES LLC</h4>
+        <p class="mb-0">DETAILS OF TRANSACTION FROM {{ date_range }}</p>
+    </div>
+
+    <!-- Page Header -->
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-warehouse"></i> Customs BOE Stock Report
+            </h2>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <form method="GET" class="row align-items-end">
+            <div class="col-md-2">
+                <label for="filter" class="form-label"><strong>Filter Type:</strong></label>
+                <select name="filter" id="filter" class="form-select">
+                    <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All BOE</option>
+                    <option value="in_boe" {% if filter_type == 'in_boe' %}selected{% endif %}>In BOE</option>
+                    <option value="out_boe" {% if filter_type == 'out_boe' %}selected{% endif %}>Out BOE</option>
+                    <option value="balance_boe" {% if filter_type == 'balance_boe' %}selected{% endif %}>Balance BOE</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="declaration_no" class="form-label"><strong>Declaration No:</strong></label>
+                <input type="text" name="declaration_no" id="declaration_no" class="form-control" placeholder="Enter Declaration No" value="{{ declaration_no }}">
+            </div>
+            <div class="col-md-2">
+                <label for="hs_code" class="form-label"><strong>HS CODE:</strong></label>
+                <input type="text" name="hs_code" id="hs_code" class="form-control" placeholder="Enter HS Code" value="{{ hs_code }}">
+            </div>
+            <div class="col-md-2">
+                <label for="particulars" class="form-label"><strong>PARTICULARS:</strong></label>
+                <input type="text" name="particulars" id="particulars" class="form-control" placeholder="Enter Particulars" value="{{ particulars }}">
+            </div>
+            <div class="col-md-2">
+                <label for="cog" class="form-label"><strong>COG:</strong></label>
+                <input type="text" name="cog" id="cog" class="form-control" placeholder="Enter COG" value="{{ cog }}">
+            </div>
+        </form>
+        
+        <!-- Second row for date filters and buttons -->
+        <form method="GET" class="row align-items-end mt-3">
+            <!-- Hidden fields to preserve other filters -->
+            <input type="hidden" name="filter" value="{{ filter_type }}">
+            <input type="hidden" name="declaration_no" value="{{ declaration_no }}">
+            <input type="hidden" name="hs_code" value="{{ hs_code }}">
+            <input type="hidden" name="particulars" value="{{ particulars }}">
+            <input type="hidden" name="cog" value="{{ cog }}">
+            
+            <div class="col-md-2">
+                <label for="from_date" class="form-label"><strong>From Date:</strong></label>
+                <input type="date" name="from_date" id="from_date" class="form-control" value="{{ from_date }}">
+            </div>
+            <div class="col-md-2">
+                <label for="to_date" class="form-label"><strong>To Date:</strong></label>
+                <input type="date" name="to_date" id="to_date" class="form-control" value="{{ to_date }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Apply Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'customs_BOE_report:report' %}" class="btn btn-secondary w-100">
+                    <i class="fas fa-times"></i> Clear Filters
+                </a>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-success mb-0">
+                    <strong>Total Records:</strong> {{ total_transactions }}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="export-buttons">
+        <div class="row">
+            <div class="col-12">
+                <a href="#" id="excel-export" class="btn btn-success me-2">
+                    <i class="fas fa-file-excel"></i> Export to Excel
+                </a>
+                <a href="#" id="pdf-export" class="btn btn-danger">
+                    <i class="fas fa-file-pdf"></i> Export to PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table"></i> BOE Transactions
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="section-header">S.No</th>
+                                    <th class="section-header">Declaration No</th>
+                                    <th class="section-header">BILL NOS</th>
+                                    <th class="section-header">DATE</th>
+                                    <th class="section-header">HS CODE</th>
+                                    <th class="section-header">PARTICULARS</th>
+                                    <th class="section-header">COG</th>
+                                    <th class="section-header">PKG_TYPE</th>
+                                    <th colspan="3" class="text-center section-header">📥 Total Transaction Goods In</th>
+                                    <th colspan="3" class="text-center section-header">📤 Total Transaction Goods Out</th>
+                                    <th colspan="3" class="text-center section-header">📦 Available Stock</th>
+                                    <th colspan="3" class="text-center section-header">⚖️ Balance</th>
+                                    <th class="section-header">DUTY @5%</th>
+                                    <th class="section-header">TOTAL DUES</th>
+                                </tr>
+                                <tr>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header"></th>
+                                    <th class="sub-header">QTY</th>
+                                    <th class="sub-header">WT (KG)</th>
+                                    <th class="sub-header">VALUE (AED)</th>
+                                    <th class="sub-header">QTY</th>
+                                    <th class="sub-header">WT (KG)</th>
+                                    <th class="sub-header">VALUE (AED)</th>
+                                    <th class="sub-header">QTY</th>
+                                    <th class="sub-header">WT (KG)</th>
+                                    <th class="sub-header">VALUE (AED)</th>
+                                    <th class="sub-header">QTY</th>
+                                    <th class="sub-header">WT (KG)</th>
+                                    <th class="sub-header">VALUE (AED)</th>
+                                    <th class="sub-header">%</th>
+                                    <th class="sub-header">AED</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                <tr class="{% if transaction.date|date:'Y-m-d' == today|date:'Y-m-d' %}table-warning{% endif %}">
+                                    <td class="text-center"><span class="badge bg-primary">{{ forloop.counter }}</span></td>
+                                    <td><strong>{{ transaction.declaration_no|default:"-" }}</strong></td>
+                                    <td><strong>{{ transaction.bill_no|default:"-" }}</strong></td>
+                                    <td class="text-center">{{ transaction.date|date:"d/m/Y"|default:"-" }}</td>
+                                    <td class="text-center">{{ transaction.hs_code|default:"-" }}</td>
+                                    <td>{{ transaction.particulars|default:"-" }}</td>
+                                    <td class="text-center">{{ transaction.cog|default:"-" }}</td>
+                                    <td class="text-center">{{ transaction.pkg_type|default:"-" }}</td>
+                                    <td class="numeric">{% if transaction.qty_in %}{{ transaction.qty_in|floatformat:0 }}{% else %}-{% endif %}</td>
+                                    <td class="numeric">{% if transaction.wt_in %}{{ transaction.wt_in|floatformat:2 }}{% else %}-{% endif %}</td>
+                                    <td class="numeric">{% if transaction.value_in %}{{ transaction.value_in|floatformat:2 }}{% else %}-{% endif %}</td>
+                                    <td class="numeric">{% if transaction.qty_out %}{{ transaction.qty_out|floatformat:0 }}{% else %}-{% endif %}</td>
+                                    <td class="numeric">{% if transaction.wt_out %}{{ transaction.wt_out|floatformat:2 }}{% else %}-{% endif %}</td>
+                                    <td class="numeric">{% if transaction.value_out %}{{ transaction.value_out|floatformat:2 }}{% else %}-{% endif %}</td>
+                                    <td class="numeric"><span class="badge bg-success">{{ transaction.qty_in|subtract:transaction.qty_out|floatformat:0 }}</span></td>
+                                    <td class="numeric"><span class="badge bg-success">{{ transaction.wt_in|subtract:transaction.wt_out|floatformat:2 }}</span></td>
+                                    <td class="numeric"><span class="badge bg-success">{{ transaction.value_in|subtract:transaction.value_out|floatformat:2 }}</span></td>
+                                    <td class="numeric"><span class="badge bg-info">{{ transaction.qty_in|subtract:transaction.qty_out|floatformat:0 }}</span></td>
+                                    <td class="numeric"><span class="badge bg-info">{{ transaction.wt_in|subtract:transaction.wt_out|floatformat:2 }}</span></td>
+                                    <td class="numeric"><span class="badge bg-info">{{ transaction.value_in|subtract:transaction.value_out|floatformat:2 }}</span></td>
+                                    <td class="numeric"><span class="badge bg-warning text-dark">{{ transaction.duty|calculate_percentage:transaction.value_in|floatformat:2 }}%</span></td>
+                                    <td class="numeric"><strong class="text-danger">{{ transaction.total_dues|floatformat:2 }}</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="22" class="text-center py-5">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle me-2"></i> 
+                                            <strong>No BOE transactions found for the selected filter.</strong>
+                                            <br><small class="text-muted">Try changing the filter or check if data exists for the selected criteria.</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update export URLs with current filter values
+    function updateExportUrls() {
+        const filter = document.getElementById('filter').value;
+        const fromDate = document.getElementById('from_date').value;
+        const toDate = document.getElementById('to_date').value;
+        const declarationNo = document.getElementById('declaration_no').value;
+        const hsCode = document.getElementById('hs_code').value;
+        const particulars = document.getElementById('particulars').value;
+        const cog = document.getElementById('cog').value;
+        
+        let params = new URLSearchParams();
+        params.append('filter', filter);
+        if (fromDate) params.append('from_date', fromDate);
+        if (toDate) params.append('to_date', toDate);
+        if (declarationNo) params.append('declaration_no', declarationNo);
+        if (hsCode) params.append('hs_code', hsCode);
+        if (particulars) params.append('particulars', particulars);
+        if (cog) params.append('cog', cog);
+        
+        const queryString = params.toString();
+        
+        document.getElementById('excel-export').href = "{% url 'customs_BOE_report:export_excel' %}?" + queryString;
+        document.getElementById('pdf-export').href = "{% url 'customs_BOE_report:export_pdf' %}?" + queryString;
+    }
+    
+    // Update URLs on page load and when form changes
+    document.addEventListener('DOMContentLoaded', function() {
+        updateExportUrls();
+        
+        // Update URLs when form fields change
+        document.getElementById('filter').addEventListener('change', updateExportUrls);
+        document.getElementById('from_date').addEventListener('change', updateExportUrls);
+        document.getElementById('to_date').addEventListener('change', updateExportUrls);
+        document.getElementById('declaration_no').addEventListener('input', updateExportUrls);
+        document.getElementById('hs_code').addEventListener('input', updateExportUrls);
+        document.getElementById('particulars').addEventListener('input', updateExportUrls);
+        document.getElementById('cog').addEventListener('input', updateExportUrls);
+    });
+    
+    // Handle form submission to combine all filters
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Collect all filter values
+                const filter = document.getElementById('filter').value;
+                const fromDate = document.getElementById('from_date').value;
+                const toDate = document.getElementById('to_date').value;
+                const declarationNo = document.getElementById('declaration_no').value;
+                const hsCode = document.getElementById('hs_code').value;
+                const particulars = document.getElementById('particulars').value;
+                const cog = document.getElementById('cog').value;
+                
+                // Build URL with all parameters
+                let params = new URLSearchParams();
+                if (filter) params.append('filter', filter);
+                if (fromDate) params.append('from_date', fromDate);
+                if (toDate) params.append('to_date', toDate);
+                if (declarationNo) params.append('declaration_no', declarationNo);
+                if (hsCode) params.append('hs_code', hsCode);
+                if (particulars) params.append('particulars', particulars);
+                if (cog) params.append('cog', cog);
+                
+                // Redirect with all parameters
+                window.location.href = window.location.pathname + '?' + params.toString();
+            });
+        });
+    });
+</script>
+{% endblock %}

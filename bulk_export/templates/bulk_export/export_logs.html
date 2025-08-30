@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Export Logs{% endblock %}
+
+{% block extra_css %}
+<style>
+    .logs-container {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .export-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-completed { background-color: #d4edda; color: #155724; }
+    .status-processing { background-color: #fff3cd; color: #856404; }
+    .status-failed { background-color: #f8d7da; color: #721c24; }
+    
+    .export-type-badge {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .format-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .pagination .page-link {
+        border-radius: 8px;
+        margin: 0 2px;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Export Logs
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'bulk_export:dashboard' %}">Bulk Export</a></li>
+                        <li class="breadcrumb-item active">Export Logs</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="logs-container">
+                {% if export_logs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Export Type</th>
+                                    <th>Format</th>
+                                    <th>Filename</th>
+                                    <th>Records</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for export in export_logs %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary export-type-badge">
+                                            {{ export.export_type|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary format-badge">
+                                            {{ export.export_format|upper }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ export.filename }}">
+                                            {{ export.filename }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ export.records_exported }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="export-status status-{{ export.status }}">
+                                            {{ export.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ export.created_at|date:"M d, Y H:i" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if export.duration %}
+                                            <small class="text-muted">
+                                                {{ export.duration|floatformat:1 }}s
+                                            </small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'bulk_export:export_log_detail' export.pk %}" 
+                                               class="btn btn-sm btn-outline-info" 
+                                               title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if export.status == 'completed' %}
+                                                <button class="btn btn-sm btn-outline-success" 
+                                                        title="Download File"
+                                                        onclick="downloadFile('{{ export.filename }}', '{{ export.export_format }}')">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="Export logs pagination" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        
+                        <div class="text-center text-muted mt-2">
+                            <small>
+                                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} exports
+                            </small>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No export logs found</h5>
+                        <p class="text-muted">Start by creating your first export from the dashboard.</p>
+                        <a href="{% url 'bulk_export:dashboard' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Go to Dashboard
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function downloadFile(filename, format) {
+        // This function would handle file download
+        // In a real implementation, you might redirect to a download URL
+        // or trigger a download through AJAX
+        alert(`Download functionality for ${filename} would be implemented here.`);
+    }
+    
+    // Auto-refresh the page every 30 seconds to show latest export status
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}

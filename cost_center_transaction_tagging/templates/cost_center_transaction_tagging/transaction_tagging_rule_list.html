@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transaction Tagging Rules - Cost Center Transaction Tagging{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_transaction_tagging/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cogs mr-2"></i>Transaction Tagging Rules
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_rule_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus mr-1"></i>Add Rule
+            </a>
+            <a href="{% url 'cost_center_transaction_tagging:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Rules Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Tagging Rules ({{ total_count }} rules)</h6>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown" data-toggle="dropdown">
+                    <i class="fas fa-download mr-1"></i>Export
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel mr-1"></i>Excel
+                    </a>
+                    <a class="dropdown-item" href="#" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf mr-1"></i>PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if transaction_tagging_rules %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="rulesTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Rule Name</th>
+                            <th>Rule Type</th>
+                            <th>Transaction Type</th>
+                            <th>Cost Center</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in transaction_tagging_rules %}
+                        <tr>
+                            <td>
+                                <strong>{{ rule.rule_name }}</strong>
+                                {% if rule.account_type %}
+                                <br>
+                                <small class="text-muted">Account: {{ rule.account_type }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-{% if rule.rule_type == 'mandatory' %}danger{% elif rule.rule_type == 'default' %}warning{% elif rule.rule_type == 'conditional' %}info{% else %}secondary{% endif %}">
+                                    {{ rule.get_rule_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge badge-{% if rule.transaction_type == 'journal_entry' %}primary{% elif rule.transaction_type == 'purchase_invoice' %}warning{% elif rule.transaction_type == 'sales_invoice' %}success{% elif rule.transaction_type == 'expense_claim' %}danger{% elif rule.transaction_type == 'payment' %}info{% else %}secondary{% endif %}">
+                                    {{ rule.get_transaction_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'cost_center_management:cost_center_detail' rule.cost_center.pk %}">
+                                    {{ rule.cost_center.code }} - {{ rule.cost_center.name }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge badge-secondary">{{ rule.priority }}</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-{% if rule.is_active %}success{% else %}secondary{% endif %}">
+                                    {% if rule.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td>{{ rule.created_by|default:"System" }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_rule_update' rule.pk %}" 
+                                       class="btn btn-sm btn-primary" data-toggle="tooltip" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            onclick="deleteRule('{{ rule.pk }}', '{{ rule.rule_name }}')"
+                                            data-toggle="tooltip" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No tagging rules found</h5>
+                <p class="text-muted">No transaction tagging rules have been created yet.</p>
+                <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_rule_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus mr-1"></i>Create First Rule
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteRuleModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the rule <strong id="ruleName"></strong>?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <form method="post" id="deleteRuleForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_transaction_tagging/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Initialize DataTable
+    $('#rulesTable').DataTable({
+        "pageLength": 25,
+        "order": [[4, "asc"], [0, "asc"]], // Sort by priority ascending, then rule name
+        "language": {
+            "search": "Search rules:",
+            "lengthMenu": "Show _MENU_ rules per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ rules"
+        }
+    });
+});
+
+function deleteRule(ruleId, ruleName) {
+    $('#ruleName').text(ruleName);
+    $('#deleteRuleForm').attr('action', `/accounting/assign-transactions/rules/${ruleId}/delete/`);
+    $('#deleteRuleModal').modal('show');
+}
+
+function exportToExcel() {
+    // Implementation for Excel export
+    alert('Excel export functionality will be implemented here.');
+}
+
+function exportToPDF() {
+    // Implementation for PDF export
+    alert('PDF export functionality will be implemented here.');
+}
+</script>
+{% endblock %}

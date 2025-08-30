@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ bank_account.bank_name }} - Transactions{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_accounts/css/bank_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="bank-accounts-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-exchange-alt"></i> Transactions</h2>
+                <p class="subtitle">
+                    {{ bank_account.bank_name }} - {{ bank_account.masked_account_number }}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'bank_accounts:bank_account_add_transaction' bank_account.pk %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Transaction
+                </a>
+                <a href="{% url 'bank_accounts:bank_account_detail' bank_account.pk %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Account
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Summary -->
+    <div class="account-summary-section">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ bank_account.balance_formatted }}</div>
+                        <div class="summary-label">Current Balance</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-arrow-up text-success"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ bank_account.currency.symbol }} {{ total_credits|default:0|floatformat:2 }}</div>
+                        <div class="summary-label">Total Credits</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-arrow-down text-danger"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ bank_account.currency.symbol }} {{ total_debits|default:0|floatformat:2 }}</div>
+                        <div class="summary-label">Total Debits</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ page_obj.paginator.count }}</div>
+                        <div class="summary-label">Total Transactions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="transactions-table-section">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Transaction History</h5>
+            </div>
+            <div class="card-body">
+                {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Description</th>
+                                    <th>Reference</th>
+                                    <th>Balance Before</th>
+                                    <th>Balance After</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="transaction-date">
+                                                <div class="date-main">{{ transaction.transaction_date|date:"M d, Y" }}</div>
+                                                <div class="date-time">{{ transaction.created_at|date:"H:i" }}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if transaction.transaction_type == 'credit' %}success{% else %}danger{% endif %}">
+                                                <i class="fas fa-{% if transaction.transaction_type == 'credit' %}arrow-up{% else %}arrow-down{% endif %}"></i>
+                                                {{ transaction.get_transaction_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="transaction-amount">
+                                                <span class="amount-value {% if transaction.transaction_type == 'credit' %}text-success{% else %}text-danger{% endif %}">
+                                                    {{ bank_account.currency.symbol }} {{ transaction.amount|floatformat:2 }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="transaction-description">
+                                                {{ transaction.description|truncatechars:50 }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="transaction-reference">
+                                                {{ transaction.reference_number|default:"-" }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="balance-info">
+                                                {{ bank_account.currency.symbol }} {{ transaction.balance_before|floatformat:2 }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="balance-info">
+                                                <strong>{{ bank_account.currency.symbol }} {{ transaction.balance_after|floatformat:2 }}</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                                        title="View Details" onclick="viewTransactionDetails('{{ transaction.pk }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                        <nav aria-label="Transactions pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-exchange-alt"></i>
+                        <h5>No Transactions Found</h5>
+                        <p>No transactions have been recorded for this account yet.</p>
+                        <a href="{% url 'bank_accounts:bank_account_add_transaction' bank_account.pk %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add First Transaction
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transactionModalLabel">Transaction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="transactionModalBody">
+                <!-- Transaction details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_accounts/js/bank_accounts.js' %}"></script>
+<script>
+function viewTransactionDetails(transactionId) {
+    // Load transaction details via AJAX
+    $.ajax({
+        url: '/bank-accounts/ajax/transaction-details/' + transactionId + '/',
+        method: 'GET',
+        success: function(data) {
+            $('#transactionModalBody').html(data);
+            var transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'));
+            transactionModal.show();
+        },
+        error: function() {
+            showAlert('Failed to load transaction details.', 'danger');
+        }
+    });
+}
+
+// Auto-refresh transactions every 30 seconds
+setInterval(function() {
+    // Only refresh if user is on this page and not interacting
+    if (document.visibilityState === 'visible') {
+        location.reload();
+    }
+}, 30000);
+</script>
+{% endblock %} 

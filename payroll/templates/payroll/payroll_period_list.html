@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payroll Periods - Payroll Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/payroll/payroll.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h2><i class="bi bi-calendar-range me-2"></i>Payroll Periods</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'payroll:dashboard' %}">Payroll Dashboard</a></li>
+                        <li class="breadcrumb-item active">Payroll Periods</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Payroll Periods</h5>
+                    <a href="{% url 'payroll:payroll_period_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create Period
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if payroll_periods %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Period Name</th>
+                                        <th>Period Type</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Pay Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for period in payroll_periods %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ period.period_name }}</strong>
+                                            {% if period.is_active %}
+                                                <span class="badge bg-success ms-2">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ period.get_period_type_display }}</td>
+                                        <td>{{ period.start_date|date:"M d, Y" }}</td>
+                                        <td>{{ period.end_date|date:"M d, Y" }}</td>
+                                        <td>{{ period.pay_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% if period.status == 'draft' %}
+                                                <span class="badge bg-warning">Draft</span>
+                                            {% elif period.status == 'processing' %}
+                                                <span class="badge bg-info">Processing</span>
+                                            {% elif period.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif period.status == 'closed' %}
+                                                <span class="badge bg-danger">Closed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'payroll:payroll_process' period.id %}" 
+                                                   class="btn btn-sm btn-outline-primary" 
+                                                   title="Process Payroll">
+                                                    <i class="bi bi-gear"></i>
+                                                </a>
+                                                <a href="{% url 'payroll:payroll_record_list' period.id %}" 
+                                                   class="btn btn-sm btn-outline-info" 
+                                                   title="View Records">
+                                                    <i class="bi bi-list-ul"></i>
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                        data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#">
+                                                            <i class="bi bi-pencil me-2"></i>Edit
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#">
+                                                            <i class="bi bi-file-earmark-text me-2"></i>Generate Report
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a class="dropdown-item text-danger" href="#">
+                                                            <i class="bi bi-trash me-2"></i>Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-calendar-x display-1 text-muted"></i>
+                            <h4 class="mt-3">No Payroll Periods Found</h4>
+                            <p class="text-muted">Create your first payroll period to get started.</p>
+                            <a href="{% url 'payroll:payroll_period_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Create First Period
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/payroll/payroll.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize data table
+    initializeDataTable();
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %} 

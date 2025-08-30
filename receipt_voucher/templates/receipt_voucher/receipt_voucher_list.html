@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Receipt Vouchers - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'receipt_voucher/css/receipt_voucher.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="receipt-voucher-container">
+    <!-- Header Section -->
+    <div class="receipt-voucher-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Receipt Vouchers</h2>
+            <div>
+                <a href="{% url 'receipt_voucher:receipt_voucher_dashboard' %}" class="btn btn-outline">
+                    <i class="fas fa-chart-bar"></i> Dashboard
+                </a>
+                <a href="{% url 'receipt_voucher:receipt_voucher_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Receipt Voucher
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>{{ total_vouchers }}</h3>
+                <p>Total Vouchers</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ total_amount|floatformat:2 }}</h3>
+                <p>Total Amount</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ draft_count }}</h3>
+                <p>Draft</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ approved_count }}</h3>
+                <p>Approved</p>
+            </div>
+            <div class="stat-card">
+                <h3>{{ received_count }}</h3>
+                <p>Received</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-filter-section">
+        <h3>Search & Filter</h3>
+        <form method="get" class="search-filter-grid">
+            <div class="form-group">
+                <label for="{{ search_form.search_field.id_for_label }}">Search Field</label>
+                {{ search_form.search_field }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.search_query.id_for_label }}">Search Query</label>
+                {{ search_form.search_query }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.status.id_for_label }}">Status</label>
+                {{ search_form.status }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.receipt_mode.id_for_label }}">Receipt Mode</label>
+                {{ search_form.receipt_mode }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.payer_type.id_for_label }}">Payer Type</label>
+                {{ search_form.payer_type }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.currency.id_for_label }}">Currency</label>
+                {{ search_form.currency }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.date_from.id_for_label }}">Date From</label>
+                {{ search_form.date_from }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.date_to.id_for_label }}">Date To</label>
+                {{ search_form.date_to }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.amount_min.id_for_label }}">Min Amount</label>
+                {{ search_form.amount_min }}
+            </div>
+            <div class="form-group">
+                <label for="{{ search_form.amount_max.id_for_label }}">Max Amount</label>
+                {{ search_form.amount_max }}
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{% url 'receipt_voucher:receipt_voucher_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Vouchers List -->
+    <div class="receipt-voucher-card">
+        <h3>Receipt Vouchers ({{ page_obj.paginator.count }})</h3>
+        
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="receipt-voucher-table">
+                <thead>
+                    <tr>
+                        <th>Voucher Number</th>
+                        <th>Date</th>
+                        <th>Payer</th>
+                        <th>Amount</th>
+                        <th>Receipt Mode</th>
+                        <th>Status</th>
+                        <th>Created By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for voucher in page_obj %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'receipt_voucher:receipt_voucher_detail' voucher.pk %}" class="text-primary">
+                                {{ voucher.voucher_number }}
+                            </a>
+                        </td>
+                        <td>{{ voucher.voucher_date|date:"d/m/Y" }}</td>
+                        <td>
+                            <div>
+                                <strong>{{ voucher.payer_name }}</strong>
+                                {% if voucher.payer_code %}
+                                <br><small class="text-muted">{{ voucher.payer_code }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ voucher.currency.code }} {{ voucher.amount|floatformat:2 }}</strong>
+                        </td>
+                        <td>{{ voucher.get_receipt_mode_display }}</td>
+                        <td>
+                            <span class="status-badge status-{{ voucher.status }}">
+                                {{ voucher.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ voucher.created_by.get_full_name }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'receipt_voucher:receipt_voucher_detail' voucher.pk %}" 
+                                   class="btn btn-sm btn-outline" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                
+                                {% if voucher.can_edit %}
+                                <a href="{% url 'receipt_voucher:receipt_voucher_edit' voucher.pk %}" 
+                                   class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                
+                                {% if voucher.can_approve %}
+                                <a href="{% url 'receipt_voucher:receipt_voucher_approve' voucher.pk %}" 
+                                   class="btn btn-sm btn-success" title="Approve">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                {% endif %}
+                                
+                                {% if voucher.can_mark_received %}
+                                <a href="{% url 'receipt_voucher:receipt_voucher_mark_received' voucher.pk %}" 
+                                   class="btn btn-sm btn-primary" title="Mark as Received">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                {% endif %}
+                                
+                                <a href="{% url 'receipt_voucher:receipt_voucher_print' voucher.pk %}" 
+                                   class="btn btn-sm btn-secondary" title="Print" target="_blank">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                
+                                {% if voucher.can_edit %}
+                                <a href="{% url 'receipt_voucher:receipt_voucher_delete' voucher.pk %}" 
+                                   class="btn btn-sm btn-danger delete-btn" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Receipt vouchers pagination" style="margin-top: 30px;">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.receipt_mode %}&receipt_mode={{ request.GET.receipt_mode }}{% endif %}{% if request.GET.payer_type %}&payer_type={{ request.GET.payer_type }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.amount_min %}&amount_min={{ request.GET.amount_min }}{% endif %}{% if request.GET.amount_max %}&amount_max={{ request.GET.amount_max }}{% endif %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.receipt_mode %}&receipt_mode={{ request.GET.receipt_mode }}{% endif %}{% if request.GET.payer_type %}&payer_type={{ request.GET.payer_type }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.amount_min %}&amount_min={{ request.GET.amount_min }}{% endif %}{% if request.GET.amount_max %}&amount_max={{ request.GET.amount_max }}{% endif %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.receipt_mode %}&receipt_mode={{ request.GET.receipt_mode }}{% endif %}{% if request.GET.payer_type %}&payer_type={{ request.GET.payer_type }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.amount_min %}&amount_min={{ request.GET.amount_min }}{% endif %}{% if request.GET.amount_max %}&amount_max={{ request.GET.amount_max }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.receipt_mode %}&receipt_mode={{ request.GET.receipt_mode }}{% endif %}{% if request.GET.payer_type %}&payer_type={{ request.GET.payer_type }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.amount_min %}&amount_min={{ request.GET.amount_min }}{% endif %}{% if request.GET.amount_max %}&amount_max={{ request.GET.amount_max }}{% endif %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.receipt_mode %}&receipt_mode={{ request.GET.receipt_mode }}{% endif %}{% if request.GET.payer_type %}&payer_type={{ request.GET.payer_type }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.amount_min %}&amount_min={{ request.GET.amount_min }}{% endif %}{% if request.GET.amount_max %}&amount_max={{ request.GET.amount_max }}{% endif %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center" style="padding: 50px;">
+            <i class="fas fa-file-invoice-dollar" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+            <h4>No Receipt Vouchers Found</h4>
+            <p class="text-muted">No receipt vouchers match your search criteria.</p>
+            <a href="{% url 'receipt_voucher:receipt_voucher_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Your First Receipt Voucher
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'receipt_voucher/js/receipt_voucher.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'opening_balance/css/opening_balance.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="opening-balance-container">
+    <!-- Header -->
+    <div class="opening-balance-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2><i class="fas fa-balance-scale"></i> {{ title }}</h2>
+                    <p class="subtitle">Manage opening balances for different financial years</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{% url 'opening_balance:opening_balance_create' %}" class="btn btn-light">
+                        <i class="fas fa-plus"></i> Create New
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="opening-balance-content">
+            <!-- Search and Filter Section -->
+            <div class="form-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="search-input" placeholder="Search by financial year...">
+                            <button class="btn btn-outline-secondary" type="button" id="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" id="filter-balanced">
+                                <i class="fas fa-check-circle"></i> Balanced
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" id="filter-unbalanced">
+                                <i class="fas fa-exclamation-triangle"></i> Unbalanced
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Opening Balances Table -->
+            <div class="entry-details-table">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Financial Year</th>
+                            <th>Total Debit</th>
+                            <th>Total Credit</th>
+                            <th>Balance Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for opening_balance in opening_balances %}
+                            <tr class="opening-balance-row" data-year="{{ opening_balance.financial_year.name|lower }}">
+                                <td>
+                                    <strong>{{ opening_balance.financial_year.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ opening_balance.financial_year.start_date|date:"M d, Y" }} - {{ opening_balance.financial_year.end_date|date:"M d, Y" }}</small>
+                                </td>
+                                <td class="text-end">
+                                    <span class="amount-debit">{{ opening_balance.total_debit|floatformat:2 }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="amount-credit">{{ opening_balance.total_credit|floatformat:2 }}</span>
+                                </td>
+                                <td>
+                                    {% if opening_balance.is_balanced %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> Balanced
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> Unbalanced
+                                        </span>
+                                        <br>
+                                        <small class="text-muted">
+                                            Diff: {{ opening_balance.balance_difference|floatformat:2 }}
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ opening_balance.created_at|date:"M d, Y" }}
+                                    <br>
+                                    <small class="text-muted">{{ opening_balance.created_at|time:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'opening_balance:opening_balance_detail' opening_balance.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           data-toggle="tooltip" 
+                                           title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'opening_balance:opening_balance_edit' opening_balance.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary" 
+                                           data-toggle="tooltip" 
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'opening_balance:opening_balance_delete' opening_balance.pk %}" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           data-toggle="tooltip" 
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                                        <h5>No Opening Balances Found</h5>
+                                        <p>Create your first opening balance to get started.</p>
+                                        <a href="{% url 'opening_balance:opening_balance_create' %}" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Create Opening Balance
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Opening balances pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="First">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+
+            <!-- Summary Statistics -->
+            {% if opening_balances %}
+                <div class="form-section mt-4">
+                    <h5><i class="fas fa-chart-bar"></i> Summary</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">Total Records</div>
+                                <div class="balance-amount">{{ page_obj.paginator.count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">Balanced</div>
+                                <div class="balance-amount balanced">
+                                    {% for opening_balance in opening_balances %}
+                                        {% if opening_balance.is_balanced %}
+                                            {{ forloop.counter }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">Unbalanced</div>
+                                <div class="balance-amount unbalanced">
+                                    {% for opening_balance in opening_balances %}
+                                        {% if not opening_balance.is_balanced %}
+                                            {{ forloop.counter }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">This Page</div>
+                                <div class="balance-amount">{{ page_obj|length }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'opening_balance/js/opening_balance.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Search functionality
+    $('#search-btn').on('click', function() {
+        const searchTerm = $('#search-input').val().toLowerCase();
+        filterRows(searchTerm);
+    });
+
+    $('#search-input').on('keyup', function(e) {
+        if (e.key === 'Enter') {
+            const searchTerm = $(this).val().toLowerCase();
+            filterRows(searchTerm);
+        }
+    });
+
+    function filterRows(searchTerm) {
+        $('.opening-balance-row').each(function() {
+            const year = $(this).data('year');
+            if (year.includes(searchTerm)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+
+    // Filter buttons
+    $('#filter-balanced').on('click', function() {
+        $('.opening-balance-row').each(function() {
+            const hasBalancedBadge = $(this).find('.badge.bg-success').length > 0;
+            if (hasBalancedBadge) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+
+    $('#filter-unbalanced').on('click', function() {
+        $('.opening-balance-row').each(function() {
+            const hasUnbalancedBadge = $(this).find('.badge.bg-warning').length > 0;
+            if (hasUnbalancedBadge) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+
+    // Show all rows
+    $('.btn-group .btn').on('click', function() {
+        if (!$(this).attr('id')) {
+            $('.opening-balance-row').show();
+        }
+    });
+
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %} 

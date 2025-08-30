@@ -1,0 +1,640 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ disposal_request.title }} - Dispose Asset{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dispose_asset/css/dispose_asset.css' %}">
+<style>
+    .detail-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-draft {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-pending {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .status-approved {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-completed {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .status-reversed {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .info-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .info-value {
+        color: #6c757d;
+    }
+    
+    .asset-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .asset-table th {
+        background: #f8f9fa;
+        border: none;
+        padding: 15px;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .asset-table td {
+        padding: 15px;
+        border-top: 1px solid #dee2e6;
+        vertical-align: middle;
+    }
+    
+    .asset-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .approval-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .approval-timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #007bff;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px #007bff;
+    }
+    
+    .timeline-item.completed::before {
+        background: #28a745;
+        box-shadow: 0 0 0 2px #28a745;
+    }
+    
+    .timeline-item.rejected::before {
+        background: #dc3545;
+        box-shadow: 0 0 0 2px #dc3545;
+    }
+    
+    .timeline-content {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .timeline-user {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .timeline-date {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .timeline-action {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .action-approved {
+        color: #28a745;
+    }
+    
+    .action-rejected {
+        color: #dc3545;
+    }
+    
+    .action-pending {
+        color: #ffc107;
+    }
+    
+    .btn-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        color: white;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40,167,69,0.3);
+        color: white;
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+    }
+    
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255,193,7,0.3);
+        color: #212529;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(220,53,69,0.3);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        border: none;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+        color: #0c5460;
+    }
+    
+    .alert-warning {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+    }
+    
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        color: #721c24;
+    }
+    
+    .document-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .document-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .document-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .document-icon {
+        color: #007bff;
+        font-size: 1.2rem;
+    }
+    
+    .document-download {
+        color: #28a745;
+        text-decoration: none;
+    }
+    
+    .document-download:hover {
+        color: #1e7e34;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-file-alt text-primary me-2"></i>
+                    Disposal Request Details
+                </h2>
+                <div class="btn-group">
+                    <a href="{% url 'dispose_asset:disposal_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                    {% if can_edit %}
+                        <a href="{% url 'dispose_asset:disposal_edit' disposal_request.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                    {% endif %}
+                    {% if can_submit %}
+                        <form method="post" action="{% url 'dispose_asset:disposal_submit' disposal_request.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-paper-plane me-2"></i>Submit
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if can_approve %}
+                        <a href="{% url 'dispose_asset:disposal_approve' disposal_request.id %}" class="btn btn-primary">
+                            <i class="fas fa-check-circle me-2"></i>Approve/Reject
+                        </a>
+                    {% endif %}
+                    {% if can_execute %}
+                        <form method="post" action="{% url 'dispose_asset:disposal_execute' disposal_request.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-play me-2"></i>Execute
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if can_reverse %}
+                        <a href="{% url 'dispose_asset:disposal_reverse' disposal_request.id %}" class="btn btn-danger">
+                            <i class="fas fa-undo me-2"></i>Reverse
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="detail-container">
+                <!-- Header Information -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <h3 class="mb-2">{{ disposal_request.title }}</h3>
+                        <p class="text-muted mb-0">{{ disposal_request.description|default:"No description provided" }}</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="status-badge status-{{ disposal_request.status }}">
+                            {{ disposal_request.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <h5 class="mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Basic Information
+                            </h5>
+                            <div class="info-row">
+                                <span class="info-label">Request ID:</span>
+                                <span class="info-value">#{{ disposal_request.id }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Disposal Type:</span>
+                                <span class="info-value">{{ disposal_request.disposal_type.name }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Disposal Date:</span>
+                                <span class="info-value">{{ disposal_request.disposal_date }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Batch Disposal:</span>
+                                <span class="info-value">{{ disposal_request.is_batch|yesno:"Yes,No" }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Created By:</span>
+                                <span class="info-value">{{ disposal_request.created_by.get_full_name }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Created Date:</span>
+                                <span class="info-value">{{ disposal_request.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            {% if disposal_request.submitted_at %}
+                            <div class="info-row">
+                                <span class="info-label">Submitted Date:</span>
+                                <span class="info-value">{{ disposal_request.submitted_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Financial Information -->
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <h5 class="mb-3">
+                                <i class="fas fa-dollar-sign me-2"></i>Financial Information
+                            </h5>
+                            <div class="info-row">
+                                <span class="info-label">Total Disposal Value:</span>
+                                <span class="info-value">${{ disposal_request.disposal_value|default:"0.00" }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Asset Account:</span>
+                                <span class="info-value">{{ disposal_request.asset_account.name }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Disposal Account:</span>
+                                <span class="info-value">{{ disposal_request.disposal_account.name }}</span>
+                            </div>
+                            {% if disposal_request.bank_account %}
+                            <div class="info-row">
+                                <span class="info-label">Bank Account:</span>
+                                <span class="info-value">{{ disposal_request.bank_account.name }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="info-row">
+                                <span class="info-label">Current Approval Level:</span>
+                                <span class="info-value">{{ disposal_request.current_approval_level }} / {{ disposal_request.required_approval_levels }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assets Table -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">
+                            <i class="fas fa-cubes me-2"></i>Assets to be Disposed
+                        </h5>
+                        <div class="asset-table">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Asset Code</th>
+                                        <th>Asset Name</th>
+                                        <th>Category</th>
+                                        <th>Location</th>
+                                        <th>Book Value</th>
+                                        <th>Disposal Value</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in disposal_request.disposal_items.all %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'asset_register:asset_detail' item.asset.id %}" class="text-decoration-none">
+                                                {{ item.asset.asset_code }}
+                                            </a>
+                                        </td>
+                                        <td>{{ item.asset.asset_name }}</td>
+                                        <td>{{ item.asset.category.name }}</td>
+                                        <td>{{ item.asset.location.name }}</td>
+                                        <td>${{ item.asset.book_value }}</td>
+                                        <td>${{ item.disposal_value|default:"0.00" }}</td>
+                                        <td>{{ item.reason|default:"-" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">No assets selected for disposal</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Approval Timeline -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">
+                            <i class="fas fa-clock me-2"></i>Approval Timeline
+                        </h5>
+                        <div class="approval-timeline">
+                            {% for approval in disposal_request.approvals.all %}
+                            <div class="timeline-item {% if approval.action == 'approve' %}completed{% elif approval.action == 'reject' %}rejected{% else %}pending{% endif %}">
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-user">{{ approval.approver.get_full_name }}</span>
+                                        <span class="timeline-date">{{ approval.created_at|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    <div class="timeline-action action-{{ approval.action }}">
+                                        {{ approval.get_action_display|title }}
+                                    </div>
+                                    {% if approval.comments %}
+                                    <div class="timeline-comments">
+                                        {{ approval.comments }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-clock fa-2x mb-2"></i>
+                                <p>No approvals yet</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <h5 class="mb-3">
+                                <i class="fas fa-comment me-2"></i>Reason & Remarks
+                            </h5>
+                            <div class="mb-3">
+                                <strong>Reason:</strong>
+                                <p class="mb-0">{{ disposal_request.reason|default:"No reason provided" }}</p>
+                            </div>
+                            {% if disposal_request.remarks %}
+                            <div>
+                                <strong>Remarks:</strong>
+                                <p class="mb-0">{{ disposal_request.remarks }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <h5 class="mb-3">
+                                <i class="fas fa-paperclip me-2"></i>Documents
+                            </h5>
+                            {% if disposal_request.documents.exists %}
+                            <ul class="document-list">
+                                {% for document in disposal_request.documents.all %}
+                                <li class="document-item">
+                                    <div class="document-info">
+                                        <i class="fas fa-file document-icon"></i>
+                                        <span>{{ document.title }}</span>
+                                    </div>
+                                    <a href="{{ document.file.url }}" class="document-download" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted mb-0">No documents attached</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Alerts -->
+                {% if disposal_request.status == 'draft' %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Draft Status:</strong> This disposal request is still in draft. You can edit it or submit it for approval.
+                </div>
+                {% elif disposal_request.status == 'pending_approval' %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>Pending Approval:</strong> This disposal request is waiting for approval at level {{ disposal_request.current_approval_level }}.
+                </div>
+                {% elif disposal_request.status == 'approved' %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Approved:</strong> This disposal request has been approved and is ready for execution.
+                </div>
+                {% elif disposal_request.status == 'rejected' %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-times-circle me-2"></i>
+                    <strong>Rejected:</strong> This disposal request has been rejected and cannot proceed.
+                </div>
+                {% elif disposal_request.status == 'completed' %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-double me-2"></i>
+                    <strong>Completed:</strong> This disposal has been executed successfully.
+                </div>
+                {% elif disposal_request.status == 'reversed' %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-undo me-2"></i>
+                    <strong>Reversed:</strong> This disposal has been reversed.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dispose_asset/js/dispose_asset.js' %}"></script>
+{% endblock %} 

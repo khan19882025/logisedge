@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Notification Template{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'notification_templates/css/notification_templates.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt fa-fw"></i> {{ action }} Notification Template
+        </h1>
+        <a href="{% url 'notification_templates:template_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left fa-fw"></i> Back to Templates
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow template-form-container">
+                <div class="template-form-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit fa-fw"></i> Template Information
+                    </h5>
+                    <p class="mb-0 mt-2 opacity-75">Fill in the details below to {{ action|lower }} your notification template</p>
+                </div>
+                
+                <div class="template-form-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information Section -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-info-circle fa-fw"></i> Basic Information</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.name.id_for_label }}" class="form-label fw-bold mb-2">
+                                            Template Name * <i class="fas fa-asterisk text-danger"></i>
+                                        </label>
+                                        {{ form.name }}
+                                        {% if form.name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.name.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.template_type.id_for_label }}" class="form-label fw-bold mb-2">
+                                            Template Type * <i class="fas fa-asterisk text-danger"></i>
+                                        </label>
+                                        {{ form.template_type }}
+                                        {% if form.template_type.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.template_type.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label fw-bold mb-2">Description</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.description.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.category.id_for_label }}" class="form-label fw-bold mb-2">
+                                            Category * <i class="fas fa-asterisk text-danger"></i>
+                                        </label>
+                                        {{ form.category }}
+                                        {% if form.category.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.category.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.priority.id_for_label }}" class="form-label fw-bold mb-2">Priority</label>
+                                        {{ form.priority }}
+                                        {% if form.priority.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.priority.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Content Section -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-edit fa-fw"></i> Template Content</h6>
+                            
+                            <!-- Subject Field (shown for all types) -->
+                            <div class="form-group mb-3">
+                                <label for="{{ form.subject.id_for_label }}" class="form-label fw-bold mb-2">
+                                    Subject/Title <i class="fas fa-asterisk text-danger"></i>
+                                </label>
+                                {{ form.subject }}
+                                {% if form.subject.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.subject.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Content Field -->
+                            <div class="form-group mb-3">
+                                <label for="{{ form.content.id_for_label }}" class="form-label fw-bold mb-2">
+                                    Content * <i class="fas fa-asterisk text-danger"></i>
+                                </label>
+                                {{ form.content }}
+                                <div id="content-counter" class="form-text text-muted text-end"></div>
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.content.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- HTML Content Field (shown for email templates) -->
+                            <div class="form-group mb-3" id="html-content-group">
+                                <label for="{{ form.html_content.id_for_label }}" class="form-label fw-bold mb-2">
+                                    HTML Content <i class="fas fa-asterisk text-danger"></i>
+                                </label>
+                                {{ form.html_content }}
+                                <div id="html-counter" class="form-text text-muted text-end"></div>
+                                {% if form.html_content.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.html_content.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Placeholder Helper -->
+                            <div class="placeholder-helper">
+                                <h6><i class="fas fa-lightbulb fa-fw"></i> Available Placeholders</h6>
+                                <p class="mb-2">Click on a placeholder to insert it into your content:</p>
+                                <div class="placeholder-list">
+                                    <span class="placeholder-item" data-placeholder="customer_name">{{customer_name}}</span>
+                                    <span class="placeholder-item" data-placeholder="customer_email">{{customer_email}}</span>
+                                    <span class="placeholder-item" data-placeholder="order_id">{{order_id}}</span>
+                                    <span class="placeholder-item" data-placeholder="order_total">{{order_total}}</span>
+                                    <span class="placeholder-item" data-placeholder="due_date">{{due_date}}</span>
+                                    <span class="placeholder-item" data-placeholder="company_name">{{company_name}}</span>
+                                    <span class="placeholder-item" data-placeholder="invoice_number">{{invoice_number}}</span>
+                                    <span class="placeholder-item" data-placeholder="payment_amount">{{payment_amount}}</span>
+                                    <span class="placeholder-item" data-placeholder="shipping_address">{{shipping_address}}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Localization Section -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-globe fa-fw"></i> Localization</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.language.id_for_label }}" class="form-label fw-bold mb-2">
+                                            Language * <i class="fas fa-asterisk text-danger"></i>
+                                        </label>
+                                        {{ form.language }}
+                                        {% if form.language.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.language.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <div class="form-check">
+                                            {{ form.is_default_language }}
+                                            <label class="form-check-label ms-2" for="{{ form.is_default_language.id_for_label }}">
+                                                Is Default Language
+                                            </label>
+                                        </div>
+                                        {% if form.is_default_language.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.is_default_language.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ form.parent_template.id_for_label }}" class="form-label fw-bold mb-2">Parent Template</label>
+                                {{ form.parent_template }}
+                                <small class="form-text text-muted">Select the parent template if this is a translation</small>
+                                {% if form.parent_template.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.parent_template.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Settings Section -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-cog fa-fw"></i> Template Settings</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <div class="form-check">
+                                            {{ form.is_active }}
+                                            <label class="form-check-label ms-2" for="{{ form.is_active.id_for_label }}">
+                                                Template is Active
+                                            </label>
+                                        </div>
+                                        {% if form.is_active.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.is_active.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <div class="form-check">
+                                            {{ form.requires_approval }}
+                                            <label class="form-check-label ms-2" for="{{ form.requires_approval.id_for_label }}">
+                                                Requires Approval
+                                            </label>
+                                        </div>
+                                        {% if form.requires_approval.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.requires_approval.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ form.tags.id_for_label }}" class="form-label fw-bold mb-2">Tags</label>
+                                {{ form.tags }}
+                                <small class="form-text text-muted">Separate tags with commas</small>
+                                {% if form.tags.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.tags.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Change Reason Section -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-comment fa-fw"></i> Change Documentation</h6>
+                            
+                            <div class="form-group mb-3">
+                                <label for="change_reason" class="form-label fw-bold mb-2">Reason for Changes</label>
+                                <textarea name="change_reason" id="change_reason" class="form-control" rows="3" 
+                                          placeholder="Document the reason for creating or updating this template (optional)"></textarea>
+                                <small class="form-text text-muted">This will be recorded in the audit trail</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Errors -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle fa-fw"></i>
+                                <strong>Form Errors:</strong>
+                                <ul class="mb-0 mt-2">
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Submit Buttons -->
+                        <div class="form-group d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save fa-fw"></i> {{ action }} Template
+                            </button>
+                            <a href="{% url 'notification_templates:template_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times fa-fw"></i> Cancel
+                            </a>
+                            {% if template and template.pk %}
+                                <a href="{% url 'notification_templates:template_test' template.pk %}" class="btn btn-info">
+                                    <i class="fas fa-play fa-fw"></i> Test Template
+                                </a>
+                                <a href="{% url 'notification_templates:template_preview' template.pk %}" class="btn btn-success">
+                                    <i class="fas fa-eye fa-fw"></i> Preview
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Template Tips -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-lightbulb fa-fw"></i> Template Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="fas fa-check-circle fa-fw text-success"></i> Best Practices</h6>
+                        <ul class="small text-muted">
+                            <li>Use clear, descriptive template names</li>
+                            <li>Include relevant placeholders for personalization</li>
+                            <li>Test templates before going live</li>
+                            <li>Keep content concise and focused</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-exclamation-triangle fa-fw text-warning"></i> Content Guidelines</h6>
+                        <ul class="small text-muted">
+                            <li><strong>Email:</strong> Include both text and HTML versions</li>
+                            <li><strong>SMS:</strong> Keep under 160 characters</li>
+                            <li><strong>WhatsApp:</strong> Maximum 1000 characters</li>
+                            <li><strong>In-App:</strong> Focus on key information</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-shield-alt fa-fw text-info"></i> Compliance</h6>
+                        <ul class="small text-muted">
+                            <li>Always include unsubscribe options for emails</li>
+                            <li>Respect recipient preferences</li>
+                            <li>Follow GDPR and CAN-SPAM guidelines</li>
+                            <li>Test with sample data before sending</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Placeholder Reference -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-code fa-fw"></i> Placeholder Reference
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-primary">Customer Information</h6>
+                        <div class="small text-muted">
+                            <code>{{customer_name}}</code> - Customer's full name<br>
+                            <code>{{customer_email}}</code> - Customer's email address<br>
+                            <code>{{customer_phone}}</code> - Customer's phone number
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-success">Order Information</h6>
+                        <div class="small text-muted">
+                            <code>{{order_id}}</code> - Order number<br>
+                            <code>{{order_total}}</code> - Order total amount<br>
+                            <code>{{order_date}}</code> - Order date
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-warning">Payment Information</h6>
+                        <div class="small text-muted">
+                            <code>{{payment_amount}}</code> - Payment amount<br>
+                            <code>{{due_date}}</code> - Payment due date<br>
+                            <code>{{invoice_number}}</code> - Invoice number
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-info">System Information</h6>
+                        <div class="small text-muted">
+                            <code>{{company_name}}</code> - Your company name<br>
+                            <code>{{current_date}}</code> - Current date<br>
+                            <code>{{support_email}}</code> - Support email
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Template Statistics -->
+            {% if template and template.pk %}
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar fa-fw"></i> Template Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary">{{ template.version }}</h4>
+                                <small class="text-muted">Version</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ template.placeholders|length }}</h4>
+                            <small class="text-muted">Placeholders</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="small text-muted">
+                        <div class="mb-1">
+                            <i class="fas fa-user fa-fw"></i> Created by: {{ template.created_by.get_full_name|default:template.created_by.username }}
+                        </div>
+                        <div class="mb-1">
+                            <i class="fas fa-calendar fa-fw"></i> Created: {{ template.created_at|date:"M d, Y" }}
+                        </div>
+                        {% if template.updated_by != template.created_by %}
+                        <div class="mb-1">
+                            <i class="fas fa-edit fa-fw"></i> Updated by: {{ template.updated_by.get_full_name|default:template.updated_by.username }}
+                        </div>
+                        <div class="mb-1">
+                            <i class="fas fa-calendar fa-fw"></i> Updated: {{ template.updated_at|date:"M d, Y" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'notification_templates/js/notification_templates.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize template type change handler
+    const templateTypeSelect = document.getElementById('id_template_type');
+    const htmlContentGroup = document.getElementById('html-content-group');
+    
+    if (templateTypeSelect && htmlContentGroup) {
+        const handleTemplateTypeChange = () => {
+            const templateType = templateTypeSelect.value;
+            if (templateType === 'email') {
+                htmlContentGroup.style.display = 'block';
+                document.getElementById('id_html_content').required = true;
+            } else {
+                htmlContentGroup.style.display = 'none';
+                document.getElementById('id_html_content').required = false;
+            }
+        };
+        
+        templateTypeSelect.addEventListener('change', handleTemplateTypeChange);
+        handleTemplateTypeChange(); // Initial call
+    }
+    
+    // Initialize character counters
+    const contentField = document.getElementById('id_content');
+    const htmlContentField = document.getElementById('id_html_content');
+    
+    if (contentField) {
+        const updateCounter = () => {
+            const count = contentField.value.length;
+            const maxLength = contentField.maxLength || '∞';
+            const counter = document.getElementById('content-counter');
+            if (counter) {
+                counter.textContent = `${count} characters`;
+                if (contentField.maxLength && count > contentField.maxLength * 0.9) {
+                    counter.className = 'form-text text-warning text-end';
+                } else {
+                    counter.className = 'form-text text-muted text-end';
+                }
+            }
+        };
+        
+        contentField.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+    
+    if (htmlContentField) {
+        const updateHtmlCounter = () => {
+            const count = htmlContentField.value.length;
+            const counter = document.getElementById('html-counter');
+            if (counter) {
+                counter.textContent = `${count} characters`;
+            }
+        };
+        
+        htmlContentField.addEventListener('input', updateHtmlCounter);
+        updateHtmlCounter();
+    }
+});
+</script>
+{% endblock %}

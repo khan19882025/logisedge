@@ -1,0 +1,232 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Currencies - Multi-Currency Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/multi_currency/multi_currency.css' %}">
+<link rel="stylesheet" href="{% static 'css/currency_icons.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-currency-exchange me-2"></i>Currencies
+            </h1>
+            <p class="text-muted mb-0">Manage system currencies</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'multi_currency:currency_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add Currency
+            </a>
+            <a href="{% url 'multi_currency:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-search me-2"></i>Search Currencies
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="search-form">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ search_form.search.label_tag }}
+                        {{ search_form.search }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ search_form.status.label_tag }}
+                        {{ search_form.status }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="form-check mt-4">
+                            {{ search_form.is_base_currency }}
+                            {{ search_form.is_base_currency.label_tag }}
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{% url 'multi_currency:currency_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="text-muted">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_currencies }} currencies</span>
+        </div>
+        <div>
+            <button class="btn btn-outline-success btn-sm" onclick="exportToCSV('currencies-table', 'currencies.csv')">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Currencies Table -->
+    <div class="card shadow">
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="currencies-table">
+                    <thead>
+                        <tr>
+                            <th data-sortable>Code</th>
+                            <th data-sortable>Name</th>
+                            <th data-sortable>Symbol</th>
+                            <th data-sortable>Decimal Places</th>
+                            <th data-sortable>Status</th>
+                            <th data-sortable>Base Currency</th>
+                            <th data-sortable>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for currency in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ currency.code }}</strong>
+                            </td>
+                            <td>{{ currency.name }}</td>
+                            <td>
+                                {% if currency.symbol == 'static/img/aed_currency.svg' %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{% static 'img/aed_currency.svg' %}" alt="AED" class="currency-icon currency-icon-aed-small">
+                                        <span class="text-muted">AED Icon</span>
+                                    </div>
+                                {% else %}
+                                    <span class="currency-symbol">{{ currency.symbol }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ currency.decimal_places }}</td>
+                            <td>
+                                {% if currency.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if currency.is_base_currency %}
+                                <i class="bi bi-star-fill text-warning base-currency-indicator"></i>
+                                <span class="text-warning">Base</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ currency.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'multi_currency:currency_detail' currency.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       data-bs-toggle="tooltip" 
+                                       title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'multi_currency:currency_update' currency.pk %}" 
+                                       class="btn btn-sm btn-outline-warning" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button class="btn btn-sm {% if currency.is_active %}btn-outline-success{% else %}btn-outline-secondary{% endif %} toggle-currency-status"
+                                            data-currency-id="{{ currency.pk }}"
+                                            data-bs-toggle="tooltip" 
+                                            title="Toggle Status">
+                                        {% if currency.is_active %}
+                                        <i class="bi bi-check-circle"></i>
+                                        {% else %}
+                                        <i class="bi bi-x-circle"></i>
+                                        {% endif %}
+                                    </button>
+                                    <a href="{% url 'multi_currency:currency_delete' currency.pk %}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Currency pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_base_currency %}&is_base_currency=on{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_base_currency %}&is_base_currency=on{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_base_currency %}&is_base_currency=on{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_base_currency %}&is_base_currency=on{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_base_currency %}&is_base_currency=on{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-currency-exchange fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No currencies found</h5>
+                <p class="text-muted">Get started by adding your first currency.</p>
+                <a href="{% url 'multi_currency:currency_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add Currency
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/multi_currency/multi_currency.js' %}"></script>
+{% endblock %} 

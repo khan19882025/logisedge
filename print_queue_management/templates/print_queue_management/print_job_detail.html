@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Print Job {{ print_job.job_number }} - Print Queue Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="fas fa-print"></i> Print Job Details
+                    </h4>
+                    <div class="card-tools">
+                        <a href="{% url 'print_queue_management:print_job_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Jobs
+                        </a>
+                        <a href="{% url 'print_queue_management:print_job_update' print_job.id %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <!-- Job Information -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Job Information</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Job Number:</strong></td>
+                                            <td>{{ print_job.job_number }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Status:</strong></td>
+                                            <td>
+                                                {% if print_job.status == 'completed' %}
+                                                    <span class="badge badge-success">{{ print_job.get_status_display }}</span>
+                                                {% elif print_job.status == 'failed' %}
+                                                    <span class="badge badge-danger">{{ print_job.get_status_display }}</span>
+                                                {% elif print_job.status == 'printing' %}
+                                                    <span class="badge badge-warning">{{ print_job.get_status_display }}</span>
+                                                {% elif print_job.status == 'queued' %}
+                                                    <span class="badge badge-secondary">{{ print_job.get_status_display }}</span>
+                                                {% else %}
+                                                    <span class="badge badge-info">{{ print_job.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Priority:</strong></td>
+                                            <td>
+                                                {% if print_job.priority == 'urgent' %}
+                                                    <span class="badge badge-danger">{{ print_job.get_priority_display }}</span>
+                                                {% elif print_job.priority == 'high' %}
+                                                    <span class="badge badge-warning">{{ print_job.get_priority_display }}</span>
+                                                {% elif print_job.priority == 'normal' %}
+                                                    <span class="badge badge-info">{{ print_job.get_priority_display }}</span>
+                                                {% else %}
+                                                    <span class="badge badge-secondary">{{ print_job.get_priority_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Pages:</strong></td>
+                                            <td>{{ print_job.pages }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Copies:</strong></td>
+                                            <td>{{ print_job.copies }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Preview Required:</strong></td>
+                                            <td>
+                                                {% if print_job.preview_required %}
+                                                    <span class="badge badge-info">Yes</span>
+                                                {% else %}
+                                                    <span class="badge badge-secondary">No</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h5>Timing Information</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Created:</strong></td>
+                                            <td>{{ print_job.created_at|date:"M d, Y H:i:s" }}</td>
+                                        </tr>
+                                        {% if print_job.started_at %}
+                                        <tr>
+                                            <td><strong>Started:</strong></td>
+                                            <td>{{ print_job.started_at|date:"M d, Y H:i:s" }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if print_job.completed_at %}
+                                        <tr>
+                                            <td><strong>Completed:</strong></td>
+                                            <td>{{ print_job.completed_at|date:"M d, Y H:i:s" }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if print_job.scheduled_at %}
+                                        <tr>
+                                            <td><strong>Scheduled:</strong></td>
+                                            <td>{{ print_job.scheduled_at|date:"M d, Y H:i:s" }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td><strong>Estimated Duration:</strong></td>
+                                            <td>{{ print_job.get_estimated_duration|floatformat:1 }} minutes</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Template and Printer Information -->
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <h5>Template Information</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Template:</strong></td>
+                                            <td>{{ print_job.print_template.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Type:</strong></td>
+                                            <td>
+                                                <span class="badge badge-info">{{ print_job.print_template.get_template_type_display }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Description:</strong></td>
+                                            <td>{{ print_job.print_template.description|default:"No description" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h5>Printer Information</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Printer:</strong></td>
+                                            <td>{{ print_job.printer.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Type:</strong></td>
+                                            <td>
+                                                <span class="badge badge-secondary">{{ print_job.printer.get_printer_type_display }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Location:</strong></td>
+                                            <td>{{ print_job.printer.location|default:"Not specified" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Status:</strong></td>
+                                            <td>
+                                                {% if print_job.printer.get_status == 'idle' %}
+                                                    <span class="badge badge-success">Idle</span>
+                                                {% elif print_job.printer.get_status == 'busy' %}
+                                                    <span class="badge badge-warning">Busy</span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">Queue Full</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Template Data -->
+                            {% if print_job.data %}
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h5>Template Data</h5>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <pre class="mb-0"><code>{{ print_job.data|pprint }}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Error Information -->
+                            {% if print_job.error_message %}
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h5>Error Information</h5>
+                                    <div class="alert alert-danger">
+                                        <strong>Error:</strong> {{ print_job.error_message }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <!-- Job Actions -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title">Job Actions</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        {% if print_job.status == 'queued' %}
+                                            <button class="btn btn-success" onclick="startJob('{{ print_job.id }}')">
+                                                <i class="fas fa-play"></i> Start Job
+                                            </button>
+                                        {% endif %}
+                                        
+                                        {% if print_job.status in 'queued,processing,printing' %}
+                                            <button class="btn btn-danger" onclick="cancelJob('{{ print_job.id }}')">
+                                                <i class="fas fa-stop"></i> Cancel Job
+                                            </button>
+                                        {% endif %}
+                                        
+                                        {% if print_job.status == 'failed' %}
+                                            <button class="btn btn-warning" onclick="retryJob('{{ print_job.id }}')">
+                                                <i class="fas fa-redo"></i> Retry Job
+                                            </button>
+                                        {% endif %}
+                                        
+                                        <a href="{% url 'print_queue_management:print_job_update' print_job.id %}" class="btn btn-warning">
+                                            <i class="fas fa-edit"></i> Edit Job
+                                        </a>
+                                        
+                                        <button class="btn btn-info" onclick="downloadJob('{{ print_job.id }}')">
+                                            <i class="fas fa-download"></i> Download
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Job Statistics -->
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h6 class="card-title">Job Statistics</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <div class="border rounded p-2">
+                                                <h4 class="text-primary mb-0">{{ print_job.retry_count }}</h4>
+                                                <small class="text-muted">Retry Count</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="border rounded p-2">
+                                                <h4 class="text-info mb-0">{{ print_job.max_retries }}</h4>
+                                                <small class="text-muted">Max Retries</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auto-Print Rule -->
+                            {% if print_job.auto_print_rule %}
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h6 class="card-title">Auto-Print Rule</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Rule:</strong> {{ print_job.auto_print_rule.name }}</p>
+                                    <p><strong>Event:</strong> {{ print_job.auto_print_rule.erp_event.name }}</p>
+                                    <p><strong>Auto-Print:</strong> 
+                                        {% if print_job.auto_print_rule.auto_print %}
+                                            <span class="badge badge-success">Enabled</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Disabled</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startJob(jobId) {
+    if (confirm('Are you sure you want to start this print job?')) {
+        // Add AJAX call to start job
+        console.log('Starting job:', jobId);
+    }
+}
+
+function cancelJob(jobId) {
+    if (confirm('Are you sure you want to cancel this print job?')) {
+        // Add AJAX call to cancel job
+        console.log('Cancelling job:', jobId);
+    }
+}
+
+function retryJob(jobId) {
+    if (confirm('Are you sure you want to retry this print job?')) {
+        // Add AJAX call to retry job
+        console.log('Retrying job:', jobId);
+    }
+}
+
+function downloadJob(jobId) {
+    // Add download functionality
+    console.log('Downloading job:', jobId);
+}
+</script>
+
+<style>
+.badge {
+    font-size: 0.75em;
+}
+
+.table-sm td {
+    padding: 0.25rem;
+}
+
+.card {
+    margin-bottom: 1rem;
+}
+
+pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.d-grid.gap-2 {
+    gap: 0.5rem !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_reports/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt mr-2"></i>{{ title }}
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Report Details</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Report Information -->
+                    <div class="col-md-6">
+                        <h6 class="font-weight-bold text-primary mb-3">Report Information</h6>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.report_name.id_for_label }}">
+                                Report Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.report_name }}
+                            {% if form.report_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.report_name.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Enter a descriptive name for this report
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.report_type.id_for_label }}">
+                                Report Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.report_type }}
+                            {% if form.report_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.report_type.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Select the type of report you want to generate
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="col-md-6">
+                        <h6 class="font-weight-bold text-primary mb-3">Date Range</h6>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.start_date.id_for_label }}">
+                                Start Date <span class="text-danger">*</span>
+                            </label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.start_date.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.end_date.id_for_label }}">
+                                End Date <span class="text-danger">*</span>
+                            </label>
+                            {{ form.end_date }}
+                            {% if form.end_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.end_date.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <!-- Scope -->
+                    <div class="col-md-6">
+                        <h6 class="font-weight-bold text-primary mb-3">Report Scope</h6>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.cost_center.id_for_label }}">
+                                Cost Center
+                            </label>
+                            {{ form.cost_center }}
+                            {% if form.cost_center.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.cost_center.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Leave blank to include all cost centers
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.department.id_for_label }}">
+                                Department
+                            </label>
+                            {{ form.department }}
+                            {% if form.department.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.department.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Leave blank to include all departments
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="col-md-6">
+                        <h6 class="font-weight-bold text-primary mb-3">Options</h6>
+                        
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                {{ form.include_inactive }}
+                                <label class="custom-control-label" for="{{ form.include_inactive.id_for_label }}">
+                                    Include Inactive Cost Centers
+                                </label>
+                            </div>
+                            {% if form.include_inactive.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.include_inactive.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Check this to include inactive cost centers in the report
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Report Type Descriptions -->
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="font-weight-bold text-primary mb-3">Report Type Descriptions</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card border-left-primary">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-primary">Summary View</h6>
+                                        <p class="card-text small">
+                                            Overview of cost centers with budget, actual spend, and variance
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-success">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-success">Detailed View</h6>
+                                        <p class="card-text small">
+                                            Transaction-level details with dates, references, and amounts
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-info">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-info">Budget Variance</h6>
+                                        <p class="card-text small">
+                                            Focus on budget vs actual spending with variance analysis
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-warning">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-warning">Profit & Loss</h6>
+                                        <p class="card-text small">
+                                            Revenue and expense analysis by cost center
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Form Actions -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times mr-1"></i>Cancel
+                            </a>
+                            <div>
+                                {% if report %}
+                                    <a href="{% url 'cost_center_reports:report_detail' report.pk %}" class="btn btn-info">
+                                        <i class="fas fa-eye mr-1"></i>View Report
+                                    </a>
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-1"></i>
+                                    {% if report %}Update Report{% else %}Create Report{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_reports/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Auto-generate report name when fields change
+    $('#id_report_type, #id_start_date, #id_end_date, #id_cost_center, #id_department').on('change', function() {
+        generateReportName();
+    });
+    
+    // Initialize date pickers
+    $('#id_start_date, #id_end_date').on('change', function() {
+        validateDateRange();
+    });
+    
+    // Form validation
+    $('.needs-validation').on('submit', function(event) {
+        if (!this.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        $(this).addClass('was-validated');
+    });
+});
+
+function validateDateRange() {
+    var startDate = $('#id_start_date').val();
+    var endDate = $('#id_end_date').val();
+    
+    if (startDate && endDate && startDate > endDate) {
+        $('#id_end_date').addClass('is-invalid');
+        if (!$('#end-date-error').length) {
+            $('#id_end_date').after('<div class="invalid-feedback" id="end-date-error">End date must be after start date.</div>');
+        }
+    } else {
+        $('#id_end_date').removeClass('is-invalid');
+        $('#end-date-error').remove();
+    }
+}
+</script>
+{% endblock %}

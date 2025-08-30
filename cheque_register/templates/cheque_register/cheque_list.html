@@ -1,0 +1,525 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cheque Register - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cheque_register/css/cheque_register.css' %}">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    .cheque-list-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .list-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0;
+    }
+    
+    .filters-section {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .filters-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .form-control, .form-select {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-outline {
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-outline:hover {
+        background: #f8fafc;
+        border-color: #9ca3af;
+    }
+    
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .table-container {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+    
+    .table th {
+        background: #f8fafc;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .table td {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr:hover {
+        background: #f8fafc;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .status-pending { background: #f59e0b; }
+    .status-cleared { background: #10b981; }
+    .status-bounced { background: #ef4444; }
+    .status-cancelled { background: #6b7280; }
+    .status-stopped { background: #3b82f6; }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+    
+    .page-link {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        background: #f3f4f6;
+        color: #374151;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    
+    .page-link.active, .page-link:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        text-align: center;
+    }
+    
+    .summary-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+    
+    .summary-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .bulk-actions {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    
+    .bulk-actions.show {
+        display: block;
+    }
+    
+    @media (max-width: 768px) {
+        .cheque-list-container {
+            padding: 1rem;
+        }
+        
+        .list-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+        
+        .filters-form {
+            grid-template-columns: 1fr;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cheque-list-container">
+    <!-- Header -->
+    <div class="list-header">
+        <h1 class="list-title"><i class="fas fa-university"></i> Cheque Register</h1>
+        <a href="{% url 'cheque_register:cheque_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Register New Cheque
+        </a>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="summary-stats">
+        <div class="summary-card">
+            <div class="summary-value">{{ total_cheques }}</div>
+            <div class="summary-label">Total Cheques</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value">{{ total_amount|floatformat:2 }}</div>
+            <div class="summary-label">Total Amount</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value">{{ pending_cheques }}</div>
+            <div class="summary-label">Pending</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value">{{ overdue_cheques }}</div>
+            <div class="summary-label">Overdue</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <form method="get" class="filters-form">
+            <div class="filter-group">
+                <label class="filter-label">Search</label>
+                {{ filter_form.search }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Type</label>
+                {{ filter_form.cheque_type }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                {{ filter_form.status }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Party Type</label>
+                {{ filter_form.party_type }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Bank Account</label>
+                {{ filter_form.bank_account }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Date From</label>
+                {{ filter_form.date_from }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Date To</label>
+                {{ filter_form.date_to }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Amount Min</label>
+                {{ filter_form.amount_min }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Amount Max</label>
+                {{ filter_form.amount_max }}
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+            </div>
+        </form>
+        
+        <!-- Special Filters -->
+        <div class="mt-3 d-flex gap-3">
+            <div class="form-check">
+                {{ filter_form.is_post_dated }}
+                <label class="form-check-label" for="{{ filter_form.is_post_dated.id_for_label }}">
+                    Post-dated Cheques Only
+                </label>
+            </div>
+            <div class="form-check">
+                {{ filter_form.is_overdue }}
+                <label class="form-check-label" for="{{ filter_form.is_overdue.id_for_label }}">
+                    Overdue Cheques Only
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="bulk-actions" id="bulkActions">
+        <form method="post" action="{% url 'cheque_register:bulk_status_update' %}" id="bulkForm">
+            {% csrf_token %}
+            <div class="d-flex align-items-center gap-3">
+                <span id="selectedCount">0 cheques selected</span>
+                <select name="new_status" class="form-select" style="width: auto;">
+                    <option value="">Select Status</option>
+                    <option value="cleared">Mark as Cleared</option>
+                    <option value="bounced">Mark as Bounced</option>
+                    <option value="cancelled">Mark as Cancelled</option>
+                    <option value="stopped">Mark as Stopped</option>
+                </select>
+                <input type="date" name="clearing_date" class="form-control" style="width: auto;" placeholder="Clearing Date">
+                <button type="submit" class="btn btn-primary btn-sm">Update Selected</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="clearSelection()">Clear Selection</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Cheques Table -->
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                    </th>
+                    <th>Cheque Number</th>
+                    <th>Type</th>
+                    <th>Party Name</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Bank Account</th>
+                    <th>Status</th>
+                    <th>Clearing Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if page_obj.object_list %}
+                    {% for cheque in page_obj.object_list %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="cheque_ids" value="{{ cheque.pk }}" class="cheque-checkbox" onchange="updateBulkActions()">
+                            </td>
+                            <td>
+                                <strong>{{ cheque.cheque_number }}</strong>
+                                {% if cheque.is_post_dated %}
+                                    <i class="fas fa-calendar-alt text-info" title="Post-dated"></i>
+                                {% endif %}
+                            </td>
+                            <td>{{ cheque.get_cheque_type_display }}</td>
+                            <td>{{ cheque.get_party_name }}</td>
+                            <td>
+                                <strong>{{ cheque.amount|floatformat:2 }}</strong>
+                                {% if cheque.is_overdue %}
+                                    <br><small class="text-danger">Overdue {{ cheque.days_overdue }} days</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ cheque.cheque_date|date:"M d, Y" }}</td>
+                            <td>{{ cheque.bank_account.name }}</td>
+                            <td>
+                                <span class="status-badge status-{{ cheque.status }}">
+                                    {{ cheque.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if cheque.clearing_date %}
+                                    {{ cheque.clearing_date|date:"M d, Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'cheque_register:cheque_detail' cheque.pk %}" class="btn btn-outline btn-sm" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'cheque_register:cheque_edit' cheque.pk %}" class="btn btn-outline btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'cheque_register:cheque_status_change' cheque.pk %}" class="btn btn-outline btn-sm" title="Change Status">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No cheques found matching your criteria.</p>
+                            <a href="{% url 'cheque_register:cheque_create' %}" class="btn btn-primary">
+                                Register First Cheque
+                            </a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </a>
+            {% endif %}
+            
+            <span class="page-link active">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                    Next <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cheque_register/js/cheque_register.js' %}"></script>
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.cheque-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.cheque-checkbox:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (checkboxes.length > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = `${checkboxes.length} cheque(s) selected`;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+function clearSelection() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.cheque-checkbox');
+    
+    selectAll.checked = false;
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    updateBulkActions();
+}
+
+// Auto-submit form when special filters change
+document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        if (this.name === 'is_post_dated' || this.name === 'is_overdue') {
+            this.form.submit();
+        }
+    });
+});
+</script>
+{% endblock %} 

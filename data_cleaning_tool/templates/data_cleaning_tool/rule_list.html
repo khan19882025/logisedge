@@ -1,0 +1,331 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Data Cleaning Rules{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-rules text-primary me-2"></i>
+                        Data Cleaning Rules
+                    </h1>
+                    <p class="text-muted mb-0">Manage and configure data cleaning rules</p>
+                </div>
+                <div>
+                    <a href="{% url 'data_cleaning_tool:rule_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Rule
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="id_rule_type" class="form-label">Rule Type</label>
+                            <select class="form-select" id="id_rule_type" name="rule_type">
+                                <option value="">All Types</option>
+                                <option value="validation" {% if request.GET.rule_type == 'validation' %}selected{% endif %}>Validation</option>
+                                <option value="transformation" {% if request.GET.rule_type == 'transformation' %}selected{% endif %}>Transformation</option>
+                                <option value="deduplication" {% if request.GET.rule_type == 'deduplication' %}selected{% endif %}>Deduplication</option>
+                                <option value="enrichment" {% if request.GET.rule_type == 'enrichment' %}selected{% endif %}>Enrichment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_data_type" class="form-label">Data Type</label>
+                            <select class="form-select" id="id_data_type" name="data_type">
+                                <option value="">All Data Types</option>
+                                <option value="master" {% if request.GET.data_type == 'master' %}selected{% endif %}>Master Data</option>
+                                <option value="transactional" {% if request.GET.data_type == 'transactional' %}selected{% endif %}>Transactional Data</option>
+                                <option value="financial" {% if request.GET.data_type == 'financial' %}selected{% endif %}>Financial Data</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_status" class="form-label">Status</label>
+                            <select class="form-select" id="id_status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="id_search" name="search" value="{{ request.GET.search }}" placeholder="Rule name or description">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-search me-2"></i>Apply Filters
+                            </button>
+                            <a href="{% url 'data_cleaning_tool:rule_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Rules List -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Rules ({{ rules.count }})
+                        </h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-2"></i>Export
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="?export=csv"><i class="fas fa-file-csv me-2"></i>CSV</a></li>
+                                <li><a class="dropdown-item" href="?export=excel"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                                <li><a class="dropdown-item" href="?export=pdf"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if rules %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Rule Name</th>
+                                        <th>Type</th>
+                                        <th>Data Type</th>
+                                        <th>Status</th>
+                                        <th>Priority</th>
+                                        <th>Last Used</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rule in rules %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="rule-icon me-3">
+                                                    {% if rule.rule_type == 'validation' %}
+                                                        <i class="fas fa-check-circle text-success"></i>
+                                                    {% elif rule.rule_type == 'transformation' %}
+                                                        <i class="fas fa-magic text-primary"></i>
+                                                    {% elif rule.rule_type == 'deduplication' %}
+                                                        <i class="fas fa-copy text-warning"></i>
+                                                    {% elif rule.rule_type == 'enrichment' %}
+                                                        <i class="fas fa-plus-circle text-info"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ rule.name }}</h6>
+                                                    <small class="text-muted">{{ rule.description|truncatechars:50 }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if rule.rule_type == 'validation' %}success{% elif rule.rule_type == 'transformation' %}primary{% elif rule.rule_type == 'deduplication' %}warning{% elif rule.rule_type == 'enrichment' %}info{% endif %}">
+                                                {{ rule.get_rule_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ rule.get_data_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            {% if rule.status == 'active' %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% elif rule.status == 'inactive' %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% elif rule.status == 'draft' %}
+                                                <span class="badge bg-warning">Draft</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if rule.priority == 'low' %}success{% elif rule.priority == 'medium' %}warning{% elif rule.priority == 'high' %}danger{% elif rule.priority == 'critical' %}dark{% endif %}">
+                                                {{ rule.get_priority_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if rule.last_used %}
+                                                <small class="text-muted">{{ rule.last_used|timesince }} ago</small>
+                                            {% else %}
+                                                <span class="text-muted">Never</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'data_cleaning_tool:rule_edit' rule.id %}" class="btn btn-outline-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-info" title="View Details" onclick="viewRuleDetails({{ rule.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" title="Delete" onclick="deleteRule({{ rule.id }}, '{{ rule.name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <div class="card-footer">
+                            <nav aria-label="Rules pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if request.GET.rule_type %}&rule_type={{ request.GET.rule_type }}{% endif %}{% if request.GET.data_type %}&data_type={{ request.GET.data_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.rule_type %}&rule_type={{ request.GET.rule_type }}{% endif %}{% if request.GET.data_type %}&data_type={{ request.GET.data_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if request.GET.rule_type %}&rule_type={{ request.GET.rule_type }}{% endif %}{% if request.GET.data_type %}&data_type={{ request.GET.data_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.rule_type %}&rule_type={{ request.GET.rule_type }}{% endif %}{% if request.GET.data_type %}&data_type={{ request.GET.data_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.rule_type %}&rule_type={{ request.GET.rule_type }}{% endif %}{% if request.GET.data_type %}&data_type={{ request.GET.data_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                                <i class="fas fa-angle-double-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-rules fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No rules found</h5>
+                            <p class="text-muted">Create your first data cleaning rule to get started.</p>
+                            <a href="{% url 'data_cleaning_tool:rule_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Rule
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rule Details Modal -->
+<div class="modal fade" id="ruleDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rule Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="ruleDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Rule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the rule "<strong id="ruleNameToDelete"></strong>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="deleteRuleForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Rule</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewRuleDetails(ruleId) {
+    // Load rule details via AJAX
+    fetch(`/utilities/data-cleaning/rules/${ruleId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('ruleDetailsContent').innerHTML = data.html;
+            new bootstrap.Modal(document.getElementById('ruleDetailsModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading rule details:', error);
+            alert('Error loading rule details');
+        });
+}
+
+function deleteRule(ruleId, ruleName) {
+    document.getElementById('ruleNameToDelete').textContent = ruleName;
+    document.getElementById('deleteRuleForm').action = `/utilities/data-cleaning/rules/${ruleId}/delete/`;
+    new bootstrap.Modal(document.getElementById('deleteRuleModal')).show();
+}
+</script>
+
+<style>
+.rule-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: rgba(0,0,0,0.05);
+}
+
+.table > tbody > tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}

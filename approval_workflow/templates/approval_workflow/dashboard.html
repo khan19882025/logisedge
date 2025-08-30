@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Approval Workflow Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'approval_workflow/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Approval Workflow Dashboard</h4>
+                <div class="page-title-right">
+                    <a href="{% url 'approval_workflow:approval_request_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Request
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">Total Pending</p>
+                            <h4 class="mb-0">{{ stats.total_pending }}</h4>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="mini-stat-icon avatar-sm rounded-circle bg-primary align-self-center">
+                                <span class="avatar-title">
+                                    <i class="bx bx-time font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">My Pending</p>
+                            <h4 class="mb-0">{{ stats.my_pending }}</h4>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="mini-stat-icon avatar-sm rounded-circle bg-success align-self-center">
+                                <span class="avatar-title">
+                                    <i class="bx bx-user-check font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">Overdue</p>
+                            <h4 class="mb-0 text-danger">{{ stats.overdue_count }}</h4>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="mini-stat-icon avatar-sm rounded-circle bg-warning align-self-center">
+                                <span class="avatar-title">
+                                    <i class="bx bx-alarm-exclamation font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">Approved Today</p>
+                            <h4 class="mb-0">{{ stats.approved_today }}</h4>
+                        </div>
+                        <div class="flex-shrink-0 align-self-center">
+                            <div class="mini-stat-icon avatar-sm rounded-circle bg-info align-self-center">
+                                <span class="avatar-title">
+                                    <i class="bx bx-check-circle font-size-24"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pending Approvals -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Pending Approvals</h4>
+                </div>
+                <div class="card-body">
+                    {% if pending_approvals %}
+                        <div class="table-responsive">
+                            <table class="table table-centered table-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Title</th>
+                                        <th>Requester</th>
+                                        <th>Priority</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in pending_approvals %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'approval_workflow:approval_request_detail' request.pk %}">
+                                                {{ request.request_id }}
+                                            </a>
+                                        </td>
+                                        <td>{{ request.title|truncatechars:30 }}</td>
+                                        <td>{{ request.requester.get_full_name|default:request.requester.username }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ request.priority }}">
+                                                {{ request.get_priority_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'approval_workflow:approve_request' request.pk %}" 
+                                               class="btn btn-sm btn-primary">
+                                                Review
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No pending approvals found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- My Requests -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">My Recent Requests</h4>
+                </div>
+                <div class="card-body">
+                    {% if my_requests %}
+                        <div class="table-responsive">
+                            <table class="table table-centered table-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Title</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in my_requests %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'approval_workflow:approval_request_detail' request.pk %}">
+                                                {{ request.request_id }}
+                                            </a>
+                                        </td>
+                                        <td>{{ request.title|truncatechars:30 }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ request.status }}">
+                                                {{ request.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ request.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'approval_workflow:approval_request_detail' request.pk %}" 
+                                               class="btn btn-sm btn-info">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent requests found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Approvals -->
+    {% if overdue_approvals %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0 text-danger">
+                        <i class="bx bx-alarm-exclamation"></i> Overdue Approvals
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-centered table-nowrap mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Title</th>
+                                    <th>Requester</th>
+                                    <th>Due Date</th>
+                                    <th>Days Overdue</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in overdue_approvals %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'approval_workflow:approval_request_detail' request.pk %}">
+                                            {{ request.request_id }}
+                                        </a>
+                                    </td>
+                                    <td>{{ request.title|truncatechars:30 }}</td>
+                                    <td>{{ request.requester.get_full_name|default:request.requester.username }}</td>
+                                    <td>{{ request.deadline|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="text-danger">
+                                            {{ request.deadline|timesince }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'approval_workflow:approve_request' request.pk %}" 
+                                           class="btn btn-sm btn-danger">
+                                            Review Now
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activities -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Recent Activities</h4>
+                </div>
+                <div class="card-body">
+                    {% if recent_activities %}
+                        <div class="table-responsive">
+                            <table class="table table-centered table-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Action</th>
+                                        <th>Request</th>
+                                        <th>User</th>
+                                        <th>Description</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for activity in recent_activities %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-{{ activity.action }}">
+                                                {{ activity.get_action_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'approval_workflow:approval_request_detail' activity.approval_request.pk %}">
+                                                {{ activity.approval_request.request_id }}
+                                            </a>
+                                        </td>
+                                        <td>{{ activity.user.get_full_name|default:activity.user.username }}</td>
+                                        <td>{{ activity.description|truncatechars:50 }}</td>
+                                        <td>{{ activity.created_at|date:"M d, Y H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent activities found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'approval_workflow/js/dashboard.js' %}"></script>
+{% endblock %}

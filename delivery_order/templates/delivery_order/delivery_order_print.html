@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Order - {{ delivery_order.do_number }}</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+        }
+        
+        /* Header styles */
+        .print-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .company-info {
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+        
+        .document-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        /* Main content */
+        .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Delivery order info */
+        .do-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border: 1px solid #000;
+            padding: 15px;
+        }
+        
+        .do-info-left, .do-info-right {
+            flex: 1;
+        }
+        
+        .info-row {
+            margin-bottom: 8px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 120px;
+        }
+        
+        .info-value {
+            display: inline-block;
+        }
+        
+        /* Customer and delivery info */
+        .customer-delivery-info {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .customer-info, .delivery-info {
+            flex: 1;
+            border: 1px solid #000;
+            padding: 15px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        /* Items table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .items-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .items-table .item-no {
+            width: 50px;
+            text-align: center;
+        }
+        
+        .items-table .description {
+            width: 300px;
+        }
+        
+        .items-table .quantity {
+            width: 80px;
+            text-align: center;
+        }
+        
+        .items-table .unit {
+            width: 80px;
+            text-align: center;
+        }
+        
+        .items-table .remarks {
+            width: 150px;
+        }
+        
+        /* Totals */
+        .totals-section {
+            margin-bottom: 20px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .total-label {
+            font-weight: bold;
+        }
+        
+        /* Terms and conditions */
+        .terms-section {
+            margin-bottom: 20px;
+        }
+        
+        .terms-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .terms-content {
+            border: 1px solid #000;
+            padding: 15px;
+            min-height: 100px;
+        }
+        
+        /* Signature section */
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        
+        .signature-box {
+            width: 200px;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            margin-bottom: 5px;
+        }
+        
+        .signature-label {
+            font-size: 11px;
+        }
+        
+        /* Print specific styles */
+        @media print {
+            body {
+                font-size: 10px;
+            }
+            
+            .print-container {
+                padding: 10px;
+            }
+            
+            .company-name {
+                font-size: 20px;
+            }
+            
+            .document-title {
+                font-size: 16px;
+            }
+            
+            .section-title {
+                font-size: 12px;
+            }
+            
+            .items-table th,
+            .items-table td {
+                padding: 5px;
+                font-size: 9px;
+            }
+            
+            .items-table .description {
+                width: 250px;
+            }
+            
+            .items-table .remarks {
+                width: 120px;
+            }
+        }
+        
+        /* Page break controls */
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .no-break {
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        <!-- Header -->
+        <div class="print-header">
+            <div class="company-name">LOGISEDGE</div>
+            <div class="company-info">
+                Logistics & Supply Chain Solutions<br>
+                Address: [Company Address]<br>
+                Phone: [Company Phone] | Email: [Company Email]
+            </div>
+            <div class="document-title">Delivery Order</div>
+        </div>
+        
+        <!-- Delivery Order Information -->
+        <div class="do-info no-break">
+            <div class="do-info-left">
+                <div class="info-row">
+                    <span class="info-label">DO Number:</span>
+                    <span class="info-value">{{ delivery_order.do_number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date:</span>
+                    <span class="info-value">{{ delivery_order.do_date|date:"d/m/Y" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">{{ delivery_order.get_status_display }}</span>
+                </div>
+            </div>
+            <div class="do-info-right">
+                <div class="info-row">
+                    <span class="info-label">Reference:</span>
+                    <span class="info-value">{{ delivery_order.reference|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Currency:</span>
+                    <span class="info-value">{{ delivery_order.currency|default:"AED" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Created By:</span>
+                    <span class="info-value">{{ delivery_order.created_by.get_full_name|default:delivery_order.created_by.username }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customer and Delivery Information -->
+        <div class="customer-delivery-info no-break">
+            <div class="customer-info">
+                <div class="section-title">Customer Information</div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">{{ delivery_order.customer.customer_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Contact:</span>
+                    <span class="info-value">{{ delivery_order.customer.contact_person|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ delivery_order.customer.phone|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ delivery_order.customer.email|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value">{{ delivery_order.customer.address|default:"-" }}</span>
+                </div>
+            </div>
+            
+            <div class="delivery-info">
+                <div class="section-title">Delivery Information</div>
+                <div class="info-row">
+                    <span class="info-label">Delivery Date:</span>
+                    <span class="info-value">{{ delivery_order.delivery_date|date:"d/m/Y"|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Delivery Address:</span>
+                    <span class="info-value">{{ delivery_order.delivery_address|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Contact Person:</span>
+                    <span class="info-value">{{ delivery_order.delivery_contact|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ delivery_order.delivery_phone|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ delivery_order.delivery_email|default:"-" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Items Table -->
+        <div class="items-section no-break">
+            <div class="section-title">Delivery Items</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th class="item-no">No.</th>
+                        <th class="description">Description</th>
+                        <th class="quantity">Quantity</th>
+                        <th class="unit">Unit</th>
+                        <th class="remarks">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in delivery_order.items.all %}
+                    <tr>
+                        <td class="item-no">{{ forloop.counter }}</td>
+                        <td class="description">{{ item.item.item_name }}</td>
+                        <td class="quantity">{{ item.requested_qty }}</td>
+                        <td class="unit">{{ item.item.unit|default:"-" }}</td>
+                        <td class="remarks">{{ item.notes|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center;">No items found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Totals -->
+        {% if delivery_order.items.all %}
+        <div class="totals-section no-break">
+            <div class="total-row">
+                <span class="total-label">Total Quantity:</span>
+                <span class="total-value">{{ delivery_order.total_quantity|floatformat:2 }}</span>
+            </div>
+            {% if delivery_order.total_weight %}
+            <div class="total-row">
+                <span class="total-label">Total Weight:</span>
+                <span class="total-value">{{ delivery_order.total_weight|floatformat:2 }} KGS</span>
+            </div>
+            {% endif %}
+            {% if delivery_order.total_volume %}
+            <div class="total-row">
+                <span class="total-label">Total Volume:</span>
+                <span class="total-value">{{ delivery_order.total_volume|floatformat:2 }} CBM</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Special Instructions -->
+        {% if delivery_order.special_instructions %}
+        <div class="terms-section no-break">
+            <div class="terms-title">Special Instructions</div>
+            <div class="terms-content">
+                {{ delivery_order.special_instructions|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Notes -->
+        {% if delivery_order.notes %}
+        <div class="terms-section no-break">
+            <div class="terms-title">Notes</div>
+            <div class="terms-content">
+                {{ delivery_order.notes|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Signature Section -->
+        <div class="signature-section no-break">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">Customer Signature</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">Authorized Signature</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">Date</div>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html> 

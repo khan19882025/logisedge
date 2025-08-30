@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Configuration - {{ configuration.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'email_configuration/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-gear me-2"></i>{{ configuration.name }}
+                </h1>
+                <div>
+                    <a href="{% url 'email_configuration:configuration_list' %}" class="btn btn-secondary me-2">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Configurations
+                    </a>
+                    <a href="{% url 'email_configuration:test_configuration' configuration.id %}" class="btn btn-info me-2">
+                        <i class="bi bi-play-circle me-2"></i>Test Configuration
+                    </a>
+                    <a href="{% url 'email_configuration:configuration_update' configuration.id %}" class="btn btn-warning me-2">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                    </a>
+                    <a href="{% url 'email_configuration:configuration_delete' configuration.id %}" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Configuration Details -->
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-info-circle me-2"></i>Configuration Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Name:</dt>
+                                        <dd class="col-sm-8">{{ configuration.name }}</dd>
+                                        
+                                        <dt class="col-sm-4">Protocol:</dt>
+                                        <dd class="col-sm-8">
+                                            <span class="badge bg-info">{{ configuration.protocol|upper }}</span>
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Host:</dt>
+                                        <dd class="col-sm-8">{{ configuration.host }}</dd>
+                                        
+                                        <dt class="col-sm-4">Port:</dt>
+                                        <dd class="col-sm-8">{{ configuration.port }}</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Encryption:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if configuration.encryption == 'none' %}
+                                                <span class="badge bg-warning">None</span>
+                                            {% elif configuration.encryption == 'ssl' %}
+                                                <span class="badge bg-success">SSL</span>
+                                            {% elif configuration.encryption == 'tls' %}
+                                                <span class="badge bg-primary">TLS</span>
+                                            {% elif configuration.encryption == 'starttls' %}
+                                                <span class="badge bg-info">STARTTLS</span>
+                                            {% endif %}
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Timeout:</dt>
+                                        <dd class="col-sm-8">{{ configuration.timeout }} seconds</dd>
+                                        
+                                        <dt class="col-sm-4">Status:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if configuration.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Default:</dt>
+                                        <dd class="col-sm-8">
+                                            {% if configuration.is_default %}
+                                                <span class="badge bg-primary">Default</span>
+                                            {% else %}
+                                                <span class="text-muted">No</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                            
+                            {% if configuration.description %}
+                            <div class="mt-3">
+                                <dt>Description:</dt>
+                                <dd>{{ configuration.description }}</dd>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Test Results -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clipboard-data me-2"></i>Test Results
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if configuration.last_tested %}
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Last Test:</dt>
+                                            <dd class="col-sm-8">
+                                                {{ configuration.last_tested|date:"M d, Y H:i" }}
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Status:</dt>
+                                            <dd class="col-sm-8">
+                                                {% if configuration.last_test_status == 'success' %}
+                                                    <span class="badge bg-success">Success</span>
+                                                {% elif configuration.last_test_status == 'failed' %}
+                                                    <span class="badge bg-danger">Failed</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">{{ configuration.last_test_status|title }}</span>
+                                                {% endif %}
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Duration:</dt>
+                                            <dd class="col-sm-8">
+                                                {% if configuration.last_test_duration %}
+                                                    {{ configuration.last_test_duration|floatformat:2 }} seconds
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Message:</dt>
+                                            <dd class="col-sm-8">
+                                                {% if configuration.last_test_message %}
+                                                    {{ configuration.last_test_message }}
+                                                {% else %}
+                                                    <span class="text-muted">No message</span>
+                                                {% endif %}
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="bi bi-question-circle display-4 text-muted"></i>
+                                    <p class="mt-2 text-muted">This configuration has not been tested yet.</p>
+                                    <a href="{% url 'email_configuration:test_configuration' configuration.id %}" class="btn btn-primary">
+                                        <i class="bi bi-play-circle me-2"></i>Run Test
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-md-4">
+                    <!-- Quick Actions -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-lightning me-2"></i>Quick Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'email_configuration:test_configuration' configuration.id %}" class="btn btn-info">
+                                    <i class="bi bi-play-circle me-2"></i>Test Configuration
+                                </a>
+                                <a href="{% url 'email_configuration:configuration_update' configuration.id %}" class="btn btn-warning">
+                                    <i class="bi bi-pencil me-2"></i>Edit Configuration
+                                </a>
+                                <a href="{% url 'email_configuration:create_notification' %}" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-2"></i>Create Notification
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-graph-up me-2"></i>Statistics
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="border-end">
+                                        <h4 class="text-primary mb-1">{{ configuration.test_results.count }}</h4>
+                                        <small class="text-muted">Total Tests</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-success mb-1">{{ configuration.test_results.filter.status='success'|length }}</h4>
+                                    <small class="text-muted">Successful</small>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-danger mb-1">{{ configuration.test_results.filter.status='failed'|length }}</h4>
+                                    <small class="text-muted">Failed</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-info mb-1">{{ configuration.notifications.count }}</h4>
+                                    <small class="text-muted">Notifications</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clock-history me-2"></i>Recent Activity
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if configuration.test_results.all %}
+                                <div class="timeline">
+                                    {% for result in configuration.test_results.all|slice:":5" %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker {% if result.status == 'success' %}bg-success{% elif result.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}"></div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">{{ result.status|title }}</h6>
+                                            <small class="text-muted">{{ result.started_at|timesince }} ago</small>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center">No recent activity</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'email_configuration/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation for delete action
+    const deleteButton = document.querySelector('a[href*="delete"]');
+    if (deleteButton) {
+        deleteButton.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

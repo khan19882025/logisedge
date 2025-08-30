@@ -1,0 +1,599 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics - Merge Duplicates{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-chart-line text-primary me-2"></i>
+                    Merge Duplicates Analytics
+                </h1>
+                <p class="text-muted">Comprehensive analytics and reporting for duplicate detection and merging operations</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{% url 'data_cleaning_tool:merge_duplicates_dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary" id="refreshData">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                    </button>
+                    <button type="button" class="btn btn-success" id="exportReport">
+                        <i class="fas fa-download me-2"></i>Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <label for="dateRange" class="form-label">Date Range</label>
+                            <select class="form-select" id="dateRange">
+                                <option value="7">Last 7 Days</option>
+                                <option value="30" selected>Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                                <option value="365">Last Year</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="customDateRange" style="display: none;">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                        <div class="col-md-3" id="customDateRange2" style="display: none;">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="targetModel" class="form-label">Target Model</label>
+                            <select class="form-select" id="targetModel">
+                                <option value="">All Models</option>
+                                <option value="customer">Customer</option>
+                                <option value="supplier">Supplier</option>
+                                <option value="item">Item</option>
+                                <option value="employee">Employee</option>
+                                <option value="asset">Asset</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Records Processed
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">
+                                {{ total_records|default:"0" }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-database fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Duplicates Found
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="duplicatesFound">
+                                {{ duplicates_found|default:"0" }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-copy fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Records Merged
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="recordsMerged">
+                                {{ records_merged|default:"0" }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-object-group fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Success Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="successRate">
+                                {{ success_rate|default:"0" }}%
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Duplicates Over Time Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Duplicates Found Over Time</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                           data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                             aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Chart Options:</div>
+                            <a class="dropdown-item" href="#" onclick="changeChartType('line')">Line Chart</a>
+                            <a class="dropdown-item" href="#" onclick="changeChartType('bar')">Bar Chart</a>
+                            <a class="dropdown-item" href="#" onclick="changeChartType('area')">Area Chart</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="duplicatesOverTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Distribution Chart -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Duplicates by Model</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="modelDistributionChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-primary"></i> Customer
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-success"></i> Supplier
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-info"></i> Item
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-warning"></i> Employee
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-danger"></i> Asset
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Performance Metrics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Average Processing Time</td>
+                                    <td id="avgProcessingTime">2.3 seconds</td>
+                                    <td><span class="text-success"><i class="fas fa-arrow-down"></i> 12%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Memory Usage</td>
+                                    <td id="memoryUsage">156 MB</td>
+                                    <td><span class="text-warning"><i class="fas fa-arrow-up"></i> 5%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>CPU Usage</td>
+                                    <td id="cpuUsage">23%</td>
+                                    <td><span class="text-success"><i class="fas fa-arrow-down"></i> 8%</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Error Rate</td>
+                                    <td id="errorRate">0.2%</td>
+                                    <td><span class="text-success"><i class="fas fa-arrow-down"></i> 15%</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Bulk merge completed</h6>
+                                <p class="timeline-text">Successfully merged 1,247 customer records</p>
+                                <small class="text-muted">2 hours ago</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Scheduled task started</h6>
+                                <p class="timeline-text">Weekly supplier deduplication task initiated</p>
+                                <small class="text-muted">5 hours ago</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Manual review required</h6>
+                                <p class="timeline-text">23 employee records need manual review</p>
+                                <small class="text-muted">1 day ago</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">New rule created</h6>
+                                <p class="timeline-text">Asset deduplication rule "Asset Tag Matching" created</p>
+                                <small class="text-muted">2 days ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Detailed Statistics by Model</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="statisticsTable">
+                            <thead>
+                                <tr>
+                                    <th>Model</th>
+                                    <th>Total Records</th>
+                                    <th>Duplicates Found</th>
+                                    <th>Records Merged</th>
+                                    <th>Success Rate</th>
+                                    <th>Avg Processing Time</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Customer</strong></td>
+                                    <td>15,247</td>
+                                    <td>1,247</td>
+                                    <td>1,198</td>
+                                    <td><span class="badge bg-success">96.1%</span></td>
+                                    <td>2.1s</td>
+                                    <td>2 hours ago</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Supplier</strong></td>
+                                    <td>8,934</td>
+                                    <td>567</td>
+                                    <td>534</td>
+                                    <td><span class="badge bg-success">94.2%</span></td>
+                                    <td>1.8s</td>
+                                    <td>5 hours ago</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item</strong></td>
+                                    <td>23,456</td>
+                                    <td>2,134</td>
+                                    <td>2,045</td>
+                                    <td><span class="badge bg-success">95.8%</span></td>
+                                    <td>3.2s</td>
+                                    <td>1 day ago</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Employee</strong></td>
+                                    <td>2,345</td>
+                                    <td>89</td>
+                                    <td>67</td>
+                                    <td><span class="badge bg-warning">75.3%</span></td>
+                                    <td>1.5s</td>
+                                    <td>1 day ago</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Asset</strong></td>
+                                    <td>5,678</td>
+                                    <td>234</td>
+                                    <td>221</td>
+                                    <td><span class="badge bg-success">94.4%</span></td>
+                                    <td>2.7s</td>
+                                    <td>2 days ago</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let duplicatesChart, modelChart;
+
+$(document).ready(function() {
+    // Initialize charts
+    initializeCharts();
+    
+    // Date range change handler
+    $('#dateRange').on('change', function() {
+        if ($(this).val() === 'custom') {
+            $('#customDateRange, #customDateRange2').show();
+        } else {
+            $('#customDateRange, #customDateRange2').hide();
+            updateCharts();
+        }
+    });
+    
+    // Custom date change handlers
+    $('#startDate, #endDate').on('change', function() {
+        if ($('#startDate').val() && $('#endDate').val()) {
+            updateCharts();
+        }
+    });
+    
+    // Target model change handler
+    $('#targetModel').on('change', function() {
+        updateCharts();
+    });
+    
+    // Refresh data button
+    $('#refreshData').on('click', function() {
+        updateCharts();
+        updateMetrics();
+    });
+    
+    // Export report button
+    $('#exportReport').on('click', function() {
+        exportReport();
+    });
+});
+
+function initializeCharts() {
+    // Duplicates Over Time Chart
+    const duplicatesCtx = document.getElementById('duplicatesOverTimeChart').getContext('2d');
+    duplicatesChart = new Chart(duplicatesCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan 1', 'Jan 2', 'Jan 3', 'Jan 4', 'Jan 5', 'Jan 6', 'Jan 7'],
+            datasets: [{
+                label: 'Duplicates Found',
+                data: [65, 59, 80, 81, 56, 55, 40],
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Model Distribution Chart
+    const modelCtx = document.getElementById('modelDistributionChart').getContext('2d');
+    modelChart = new Chart(modelCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Customer', 'Supplier', 'Item', 'Employee', 'Asset'],
+            datasets: [{
+                data: [1247, 567, 2134, 89, 234],
+                backgroundColor: [
+                    '#4e73df',
+                    '#1cc88a',
+                    '#36b9cc',
+                    '#f6c23e',
+                    '#e74a3b'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function changeChartType(type) {
+    duplicatesChart.config.type = type;
+    duplicatesChart.update();
+}
+
+function updateCharts() {
+    // In a real implementation, this would make AJAX calls to get updated data
+    // For now, we'll just simulate some data updates
+    
+    // Update duplicates over time chart
+    const newData = generateRandomData(7);
+    duplicatesChart.data.datasets[0].data = newData;
+    duplicatesChart.update();
+    
+    // Update model distribution chart
+    const newModelData = generateRandomModelData();
+    modelChart.data.datasets[0].data = newModelData;
+    modelChart.update();
+}
+
+function generateRandomData(count) {
+    const data = [];
+    for (let i = 0; i < count; i++) {
+        data.push(Math.floor(Math.random() * 100) + 20);
+    }
+    return data;
+}
+
+function generateRandomModelData() {
+    return [
+        Math.floor(Math.random() * 1000) + 500,
+        Math.floor(Math.random() * 500) + 200,
+        Math.floor(Math.random() * 2000) + 1000,
+        Math.floor(Math.random() * 200) + 50,
+        Math.floor(Math.random() * 300) + 100
+    ];
+}
+
+function updateMetrics() {
+    // In a real implementation, this would update the metrics from the server
+    // For now, we'll just show a loading state
+    $('#refreshData').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Updating...');
+    
+    setTimeout(() => {
+        $('#refreshData').prop('disabled', false).html('<i class="fas fa-sync-alt me-2"></i>Refresh Data');
+        
+        // Update some random metrics
+        $('#totalRecords').text(Math.floor(Math.random() * 10000) + 50000);
+        $('#duplicatesFound').text(Math.floor(Math.random() * 1000) + 4000);
+        $('#recordsMerged').text(Math.floor(Math.random() * 800) + 3500);
+        $('#successRate').text((Math.random() * 10 + 90).toFixed(1) + '%');
+    }, 2000);
+}
+
+function exportReport() {
+    // In a real implementation, this would generate and download a report
+    alert('Report export functionality would be implemented here. This could generate PDF, Excel, or CSV reports.');
+}
+</script>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    padding: 10px 0;
+}
+
+.timeline-title {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.timeline-text {
+    margin: 0 0 5px 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.chart-area {
+    position: relative;
+    height: 300px;
+}
+
+.chart-pie {
+    position: relative;
+    height: 250px;
+}
+</style>
+{% endblock %}

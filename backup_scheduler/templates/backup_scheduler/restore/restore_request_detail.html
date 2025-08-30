@@ -1,0 +1,671 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Restore Request: {{ restore_request.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-container {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+    }
+    
+    .detail-section {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #f8f9fa;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 500;
+        color: #495057;
+        min-width: 200px;
+    }
+    
+    .info-value {
+        color: #6c757d;
+        text-align: right;
+        flex: 1;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-rejected { background: #f8d7da; color: #721c24; }
+    .status-in_progress { background: #cce5ff; color: #004085; }
+    .status-completed { background: #d1ecf1; color: #0c5460; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-cancelled { background: #e2e3e5; color: #383d41; }
+    
+    .priority-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .priority-low { background: #e9ecef; color: #6c757d; }
+    .priority-normal { background: #d1ecf1; color: #0c5460; }
+    .priority-high { background: #fff3cd; color: #856404; }
+    .priority-critical { background: #f8d7da; color: #721c24; }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -2.5rem;
+        top: 0.25rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #e9ecef;
+    }
+    
+    .timeline-item.completed::before {
+        background: #28a745;
+    }
+    
+    .timeline-item.failed::before {
+        background: #dc3545;
+    }
+    
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 3px solid #667eea;
+    }
+    
+    .timeline-content.completed {
+        border-left-color: #28a745;
+    }
+    
+    .timeline-content.failed {
+        border-left-color: #dc3545;
+    }
+    
+    .timeline-date {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-title {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+    
+    .alert-warning {
+        background: #fff3cd;
+        color: #856404;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .alert-info {
+        background: #e7f3ff;
+        color: #004085;
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border-left: 4px solid #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Restore Request Details</h1>
+                <div>
+                    <a href="{% url 'backup_scheduler:restore_request_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <a href="{% url 'backup_scheduler:restore_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Alert -->
+    {% if restore_request.status == 'pending' and restore_request.requires_approval %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Approval Required:</strong> This restore request is pending approval before it can be executed.
+    </div>
+    {% elif restore_request.status == 'approved' %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <strong>Ready for Execution:</strong> This restore request has been approved and is ready to be executed.
+    </div>
+    {% elif restore_request.status == 'in_progress' %}
+    <div class="alert alert-info">
+        <i class="fas fa-spinner fa-spin"></i>
+        <strong>In Progress:</strong> This restore operation is currently being executed.
+    </div>
+    {% elif restore_request.status == 'completed' %}
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <strong>Completed:</strong> This restore operation has been successfully completed.
+    </div>
+    {% elif restore_request.status == 'failed' %}
+    <div class="alert alert-danger">
+        <i class="fas fa-times-circle"></i>
+        <strong>Failed:</strong> This restore operation has failed. Please check the error details below.
+    </div>
+    {% endif %}
+
+    <!-- Basic Information -->
+    <div class="detail-container">
+        <div class="detail-section">
+            <h5 class="section-title">
+                <i class="fas fa-info-circle text-primary"></i> Basic Information
+            </h5>
+            
+            <div class="info-row">
+                <span class="info-label">Title</span>
+                <span class="info-value">{{ restore_request.title }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Description</span>
+                <span class="info-value">{{ restore_request.description }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Status</span>
+                <span class="info-value">
+                    <span class="status-badge status-{{ restore_request.status }}">
+                        {{ restore_request.status|title }}
+                    </span>
+                </span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Priority</span>
+                <span class="info-value">
+                    <span class="priority-badge priority-{{ restore_request.priority }}">
+                        {{ restore_request.priority|title }}
+                    </span>
+                </span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Created By</span>
+                <span class="info-value">{{ restore_request.created_by.get_full_name|default:restore_request.created_by.username }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Created At</span>
+                <span class="info-value">{{ restore_request.created_at|date:"M d, Y H:i" }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Last Updated</span>
+                <span class="info-value">{{ restore_request.updated_at|date:"M d, Y H:i" }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Request ID</span>
+                <span class="info-value"><code>{{ restore_request.request_id }}</code></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restore Configuration -->
+    <div class="detail-container">
+        <div class="detail-section">
+            <h5 class="section-title">
+                <i class="fas fa-cogs text-warning"></i> Restore Configuration
+            </h5>
+            
+            <div class="info-row">
+                <span class="info-label">Restore Type</span>
+                <span class="info-value">{{ restore_request.get_restore_type_display }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Target Environment</span>
+                <span class="info-value">{{ restore_request.target_environment|title }}</span>
+            </div>
+            
+            {% if restore_request.source_backup %}
+            <div class="info-row">
+                <span class="info-label">Source Backup</span>
+                <span class="info-value">
+                    <a href="{% url 'backup_scheduler:execution_detail' restore_request.source_backup.pk %}">
+                        {{ restore_request.source_backup.backup_type.name }} - {{ restore_request.source_backup.created_at|date:"M d, Y" }}
+                    </a>
+                </span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.source_file_path %}
+            <div class="info-row">
+                <span class="info-label">Source File</span>
+                <span class="info-value"><code>{{ restore_request.source_file_path }}</code></span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.restore_modules %}
+            <div class="info-row">
+                <span class="info-label">Restore Modules</span>
+                <span class="info-value">
+                    {% for module in restore_request.restore_modules %}
+                        <span class="badge badge-secondary me-1">{{ module }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.restore_tables %}
+            <div class="info-row">
+                <span class="info-label">Restore Tables</span>
+                <span class="info-value">
+                    {% for table in restore_request.restore_tables %}
+                        <span class="badge badge-info me-1">{{ table }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.target_timestamp %}
+            <div class="info-row">
+                <span class="info-label">Target Timestamp</span>
+                <span class="info-value">{{ restore_request.target_timestamp|date:"M d, Y H:i:s" }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Progress & Execution -->
+    <div class="detail-container">
+        <div class="detail-section">
+            <h5 class="section-title">
+                <i class="fas fa-chart-line text-success"></i> Progress & Execution
+            </h5>
+            
+            <div class="info-row">
+                <span class="info-label">Progress</span>
+                <span class="info-value">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ restore_request.progress_percentage }}%"></div>
+                    </div>
+                    {{ restore_request.progress_percentage }}%
+                </span>
+            </div>
+            
+            {% if restore_request.started_at %}
+            <div class="info-row">
+                <span class="info-label">Started At</span>
+                <span class="info-value">{{ restore_request.started_at|date:"M d, Y H:i" }}</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.completed_at %}
+            <div class="info-row">
+                <span class="info-label">Completed At</span>
+                <span class="info-value">{{ restore_request.completed_at|date:"M d, Y H:i" }}</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.estimated_duration %}
+            <div class="info-row">
+                <span class="info-label">Estimated Duration</span>
+                <span class="info-value">{{ restore_request.estimated_duration }} minutes</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.actual_duration %}
+            <div class="info-row">
+                <span class="info-label">Actual Duration</span>
+                <span class="info-value">{{ restore_request.actual_duration }} minutes</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.scheduled_at %}
+            <div class="info-row">
+                <span class="info-label">Scheduled For</span>
+                <span class="info-value">{{ restore_request.scheduled_at|date:"M d, Y H:i" }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Approval & Safety -->
+    <div class="detail-container">
+        <div class="detail-section">
+            <h5 class="section-title">
+                <i class="fas fa-shield-alt text-info"></i> Approval & Safety
+            </h5>
+            
+            <div class="info-row">
+                <span class="info-label">Requires Approval</span>
+                <span class="info-value">
+                    {% if restore_request.requires_approval %}
+                        <span class="badge badge-warning">Yes</span>
+                    {% else %}
+                        <span class="badge badge-success">No</span>
+                    {% endif %}
+                </span>
+            </div>
+            
+            {% if restore_request.approved_by %}
+            <div class="info-row">
+                <span class="info-label">Approved By</span>
+                <span class="info-value">{{ restore_request.approved_by.get_full_name|default:restore_request.approved_by.username }}</span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Approved At</span>
+                <span class="info-value">{{ restore_request.approved_at|date:"M d, Y H:i" }}</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.approval_notes %}
+            <div class="info-row">
+                <span class="info-label">Approval Notes</span>
+                <span class="info-value">{{ restore_request.approval_notes }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="info-row">
+                <span class="info-label">Backup Before Restore</span>
+                <span class="info-value">
+                    {% if restore_request.backup_before_restore %}
+                        <span class="badge badge-success">Enabled</span>
+                    {% else %}
+                        <span class="badge badge-secondary">Disabled</span>
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Dry Run Enabled</span>
+                <span class="info-value">
+                    {% if restore_request.dry_run_enabled %}
+                        <span class="badge badge-info">Enabled</span>
+                    {% else %}
+                        <span class="badge badge-secondary">Disabled</span>
+                    {% endif %}
+                </span>
+            </div>
+            
+            {% if restore_request.rollback_plan %}
+            <div class="info-row">
+                <span class="info-label">Rollback Plan</span>
+                <span class="info-value">{{ restore_request.rollback_plan }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Results & Errors -->
+    {% if restore_request.status in 'completed,failed' %}
+    <div class="detail-container">
+        <div class="detail-section">
+            <h5 class="section-title">
+                <i class="fas fa-clipboard-check text-primary"></i> Results & Errors
+            </h5>
+            
+            {% if restore_request.restored_file_path %}
+            <div class="info-row">
+                <span class="info-label">Restored File Path</span>
+                <span class="info-value"><code>{{ restore_request.restored_file_path }}</code></span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.restored_file_size_mb %}
+            <div class="info-row">
+                <span class="info-label">Restored File Size</span>
+                <span class="info-value">{{ restore_request.restored_file_size_mb }} MB</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.restored_records_count %}
+            <div class="info-row">
+                <span class="info-label">Restored Records</span>
+                <span class="info-value">{{ restore_request.restored_records_count }}</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.error_message %}
+            <div class="info-row">
+                <span class="info-label">Error Message</span>
+                <span class="info-value text-danger">{{ restore_request.error_message }}</span>
+            </div>
+            {% endif %}
+            
+            {% if restore_request.error_details %}
+            <div class="info-row">
+                <span class="info-label">Error Details</span>
+                <span class="info-value">
+                    <pre class="bg-light p-2 rounded"><code>{{ restore_request.error_details|pprint }}</code></pre>
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="detail-container">
+        <div class="detail-section">
+            <h5 class="section-title">
+                <i class="fas fa-tools text-warning"></i> Actions
+            </h5>
+            
+            <div class="action-buttons">
+                {% if restore_request.status == 'pending' and restore_request.requires_approval %}
+                    {% if perms.backup_scheduler.approve_restorerequest %}
+                    <a href="{% url 'backup_scheduler:restore_request_approve' restore_request.pk %}" 
+                       class="btn btn-success">
+                        <i class="fas fa-check"></i> Approve Request
+                    </a>
+                    {% endif %}
+                {% endif %}
+                
+                {% if restore_request.status == 'approved' %}
+                    {% if perms.backup_scheduler.execute_restorerequest %}
+                    <a href="{% url 'backup_scheduler:restore_request_execute' restore_request.pk %}" 
+                       class="btn btn-warning">
+                        <i class="fas fa-play"></i> Execute Restore
+                    </a>
+                    {% endif %}
+                {% endif %}
+                
+                {% if restore_request.status == 'pending' %}
+                    {% if perms.backup_scheduler.change_restorerequest %}
+                    <a href="{% url 'backup_scheduler:restore_request_edit' restore_request.pk %}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit Request
+                    </a>
+                    {% endif %}
+                {% endif %}
+                
+                {% if restore_request.status in 'pending,cancelled' %}
+                    {% if perms.backup_scheduler.delete_restorerequest %}
+                    <a href="{% url 'backup_scheduler:restore_request_delete' restore_request.pk %}" 
+                       class="btn btn-danger"
+                       onclick="return confirm('Are you sure you want to delete this restore request?')">
+                        <i class="fas fa-trash"></i> Delete Request
+                    </a>
+                    {% endif %}
+                {% endif %}
+                
+                <a href="{% url 'backup_scheduler:restore_validation' restore_request.pk %}" 
+                   class="btn btn-info">
+                    <i class="fas fa-check-circle"></i> Run Validation
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="detail-container">
+        <div class="detail-section">
+            <h5 class="section-title">
+                <i class="fas fa-history text-secondary"></i> Timeline
+            </h5>
+            
+            <div class="timeline">
+                <div class="timeline-item completed">
+                    <div class="timeline-content completed">
+                        <div class="timeline-date">{{ restore_request.created_at|date:"M d, Y H:i" }}</div>
+                        <div class="timeline-title">Request Created</div>
+                        <div class="timeline-description">Restore request created by {{ restore_request.created_by.get_full_name|default:restore_request.created_by.username }}</div>
+                    </div>
+                </div>
+                
+                {% if restore_request.approved_at %}
+                <div class="timeline-item completed">
+                    <div class="timeline-content completed">
+                        <div class="timeline-date">{{ restore_request.approved_at|date:"M d, Y H:i" }}</div>
+                        <div class="timeline-title">Request Approved</div>
+                        <div class="timeline-description">Approved by {{ restore_request.approved_by.get_full_name|default:restore_request.approved_by.username }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if restore_request.started_at %}
+                <div class="timeline-item {% if restore_request.status == 'completed' %}completed{% elif restore_request.status == 'failed' %}failed{% endif %}">
+                    <div class="timeline-content {% if restore_request.status == 'completed' %}completed{% elif restore_request.status == 'failed' %}failed{% endif %}">
+                        <div class="timeline-date">{{ restore_request.started_at|date:"M d, Y H:i" }}</div>
+                        <div class="timeline-title">Execution Started</div>
+                        <div class="timeline-description">Restore operation began</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if restore_request.completed_at %}
+                <div class="timeline-item {% if restore_request.status == 'completed' %}completed{% else %}failed{% endif %}">
+                    <div class="timeline-content {% if restore_request.status == 'completed' %}completed{% else %}failed{% endif %}">
+                        <div class="timeline-date">{{ restore_request.completed_at|date:"M d, Y H:i" }}</div>
+                        <div class="timeline-title">Execution {{ restore_request.status|title }}</div>
+                        <div class="timeline-description">
+                            {% if restore_request.status == 'completed' %}
+                                Restore operation completed successfully
+                            {% else %}
+                                Restore operation failed: {{ restore_request.error_message|default:"Unknown error" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Add some interactive features
+        $('.timeline-item').hover(
+            function() {
+                $(this).find('.timeline-content').css('transform', 'scale(1.02)');
+            },
+            function() {
+                $(this).find('.timeline-content').css('transform', 'scale(1)');
+            }
+        );
+        
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+{% endblock %}

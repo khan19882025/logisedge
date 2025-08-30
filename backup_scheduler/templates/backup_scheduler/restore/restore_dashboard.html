@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Restore Management Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .stats-card.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    
+    .stats-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stats-card.info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .quick-actions {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .action-btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        margin: 0.5rem;
+        border-radius: 25px;
+        text-decoration: none;
+        color: white;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .action-btn.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .action-btn.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    
+    .action-btn.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .action-btn.disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    
+    .action-btn.disabled:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .recent-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #333;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 0.5rem;
+    }
+    
+    .request-item {
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .request-item:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-rejected { background: #f8d7da; color: #721c24; }
+    .status-completed { background: #d1ecf1; color: #0c5460; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    
+    .priority-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+    
+    .priority-low { background: #e9ecef; color: #6c757d; }
+    .priority-normal { background: #d1ecf1; color: #0c5460; }
+    .priority-high { background: #fff3cd; color: #856404; }
+    .priority-critical { background: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Restore Management Dashboard</h1>
+                <div>
+                    <a href="{% url 'backup_scheduler:restore_request_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Restore Request
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-number">{{ total_requests }}</div>
+                <div class="stats-label">Total Requests</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card warning">
+                <div class="stats-number">{{ pending_requests }}</div>
+                <div class="stats-label">Pending Requests</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card success">
+                <div class="stats-number">{{ completed_requests }}</div>
+                <div class="stats-label">Completed</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card info">
+                <div class="stats-number">{{ success_rate }}%</div>
+                <div class="stats-label">Success Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="quick-actions">
+                <h5 class="section-title">Quick Actions</h5>
+                <div class="text-center">
+                    <a href="{% url 'backup_scheduler:restore_request_create' %}" class="action-btn primary">
+                        <i class="fas fa-plus"></i> Create Restore Request
+                    </a>
+                    <a href="{% url 'backup_scheduler:restore_request_list' %}" class="action-btn info">
+                        <i class="fas fa-list"></i> View All Requests
+                    </a>
+                    <a href="{% url 'backup_scheduler:restore_execution_list' %}" class="action-btn success">
+                        <i class="fas fa-play"></i> View Executions
+                    </a>
+                    {% if recent_requests %}
+                        {% with first_request=recent_requests|first %}
+                        <a href="{% url 'backup_scheduler:restore_validation' pk=first_request.pk %}" class="action-btn warning">
+                            <i class="fas fa-check-circle"></i> Run Validation
+                        </a>
+                        {% endwith %}
+                    {% else %}
+                        <span class="action-btn warning disabled" title="No restore requests available for validation">
+                            <i class="fas fa-check-circle"></i> Run Validation
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Restore Requests -->
+        <div class="col-xl-6">
+            <div class="recent-section">
+                <h5 class="section-title">
+                    Recent Restore Requests
+                    <a href="{% url 'backup_scheduler:restore_request_list' %}" class="float-right btn btn-sm btn-outline-primary">View All</a>
+                </h5>
+                {% if recent_requests %}
+                    {% for request in recent_requests %}
+                    <div class="request-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ request.title }}</h6>
+                            <span class="status-badge status-{{ request.status }}">{{ request.status|title }}</span>
+                        </div>
+                        <p class="text-muted small mb-2">{{ request.description|truncatewords:20 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="priority-badge priority-{{ request.priority }}">{{ request.priority|title }}</span>
+                            <small class="text-muted">{{ request.created_at|timesince }} ago</small>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'backup_scheduler:restore_request_detail' request.pk %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center py-3">No restore requests found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pending Approvals -->
+        <div class="col-xl-6">
+            <div class="recent-section">
+                <h5 class="section-title">
+                    Pending Approvals
+                    <span class="badge badge-warning ml-2">{{ pending_approvals|length }}</span>
+                </h5>
+                {% if pending_approvals %}
+                    {% for request in pending_approvals %}
+                    <div class="request-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ request.title }}</h6>
+                            <span class="priority-badge priority-{{ request.priority }}">{{ request.priority|title }}</span>
+                        </div>
+                        <p class="text-muted small mb-2">Requested by: {{ request.created_by.get_full_name|default:request.created_by.username }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">{{ request.created_at|timesince }} ago</small>
+                            <div>
+                                <a href="{% url 'backup_scheduler:restore_request_approve' request.pk %}" class="btn btn-sm btn-success">Approve</a>
+                                <a href="{% url 'backup_scheduler:restore_request_detail' request.pk %}" class="btn btn-sm btn-outline-primary">Review</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center py-3">No pending approvals.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Executions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="recent-section">
+                <h5 class="section-title">
+                    Recent Executions
+                    <a href="{% url 'backup_scheduler:restore_execution_list' %}" class="float-right btn btn-sm btn-outline-primary">View All</a>
+                </h5>
+                {% if recent_executions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Request</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Executed By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for execution in recent_executions %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'backup_scheduler:restore_request_detail' execution.restore_request.pk %}">
+                                            {{ execution.restore_request.title|truncatechars:30 }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-{{ execution.status }}">{{ execution.status|title }}</span>
+                                    </td>
+                                    <td>{{ execution.started_at|default:"Not started" }}</td>
+                                    <td>
+                                        {% if execution.duration_seconds %}
+                                            {{ execution.duration_seconds|floatformat:0 }}s
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ execution.executed_by.get_full_name|default:execution.executed_by.username }}</td>
+                                    <td>
+                                        <a href="{% url 'backup_scheduler:restore_execution_detail' execution.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-3">No executions found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh dashboard every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+    
+    // Add some interactive features
+    $(document).ready(function() {
+        // Add hover effects to stats cards
+        $('.stats-card').hover(
+            function() {
+                $(this).css('transform', 'scale(1.02)');
+            },
+            function() {
+                $(this).css('transform', 'scale(1)');
+            }
+        );
+        
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+{% endblock %}

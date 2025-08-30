@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Roles & Permissions{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'roles_permissions/css/dashboard.css' %}">
+<style>
+    .form-container {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 0.5rem;
+        color: #007bff;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-building me-2"></i>
+                {{ title }}
+            </h1>
+            <p class="text-muted">
+                {% if cost_center %}
+                    Edit cost center "{{ cost_center.name }}"
+                {% else %}
+                    Create a new cost center for role-based access control
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'roles_permissions:cost_center_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to Cost Centers
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Cost Center Form -->
+    <div class="form-container">
+        <form method="post" id="costCenterForm">
+            {% csrf_token %}
+            
+            <!-- Basic Information Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Basic Information
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">
+                                Enter a descriptive name for the cost center
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.code.id_for_label }}" class="form-label">
+                                Code <span class="text-danger">*</span>
+                            </label>
+                            {{ form.code }}
+                            {% if form.code.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.code.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">
+                                Enter a unique code for the cost center
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                        Description
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.description.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="help-text">
+                        Provide a detailed description of the cost center's purpose
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organization Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-sitemap"></i>
+                    Organization
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">
+                                Department
+                            </label>
+                            {{ form.department }}
+                            {% if form.department.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.department.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">
+                                Select the department this cost center belongs to
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.manager.id_for_label }}" class="form-label">
+                                Manager
+                            </label>
+                            {{ form.manager }}
+                            {% if form.manager.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.manager.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">
+                                Select the manager responsible for this cost center
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Section -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-toggle-on"></i>
+                    Status
+                </h5>
+                <div class="form-check">
+                    {{ form.is_active }}
+                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                        Active
+                    </label>
+                    <div class="help-text">
+                        Check this box to make the cost center active and available for use
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{% url 'roles_permissions:cost_center_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>
+                        Cancel
+                    </a>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>
+                        {{ submit_text }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('costCenterForm');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const name = document.getElementById('{{ form.name.id_for_label }}').value.trim();
+            const code = document.getElementById('{{ form.code.id_for_label }}').value.trim();
+            
+            if (!name || !code) {
+                e.preventDefault();
+                alert('Please fill in all required fields (Name and Code).');
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            // Re-enable after a short delay (in case of validation errors)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 3000);
+        });
+    }
+    
+    // Auto-generate code from name
+    const nameField = document.getElementById('{{ form.name.id_for_label }}');
+    const codeField = document.getElementById('{{ form.code.id_for_label }}');
+    
+    if (nameField && codeField) {
+        nameField.addEventListener('input', function() {
+            if (!codeField.value) {  // Only auto-generate if code field is empty
+                const name = this.value.trim();
+                if (name) {
+                    // Convert name to uppercase code format
+                    const code = name.toUpperCase()
+                        .replace(/[^A-Z0-9]/g, '')  // Remove non-alphanumeric characters
+                        .substring(0, 10);  // Limit to 10 characters
+                    codeField.value = code;
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

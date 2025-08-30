@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load hr_letters_filters %}
+
+{% block title %}Bulk Letter Generation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'hr_letters_documents/css/dashboard.css' %}">
+<style>
+    .bulk-form-section {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+    }
+    
+    .employee-selection {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 1rem;
+    }
+    
+    .employee-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid #f8f9fa;
+        transition: background-color 0.2s;
+    }
+    
+    .employee-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .employee-item:last-child {
+        border-bottom: none;
+    }
+    
+    .employee-checkbox {
+        margin-right: 1rem;
+    }
+    
+    .employee-info {
+        flex: 1;
+    }
+    
+    .employee-name {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .employee-details {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .preview-section {
+        background: #f8f9fa;
+        border-radius: 5px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .letter-preview {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .progress-section {
+        margin-top: 1rem;
+    }
+    
+    .progress-bar {
+        height: 20px;
+        border-radius: 10px;
+    }
+    
+    .status-message {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .template-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .placeholder-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .placeholder-item {
+        display: inline-block;
+        background: #e9ecef;
+        color: #495057;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        margin: 0.25rem;
+        font-size: 0.875rem;
+        font-family: monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-copy me-2"></i>
+                    Bulk Letter Generation
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'hr_letters_documents:dashboard' %}">HR Letters & Documents</a></li>
+                        <li class="breadcrumb-item active">Bulk Generation</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" id="bulkLetterForm">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Letter Type and Template Selection -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-file-alt me-2"></i>Letter Configuration</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_letter_type" class="form-label">Letter Type *</label>
+                                <select name="letter_type" id="id_letter_type" class="form-select" required>
+                                    <option value="">Select Letter Type</option>
+                                    {% for letter_type in letter_types %}
+                                        <option value="{{ letter_type.id }}">{{ letter_type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_template" class="form-label">Template *</label>
+                                <select name="template" id="id_template" class="form-select" required>
+                                    <option value="">Select Template</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Template Preview -->
+                    <div id="templatePreview" class="template-preview" style="display: none;">
+                        <h6><i class="fas fa-eye me-2"></i>Template Preview</h6>
+                        <div id="templateContent"></div>
+                        <div class="mt-3">
+                            <h6>Available Placeholders:</h6>
+                            <ul class="placeholder-list" id="placeholderList">
+                                <!-- Placeholders will be populated via JavaScript -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employee Selection -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-users me-2"></i>Select Employees</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllEmployees">
+                            <label class="form-check-label" for="selectAllEmployees">
+                                Select All Active Employees
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="employee-selection">
+                        {% for employee in employees %}
+                            <div class="employee-item">
+                                <input type="checkbox" name="employees" value="{{ employee.id }}" 
+                                       class="form-check-input employee-checkbox" id="employee_{{ employee.id }}">
+                                <div class="employee-info">
+                                    <div class="employee-name">{{ employee.first_name }} {{ employee.last_name }}</div>
+                                    <div class="employee-details">
+                                        {{ employee.designation }} • {{ employee.department }} • ID: {{ employee.employee_id }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted">No active employees found.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Letter Content -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-edit me-2"></i>Letter Content</h5>
+                    <div class="mb-3">
+                        <ul class="nav nav-tabs" id="languageTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="english-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#english" type="button" role="tab">
+                                    <i class="fas fa-language me-1"></i>English
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="arabic-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#arabic" type="button" role="tab">
+                                    <i class="fas fa-language me-1"></i>العربية
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content mt-3" id="languageTabContent">
+                            <div class="tab-pane fade show active" id="english" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="id_english_subject" class="form-label">Subject</label>
+                                    <input type="text" name="english_subject" id="id_english_subject" 
+                                           class="form-control" placeholder="Enter letter subject">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_english_content" class="form-label">Content</label>
+                                    <textarea name="english_content" id="id_english_content" 
+                                              class="form-control" rows="10" 
+                                              placeholder="Enter letter content with placeholders like {{employee_name}}"></textarea>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="arabic" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="id_arabic_subject" class="form-label">الموضوع</label>
+                                    <input type="text" name="arabic_subject" id="id_arabic_subject" 
+                                           class="form-control" placeholder="أدخل موضوع الرسالة">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_arabic_content" class="form-label">المحتوى</label>
+                                    <textarea name="arabic_content" id="id_arabic_content" 
+                                              class="form-control" rows="10" 
+                                              placeholder="أدخل محتوى الرسالة مع العناصر النائبة مثل {{employee_name}}"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Settings -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-cog me-2"></i>Additional Settings</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_issue_date" class="form-label">Issue Date</label>
+                                <input type="date" name="issue_date" id="id_issue_date" 
+                                       class="form-control" value="{{ today_date }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_effective_date" class="form-label">Effective Date</label>
+                                <input type="date" name="effective_date" id="id_effective_date" 
+                                       class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_notes" class="form-label">Notes</label>
+                        <textarea name="notes" id="id_notes" class="form-control" rows="3" 
+                                  placeholder="Additional notes or instructions"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Generation Progress -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-tasks me-2"></i>Generation Progress</h5>
+                    <div class="progress-section">
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="status-message" id="statusMessage">Ready to generate</div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-eye me-2"></i>Preview</h5>
+                    <div class="preview-section">
+                        <p class="text-muted">Select an employee to preview the generated letter:</p>
+                        <select id="previewEmployee" class="form-select mb-3">
+                            <option value="">Select Employee</option>
+                        </select>
+                        <div id="letterPreview" class="letter-preview" style="display: none;">
+                            <!-- Preview content will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-play me-2"></i>Actions</h5>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary" id="previewBtn">
+                            <i class="fas fa-eye me-2"></i>Preview Letters
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="generateBtn">
+                            <i class="fas fa-magic me-2"></i>Generate Letters
+                        </button>
+                        <a href="{% url 'hr_letters_documents:letter_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-2"></i>View All Letters
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="bulk-form-section">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Quick Stats</h5>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <h4 class="text-primary">{{ total_employees }}</h4>
+                                <small class="text-muted">Total Employees</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <h4 class="text-success">{{ total_letter_types }}</h4>
+                                <small class="text-muted">Letter Types</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'hr_letters_documents/js/bulk_letter_generation.js' %}"></script>
+{% endblock %} 

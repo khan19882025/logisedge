@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Backup History - Manual Backup{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'manual_backup/css/dashboard.css' %}">
+<style>
+    .search-filters {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .backup-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .backup-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .backup-table th,
+    .backup-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .backup-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .backup-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-in_progress { background: #cce5ff; color: #004085; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-cancelled { background: #e2e3e5; color: #383d41; }
+    
+    .priority-badge {
+        padding: 3px 6px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    
+    .priority-low { background: #e9ecef; color: #6c757d; }
+    .priority-normal { background: #d1ecf1; color: #0c5460; }
+    .priority-high { background: #fff3cd; color: #856404; }
+    .priority-critical { background: #f8d7da; color: #721c24; }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 10px;
+    }
+    
+    .pagination a,
+    .pagination span {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        text-decoration: none;
+        color: #007bff;
+        border-radius: 4px;
+    }
+    
+    .pagination .current {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .pagination a:hover {
+        background: #e9ecef;
+    }
+    
+    .search-results {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #e7f3ff;
+        border-radius: 6px;
+        border-left: 4px solid #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="backup-history-page">
+    <div class="page-header">
+        <h1><i class="fas fa-history"></i> Backup History</h1>
+        <p>View and manage all backup sessions with advanced filtering and search capabilities</p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filters">
+        <form method="get" class="filter-form">
+            <div class="filter-row">
+                <div class="form-group">
+                    <label for="{{ search_form.search_field.id_for_label }}">Search Field</label>
+                    {{ search_form.search_field }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ search_form.search_query.id_for_label }}">Search Query</label>
+                    {{ search_form.search_query }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ search_form.status.id_for_label }}">Status</label>
+                    {{ search_form.status }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ search_form.reason.id_for_label }}">Reason</label>
+                    {{ search_form.reason }}
+                </div>
+            </div>
+            
+            <div class="filter-row">
+                <div class="form-group">
+                    <label for="{{ search_form.priority.id_for_label }}">Priority</label>
+                    {{ search_form.priority }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ search_form.date_from.id_for_label }}">Date From</label>
+                    {{ search_form.date_from }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ search_form.date_to.id_for_label }}">Date To</label>
+                    {{ search_form.date_to }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ search_form.created_by.id_for_label }}">Created By</label>
+                    {{ search_form.created_by }}
+                </div>
+            </div>
+            
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{% url 'manual_backup:backup_history' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results Summary -->
+    {% if search_form.is_bound and search_form.is_valid %}
+    <div class="search-results">
+        <strong>Search Results:</strong> Found {{ total_backups }} backup{{ total_backups|pluralize }} 
+        {% if search_form.cleaned_data.search_query %}
+            matching "{{ search_form.cleaned_data.search_query }}"
+        {% endif %}
+        {% if search_form.cleaned_data.status %}
+            with status "{{ search_form.cleaned_data.get_status_display }}"
+        {% endif %}
+        {% if search_form.cleaned_data.reason %}
+            for reason "{{ search_form.cleaned_data.get_reason_display }}"
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Backup History Table -->
+    <div class="backup-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Backup ID</th>
+                    <th>Name</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Created By</th>
+                    <th>Created</th>
+                    <th>Duration</th>
+                    <th>Size</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for backup in page_obj %}
+                <tr>
+                    <td>
+                        <code>{{ backup.backup_id|truncatechars:8 }}</code>
+                    </td>
+                    <td>
+                        <strong>{{ backup.name }}</strong>
+                        {% if backup.description %}
+                            <br><small class="text-muted">{{ backup.description|truncatechars:50 }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ backup.get_reason_display }}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ backup.status }}">
+                            {{ backup.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="priority-badge priority-{{ backup.priority }}">
+                            {{ backup.get_priority_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if backup.created_by %}
+                            {{ backup.created_by.username }}
+                        {% else %}
+                            <span class="text-muted">System</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ backup.created_at|date:"M d, Y H:i" }}
+                    </td>
+                    <td>
+                        {% if backup.duration_formatted != "N/A" %}
+                            {{ backup.duration_formatted }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if backup.file_size_formatted != "N/A" %}
+                            {{ backup.file_size_formatted }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'manual_backup:backup_detail' backup.backup_id %}" 
+                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if backup.status == 'pending' %}
+                            <button class="btn btn-sm btn-outline-success" 
+                                    onclick="startBackup('{{ backup.backup_id }}')" title="Start Backup">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            {% endif %}
+                            {% if backup.status == 'in_progress' %}
+                            <button class="btn btn-sm btn-outline-warning" 
+                                    onclick="viewProgress('{{ backup.backup_id }}')" title="View Progress">
+                                <i class="fas fa-clock"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center py-4">
+                        <div class="empty-state">
+                            <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                            <h4>No backups found</h4>
+                            <p class="text-muted">
+                                {% if search_form.is_bound %}
+                                    No backups match your current search criteria.
+                                {% else %}
+                                    No backup sessions have been created yet.
+                                {% endif %}
+                            </p>
+                            {% if not search_form.is_bound %}
+                            <a href="{% url 'manual_backup:initiate_backup' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First Backup
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                <i class="fas fa-angle-left"></i>
+            </a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="current">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                <i class="fas fa-angle-right"></i>
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Page Info -->
+    <div class="page-info text-center text-muted mt-3">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_backups }} backups
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startBackup(backupId) {
+    if (confirm('Are you sure you want to start this backup?')) {
+        fetch(`/manual-backup/api/start/${backupId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error starting backup: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error starting backup');
+        });
+    }
+}
+
+function viewProgress(backupId) {
+    window.location.href = `/manual-backup/detail/${backupId}/`;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

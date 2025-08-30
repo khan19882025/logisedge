@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'opening_balance/css/opening_balance.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="opening-balance-container">
+    <!-- Header -->
+    <div class="opening-balance-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2><i class="fas fa-balance-scale"></i> {{ title }}</h2>
+                    <p class="subtitle">
+                        Opening balance details for {{ opening_balance.financial_year.name }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{% url 'opening_balance:opening_balance_list' %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="opening-balance-content">
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Financial Year:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                {{ opening_balance.financial_year.name }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Period:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                {{ opening_balance.financial_year.start_date|date:"M d, Y" }} - {{ opening_balance.financial_year.end_date|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Created By:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                {{ opening_balance.created_by.get_full_name|default:opening_balance.created_by.username }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Created:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                {{ opening_balance.created_at|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Last Updated:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                {{ opening_balance.updated_at|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4">
+                                <strong>Status:</strong>
+                            </div>
+                            <div class="col-sm-8">
+                                {% if opening_balance.is_balanced %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle"></i> Balanced
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> Unbalanced
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Summary -->
+            <div class="form-section">
+                <h4><i class="fas fa-chart-pie"></i> Balance Summary</h4>
+                <div class="balance-summary">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">Total Debit</div>
+                                <div class="balance-amount">{{ opening_balance.total_debit|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">Total Credit</div>
+                                <div class="balance-amount">{{ opening_balance.total_credit|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">Balance Difference</div>
+                                <div class="balance-amount {% if opening_balance.is_balanced %}balanced{% else %}unbalanced{% endif %}">
+                                    {{ opening_balance.balance_difference|floatformat:2 }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="balance-item">
+                                <div class="balance-label">Total Entries</div>
+                                <div class="balance-amount">{{ opening_balance.entries.count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entry Details -->
+            <div class="form-section">
+                <h4><i class="fas fa-list"></i> Entry Details</h4>
+                <div class="entry-details-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th>Amount</th>
+                                <th>Type</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in opening_balance.entries.all %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ entry.account.account_code }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ entry.account.account_name }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="{% if entry.balance_type == 'debit' %}text-danger{% else %}text-success{% endif %}">
+                                            {{ entry.amount|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if entry.balance_type == 'debit' %}
+                                            <span class="badge bg-danger">Debit</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Credit</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entry.remarks %}
+                                            {{ entry.remarks }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-inbox fa-2x mb-3"></i>
+                                            <p>No entries found for this opening balance.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="{% url 'opening_balance:opening_balance_edit' opening_balance.pk %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Opening Balance
+                </a>
+                <a href="{% url 'opening_balance:opening_balance_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+                <a href="{% url 'opening_balance:opening_balance_delete' opening_balance.pk %}" class="btn btn-outline-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'opening_balance/js/opening_balance.js' %}"></script>
+{% endblock %} 

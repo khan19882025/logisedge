@@ -1,0 +1,204 @@
+{% extends 'depreciation_schedule/base.html' %}
+{% load static %}
+
+{% block title %}Depreciation Settings{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Settings</li>
+{% endblock %}
+
+{% block depreciation_schedule_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Depreciation Settings</h1>
+            <a href="{% url 'depreciation_schedule:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">General Settings</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.default_depreciation_expense_account.id_for_label }}" class="form-label">
+                                    Default Depreciation Expense Account
+                                </label>
+                                {{ form.default_depreciation_expense_account }}
+                                {% if form.default_depreciation_expense_account.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.default_depreciation_expense_account.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Default account to debit for depreciation expense</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.default_accumulated_depreciation_account.id_for_label }}" class="form-label">
+                                    Default Accumulated Depreciation Account
+                                </label>
+                                {{ form.default_accumulated_depreciation_account }}
+                                {% if form.default_accumulated_depreciation_account.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.default_accumulated_depreciation_account.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Default account to credit for accumulated depreciation</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.auto_post_to_gl }}
+                                    <label class="form-check-label" for="{{ form.auto_post_to_gl.id_for_label }}">
+                                        Automatically Post to General Ledger
+                                    </label>
+                                    {% if form.auto_post_to_gl.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.auto_post_to_gl.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Automatically post depreciation to general ledger when calculated</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.require_approval }}
+                                    <label class="form-check-label" for="{{ form.require_approval.id_for_label }}">
+                                        Require Approval Before Posting
+                                    </label>
+                                    {% if form.require_approval.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.require_approval.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Require approval before posting depreciation to general ledger</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.minimum_depreciation_amount.id_for_label }}" class="form-label">
+                                    Minimum Depreciation Amount
+                                </label>
+                                {{ form.minimum_depreciation_amount }}
+                                {% if form.minimum_depreciation_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.minimum_depreciation_amount.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Minimum depreciation amount to post to general ledger</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Current Settings</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-6">Depreciation Expense Account:</dt>
+                    <dd class="col-sm-6">
+                        {% if settings.default_depreciation_expense_account %}
+                            {{ settings.default_depreciation_expense_account }}
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-6">Accumulated Depreciation Account:</dt>
+                    <dd class="col-sm-6">
+                        {% if settings.default_accumulated_depreciation_account %}
+                            {{ settings.default_accumulated_depreciation_account }}
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-6">Auto Post to GL:</dt>
+                    <dd class="col-sm-6">
+                        {% if settings.auto_post_to_gl %}
+                            <span class="badge bg-success">Enabled</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Disabled</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-6">Require Approval:</dt>
+                    <dd class="col-sm-6">
+                        {% if settings.require_approval %}
+                            <span class="badge bg-warning">Required</span>
+                        {% else %}
+                            <span class="badge bg-info">Not Required</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-6">Minimum Amount:</dt>
+                    <dd class="col-sm-6">{{ settings.minimum_depreciation_amount|floatformat:2 }}</dd>
+                </dl>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <small class="text-muted">
+                        Last updated: {{ settings.updated_at|date:"M d, Y H:i"|default:"Never" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'depreciation_schedule:schedule_create' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Schedule
+                    </a>
+                    <a href="{% url 'depreciation_schedule:asset_calculator' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-calculator me-2"></i>Asset Calculator
+                    </a>
+                    <a href="{% url 'depreciation_schedule:dashboard' %}" class="btn btn-outline-info">
+                        <i class="bi bi-dashboard me-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

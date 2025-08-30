@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Upload Containers{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-upload me-2"></i>Bulk Upload Containers
+        </h1>
+        <a href="{% url 'container_management:container_list' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Containers
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Upload File
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.file.id_for_label }}" class="form-label">
+                                Select File <span class="text-danger">*</span>
+                            </label>
+                            {{ form.file }}
+                            {% if form.file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.file.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Supported formats: Excel (.xlsx, .xls) or CSV (.csv) files
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.file_type.id_for_label }}" class="form-label">
+                                File Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.file_type }}
+                            {% if form.file_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.file_type.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.has_header.id_for_label }}" class="form-label">
+                                File Options
+                            </label>
+                            <div class="form-check">
+                                {{ form.has_header }}
+                                <label class="form-check-label" for="{{ form.has_header.id_for_label }}">
+                                    File contains header row
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'container_management:container_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload me-1"></i>Upload and Process
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- File Format Guide -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>File Format Guide
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Required Columns:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <strong>container_number</strong> - ISO 6346 standard container number
+                        </li>
+                        <li class="mb-2">
+                            <strong>container_type</strong> - 20ft, 40ft, 40hc, reefer, open_top, flat_rack, tank
+                        </li>
+                        <li class="mb-2">
+                            <strong>size</strong> - Container size (20ft, 40ft, etc.)
+                        </li>
+                        <li class="mb-2">
+                            <strong>tare_weight</strong> - Empty container weight in kg
+                        </li>
+                        <li class="mb-2">
+                            <strong>max_payload</strong> - Maximum payload in kg
+                        </li>
+                        <li class="mb-2">
+                            <strong>status</strong> - available, booked, in_use, maintenance, retired
+                        </li>
+                        <li class="mb-2">
+                            <strong>current_location</strong> - Current location (Port/Terminal/Yard)
+                        </li>
+                    </ul>
+                    
+                    <h6 class="text-primary mt-3">Optional Columns:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <strong>yard_location</strong> - Specific yard location
+                        </li>
+                        <li class="mb-2">
+                            <strong>line_operator</strong> - Shipping line operator
+                        </li>
+                        <li class="mb-2">
+                            <strong>purchase_date</strong> - Purchase date (YYYY-MM-DD)
+                        </li>
+                        <li class="mb-2">
+                            <strong>last_maintenance</strong> - Last maintenance date (YYYY-MM-DD)
+                        </li>
+                        <li class="mb-2">
+                            <strong>next_maintenance</strong> - Next maintenance date (YYYY-MM-DD)
+                        </li>
+                        <li class="mb-2">
+                            <strong>notes</strong> - Additional notes
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Download Template -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-download me-2"></i>Download Template
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Download a sample template to see the correct format for your data.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Download Excel Template
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-file-earmark-text me-1"></i>Download CSV Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+    <script>
+        // Initialize form enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add Bootstrap classes to form fields
+            const formFields = document.querySelectorAll('input, select, textarea');
+            formFields.forEach(field => {
+                if (field.type !== 'checkbox') {
+                    field.classList.add('form-control');
+                }
+            });
+
+            // File input enhancement
+            const fileInput = document.getElementById('{{ form.file.id_for_label }}');
+            if (fileInput) {
+                fileInput.addEventListener('change', function() {
+                    const fileName = this.files[0]?.name;
+                    if (fileName) {
+                        // You can add file validation here
+                        console.log('Selected file:', fileName);
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,421 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}{% if rule %}Edit Rule{% else %}Create New Rule{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-{% if rule %}edit{% else %}plus-circle{% endif %} text-primary me-2"></i>
+                        {% if rule %}Edit Rule{% else %}Create New Rule{% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if rule %}
+                            Modify the data cleaning rule "{{ rule.name }}"
+                        {% else %}
+                            Define a new data cleaning rule for your data quality needs
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'data_cleaning_tool:rule_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Rules
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-cog me-2"></i>
+                                Rule Configuration
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="ruleForm">
+                                {% csrf_token %}
+                                
+                                <!-- Basic Information -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_name" class="form-label">Rule Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="id_name" name="name" value="{{ rule.name|default:'' }}" required>
+                                            <div class="form-text">A descriptive name for the rule</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_rule_type" class="form-label">Rule Type <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="id_rule_type" name="rule_type" required>
+                                                <option value="">Select Rule Type</option>
+                                                <option value="validation" {% if rule.rule_type == 'validation' %}selected{% endif %}>Validation</option>
+                                                <option value="transformation" {% if rule.rule_type == 'transformation' %}selected{% endif %}>Transformation</option>
+                                                <option value="deduplication" {% if rule.rule_type == 'deduplication' %}selected{% endif %}>Deduplication</option>
+                                                <option value="enrichment" {% if rule.rule_type == 'enrichment' %}selected{% endif %}>Enrichment</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="id_description" name="description" rows="3" placeholder="Describe what this rule does...">{{ rule.description|default:'' }}</textarea>
+                                    <div class="form-text">Detailed description of the rule's purpose and behavior</div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <!-- Data Configuration -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-database me-2"></i>
+                                    Data Configuration
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_data_type" class="form-label">Data Type <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="id_data_type" name="data_type" required>
+                                                <option value="">Select Data Type</option>
+                                                <option value="master" {% if rule.data_type == 'master' %}selected{% endif %}>Master Data</option>
+                                                <option value="transactional" {% if rule.data_type == 'transactional' %}selected{% endif %}>Transactional Data</option>
+                                                <option value="financial" {% if rule.data_type == 'financial' %}selected{% endif %}>Financial Data</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_target_model" class="form-label">Target Model</label>
+                                            <input type="text" class="form-control" id="id_target_model" name="target_model" value="{{ rule.target_model|default:'' }}" placeholder="e.g., Customer, Invoice, etc.">
+                                            <div class="form-text">Specific Django model this rule applies to</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_priority" class="form-label">Priority</label>
+                                            <select class="form-select" id="id_priority" name="priority">
+                                                <option value="low" {% if rule.priority == 'low' %}selected{% endif %}>Low</option>
+                                                <option value="medium" {% if rule.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                                <option value="high" {% if rule.priority == 'high' %}selected{% endif %}>High</option>
+                                                <option value="critical" {% if rule.priority == 'critical' %}selected{% endif %}>Critical</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_status" class="form-label">Status</label>
+                                            <select class="form-select" id="id_status" name="status">
+                                                <option value="draft" {% if rule.status == 'draft' %}selected{% endif %}>Draft</option>
+                                                <option value="active" {% if rule.status == 'active' %}selected{% endif %}>Active</option>
+                                                <option value="inactive" {% if rule.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <!-- Rule Logic -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-code me-2"></i>
+                                    Rule Logic
+                                </h6>
+
+                                <div class="mb-3">
+                                    <label for="id_rule_config" class="form-label">Rule Configuration (JSON) <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="id_rule_config" name="rule_config" rows="8" required placeholder='{"field": "email", "condition": "regex", "pattern": "^[^@]+@[^@]+\\.[^@]+$", "action": "validate"}'>{{ rule.rule_config|default:'' }}</textarea>
+                                    <div class="form-text">
+                                        Define the rule logic in JSON format. Examples:
+                                        <ul class="mt-2">
+                                            <li><strong>Validation:</strong> {"field": "email", "condition": "regex", "pattern": "^[^@]+@[^@]+\\.[^@]+$"}</li>
+                                            <li><strong>Transformation:</strong> {"field": "phone", "action": "format", "format": "###-###-####"}</li>
+                                            <li><strong>Deduplication:</strong> {"fields": ["email", "phone"], "strategy": "keep_latest"}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_error_message" class="form-label">Error Message</label>
+                                            <input type="text" class="form-control" id="id_error_message" name="error_message" value="{{ rule.error_message|default:'' }}" placeholder="Custom error message for validation failures">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_success_message" class="form-label">Success Message</label>
+                                            <input type="text" class="form-control" id="id_success_message" name="success_message" value="{{ rule.success_message|default:'' }}" placeholder="Message shown when rule passes">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <!-- Execution Settings -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-play me-2"></i>
+                                    Execution Settings
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_is_automated" name="is_automated" {% if rule.is_automated %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_is_automated">
+                                                Run Automatically
+                                            </label>
+                                            <div class="form-text">Execute this rule automatically during scheduled cleaning</div>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_stop_on_error" name="stop_on_error" {% if rule.stop_on_error %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_stop_on_error">
+                                                Stop on Error
+                                            </label>
+                                            <div class="form-text">Halt execution if this rule fails</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_log_actions" name="log_actions" {% if rule.log_actions %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_log_actions">
+                                                Log Actions
+                                            </label>
+                                            <div class="form-text">Record all actions performed by this rule</div>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_create_backup" name="create_backup" {% if rule.create_backup %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_create_backup">
+                                                Create Backup
+                                            </label>
+                                            <div class="form-text">Backup data before applying this rule</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_execution_order" class="form-label">Execution Order</label>
+                                            <input type="number" class="form-control" id="id_execution_order" name="execution_order" value="{{ rule.execution_order|default:0 }}" min="0" max="999">
+                                            <div class="form-text">Order in which this rule should be executed (lower numbers first)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_timeout_seconds" class="form-label">Timeout (seconds)</label>
+                                            <input type="number" class="form-control" id="id_timeout_seconds" name="timeout_seconds" value="{{ rule.timeout_seconds|default:300 }}" min="30" max="3600">
+                                            <div class="form-text">Maximum time allowed for rule execution</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <!-- Advanced Settings -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-sliders-h me-2"></i>
+                                    Advanced Settings
+                                </h6>
+
+                                <div class="mb-3">
+                                    <label for="id_conditions" class="form-label">Preconditions</label>
+                                    <textarea class="form-control" id="id_conditions" name="conditions" rows="3" placeholder='{"field": "status", "operator": "equals", "value": "active"}'>{{ rule.conditions|default:'' }}</textarea>
+                                    <div class="form-text">JSON conditions that must be met before this rule executes</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_dependencies" class="form-label">Dependencies</label>
+                                    <input type="text" class="form-control" id="id_dependencies" name="dependencies" value="{{ rule.dependencies|default:'' }}" placeholder="Comma-separated list of rule IDs this rule depends on">
+                                    <div class="form-text">Other rules that must complete successfully before this rule runs</div>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        {% if rule %}Update Rule{% else %}Create Rule{% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Rule Types Guide
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="text-success">Validation Rules</h6>
+                                <p class="small text-muted mb-0">
+                                    Check data against defined criteria (format, range, business rules)
+                                </p>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="text-primary">Transformation Rules</h6>
+                                <p class="small text-muted mb-0">
+                                    Convert data from one format to another (standardization, formatting)
+                                </p>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="text-warning">Deduplication Rules</h6>
+                                <p class="small text-muted mb-0">
+                                    Identify and handle duplicate records based on specified criteria
+                                </p>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="text-info">Enrichment Rules</h6>
+                                <p class="small text-muted mb-0">
+                                    Add missing data or enhance existing records with additional information
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                Best Practices
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled small">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Start with simple rules and gradually add complexity
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Test rules on small datasets before applying to production
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Use descriptive names and clear descriptions
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Set appropriate timeouts for complex operations
+                                </li>
+                                <li class="mb-0">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Document any custom logic in the description
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-code me-2"></i>
+                                JSON Examples
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="text-primary">Email Validation</h6>
+                                <pre class="small bg-light p-2 rounded"><code>{
+  "field": "email",
+  "condition": "regex",
+  "pattern": "^[^@]+@[^@]+\\.[^@]+$"
+}</code></pre>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="text-primary">Phone Formatting</h6>
+                                <pre class="small bg-light p-2 rounded"><code>{
+  "field": "phone",
+  "action": "format",
+  "format": "###-###-####"
+}</code></pre>
+                            </div>
+
+                            <div class="mb-0">
+                                <h6 class="text-primary">Duplicate Detection</h6>
+                                <pre class="small bg-light p-2 rounded"><code>{
+  "fields": ["email", "phone"],
+  "strategy": "keep_latest"
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JSON validation
+document.getElementById('ruleForm').addEventListener('submit', function(e) {
+    const ruleConfig = document.getElementById('id_rule_config').value;
+    const conditions = document.getElementById('id_conditions').value;
+    
+    try {
+        if (ruleConfig.trim()) {
+            JSON.parse(ruleConfig);
+        }
+        if (conditions.trim()) {
+            JSON.parse(conditions);
+        }
+    } catch (error) {
+        e.preventDefault();
+        alert('Invalid JSON format in Rule Configuration or Preconditions fields. Please check the syntax.');
+        return false;
+    }
+});
+
+// Auto-resize textareas
+document.querySelectorAll('textarea').forEach(textarea => {
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+});
+</script>
+
+<style>
+pre {
+    font-size: 0.75rem;
+    margin: 0;
+}
+
+.form-text ul {
+    margin-bottom: 0;
+}
+
+.form-text li {
+    margin-bottom: 0.25rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load backup_filters %}
+
+{% block title %}Backup Executions{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'backup_scheduler/css/execution_list.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-list me-2"></i>Backup Executions
+                </h1>
+                <p class="text-muted">Monitor and manage backup execution history</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-2">
+                            <label for="{{ filter_form.status.id_for_label }}">Status</label>
+                            {{ filter_form.status }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ filter_form.backup_type.id_for_label }}">Backup Type</label>
+                            {{ filter_form.backup_type }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ filter_form.backup_scope.id_for_label }}">Backup Scope</label>
+                            {{ filter_form.backup_scope }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ filter_form.date_from.id_for_label }}">From Date</label>
+                            {{ filter_form.date_from }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ filter_form.date_to.id_for_label }}">To Date</label>
+                            {{ filter_form.date_to }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ filter_form.is_manual.id_for_label }}">Type</label>
+                            {{ filter_form.is_manual }}
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-2"></i>Apply Filters
+                            </button>
+                            <a href="{% url 'backup_scheduler:execution_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Backup Executions</h6>
+                    <a href="{% url 'backup_scheduler:manual_backup' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-2"></i>New Manual Backup
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Execution ID</th>
+                                        <th>Type</th>
+                                        <th>Scope</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Duration</th>
+                                        <th>File Size</th>
+                                        <th>Triggered By</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for execution in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'backup_scheduler:execution_detail' execution.pk %}">
+                                                {{ execution.execution_id|truncatechars:12 }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ execution.backup_type.name }}</span>
+                                        </td>
+                                        <td>{{ execution.backup_scope.name }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ execution.status|status_badge }}">
+                                                {{ execution.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if execution.started_at %}
+                                                {{ execution.started_at|date:"M d, H:i" }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if execution.duration_seconds %}
+                                                {{ execution.duration_seconds }}s
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if execution.file_size_mb %}
+                                                {{ execution.file_size_mb }} MB
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ execution.is_manual|yesno:'warning,secondary' }}">
+                                                {{ execution.is_manual|yesno:'Manual,Scheduled' }}
+                                            </span>
+                                            <br>
+                                            <small>{{ execution.triggered_by.username }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'backup_scheduler:execution_detail' execution.pk %}" 
+                                                   class="btn btn-sm btn-info" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if execution.status == 'running' %}
+                                                    <a href="{% url 'backup_scheduler:execution_cancel' execution.pk %}" 
+                                                       class="btn btn-sm btn-warning" title="Cancel"
+                                                       onclick="return confirm('Are you sure you want to cancel this backup?')">
+                                                        <i class="fas fa-stop"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.backup_scope %}&backup_scope={{ request.GET.backup_scope }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_manual %}&is_manual={{ request.GET.is_manual }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.backup_scope %}&backup_scope={{ request.GET.backup_scope }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_manual %}&is_manual={{ request.GET.is_manual }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.backup_scope %}&backup_scope={{ request.GET.backup_scope }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_manual %}&is_manual={{ request.GET.is_manual }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.backup_scope %}&backup_scope={{ request.GET.backup_scope }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_manual %}&is_manual={{ request.GET.is_manual }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.backup_scope %}&backup_scope={{ request.GET.backup_scope }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_manual %}&is_manual={{ request.GET.is_manual }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No backup executions found</h5>
+                            <p class="text-muted">Start by creating a manual backup or check your backup schedules.</p>
+                            <a href="{% url 'backup_scheduler:manual_backup' %}" class="btn btn-primary">
+                                <i class="fas fa-play me-2"></i>Create Manual Backup
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'backup_scheduler/js/execution_list.js' %}"></script>
+{% endblock %}

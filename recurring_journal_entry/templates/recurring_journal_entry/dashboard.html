@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recurring Journal Entry Dashboard - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'recurring_journal_entry/css/recurring_journal_entry.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="recurring-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-chart-line"></i> Recurring Journal Entry Dashboard</h2>
+                <p class="subtitle">Overview and analytics for automated journal entries</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'recurring_journal_entry:recurring_entry_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Template
+                </a>
+                <a href="{% url 'recurring_journal_entry:recurring_entry_list' %}" class="btn btn-outline-info">
+                    <i class="fas fa-list"></i> View All
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-cards mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ total_entries }}</div>
+                        <div class="stat-label">Total Templates</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card active">
+                    <div class="stat-icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ active_entries }}</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card paused">
+                    <div class="stat-icon">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ paused_entries }}</div>
+                        <div class="stat-label">Paused</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card completed">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ completed_entries }}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Chart Section -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Monthly Template Creation</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyChart" width="400" height="200" data-chart='{{ chart_data|escapejs }}'></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Entries -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-alt"></i> Upcoming Entries</h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_entries %}
+                        <div class="upcoming-entries">
+                            {% for entry_info in upcoming_entries %}
+                                <div class="upcoming-entry-item">
+                                    <div class="entry-info">
+                                        <div class="entry-name">{{ entry_info.entry.template_name }}</div>
+                                        <div class="entry-date">
+                                            {{ entry_info.next_date|date:"M d, Y" }}
+                                            {% if entry_info.days_until == 0 %}
+                                                <span class="badge bg-danger ms-2">Today</span>
+                                            {% elif entry_info.days_until == 1 %}
+                                                <span class="badge bg-warning ms-2">Tomorrow</span>
+                                            {% else %}
+                                                <span class="badge bg-info ms-2">{{ entry_info.days_until }} days</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="entry-actions">
+                                        <a href="{% url 'recurring_journal_entry:generate_entry' entry_info.entry.pk %}" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No upcoming entries in the next 30 days.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Templates -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Recent Templates</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_entries %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Template Name</th>
+                                        <th>Type</th>
+                                        <th>Frequency</th>
+                                        <th>Status</th>
+                                        <th>Next Due</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in recent_entries %}
+                                        <tr>
+                                            <td>
+                                                <div class="entry-name">
+                                                    <strong>{{ entry.template_name }}</strong>
+                                                    <small class="text-muted d-block">{{ entry.narration|truncatechars:50 }}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ entry.get_journal_type_display }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ entry.get_frequency_display }}</span>
+                                            </td>
+                                            <td>
+                                                {% if entry.status == 'ACTIVE' %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% elif entry.status == 'PAUSED' %}
+                                                    <span class="badge bg-warning">Paused</span>
+                                                {% elif entry.status == 'COMPLETED' %}
+                                                    <span class="badge bg-primary">Completed</span>
+                                                {% elif entry.status == 'CANCELLED' %}
+                                                    <span class="badge bg-danger">Cancelled</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if entry.status == 'ACTIVE' %}
+                                                    {% with next_date=entry.get_next_posting_date %}
+                                                        {% if next_date %}
+                                                            <div class="next-due">
+                                                                <div class="date">{{ next_date|date:"M d, Y" }}</div>
+                                                                <small class="text-muted">
+                                                                    {% if next_date == today %}
+                                                                        <span class="text-danger">Due Today</span>
+                                                                    {% elif next_date < today %}
+                                                                        <span class="text-warning">Overdue</span>
+                                                                    {% else %}
+                                                                        <span class="text-info">{{ next_date|timeuntil }}</span>
+                                                                    {% endif %}
+                                                                </small>
+                                                            </div>
+                                                        {% else %}
+                                                            <span class="text-muted">No more dates</span>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ entry.created_at|date:"M d, Y" }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'recurring_journal_entry:recurring_entry_detail' entry.pk %}" 
+                                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if entry.status == 'ACTIVE' %}
+                                                        <a href="{% url 'recurring_journal_entry:generate_entry' entry.pk %}" 
+                                                           class="btn btn-sm btn-outline-success" title="Generate Entry">
+                                                            <i class="fas fa-plus"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="text-center py-5">
+                                <i class="fas fa-sync-alt fa-3x text-muted mb-3"></i>
+                                <h4>No Recurring Templates Yet</h4>
+                                <p class="text-muted">Create your first recurring journal entry template to get started.</p>
+                                <a href="{% url 'recurring_journal_entry:recurring_entry_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Create First Template
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get chart data from data attribute
+    var canvas = document.getElementById('monthlyChart');
+    if (canvas) {
+        var chartDataStr = canvas.getAttribute('data-chart');
+        if (chartDataStr) {
+            try {
+                var chartData = JSON.parse(chartDataStr);
+                
+                // Create monthly chart
+                var ctx = canvas.getContext('2d');
+                var monthlyChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.labels || [],
+                        datasets: [{
+                            label: 'Templates Created',
+                            data: chartData.data || [],
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Error parsing chart data:', e);
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Inventory Record {{ object.container.container_number }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Delete Inventory Record
+        </h1>
+        <a href="{% url 'container_management:inventory_list' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Inventory
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Warning!
+                        </h5>
+                        <p class="mb-0">
+                            You are about to delete the inventory record for container <strong>{{ object.container.container_number }}</strong>. 
+                            This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Inventory Details:</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Container:</strong></td>
+                                    <td>{{ object.container.container_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Port:</strong></td>
+                                    <td>{{ object.port }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Terminal:</strong></td>
+                                    <td>{{ object.terminal|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Yard Location:</strong></td>
+                                    <td>{{ object.yard_location }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ object.get_status_display_class }}">
+                                            {{ object.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Arrival Date:</strong></td>
+                                    <td>{{ object.arrival_date|date:"M d, Y" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger">Related Data:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="bi bi-arrow-left-right me-2"></i>
+                                    <strong>{{ object.movements.count }}</strong> movements
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-calendar-check me-2"></i>
+                                    <strong>{{ object.get_days_in_port }}</strong> days in port
+                                </li>
+                                {% if object.demurrage_rate %}
+                                    <li class="mb-2">
+                                        <i class="bi bi-currency-dollar me-2"></i>
+                                        <strong>{{ object.get_demurrage_days }}</strong> demurrage days
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="bi bi-calculator me-2"></i>
+                                        <strong>AED {{ object.get_demurrage_amount|floatformat:2 }}</strong> demurrage amount
+                                    </li>
+                                {% endif %}
+                                {% if object.is_overstayed %}
+                                    <li class="mb-2">
+                                        <i class="bi bi-exclamation-triangle me-2 text-danger"></i>
+                                        <strong>{{ object.get_overstay_days }}</strong> days overstayed
+                                    </li>
+                                {% endif %}
+                            </ul>
+                            
+                            {% if object.movements.exists %}
+                                <div class="alert alert-danger mt-3" role="alert">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Warning:</strong> This inventory record has related movement data. 
+                                    Deleting it will also remove all associated records.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'container_management:inventory_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Delete Record
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+{% endblock %}

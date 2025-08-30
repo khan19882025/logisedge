@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load hr_letters_filters %}
+
+{% block title %}Letter Templates{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'hr_letters_documents/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-file-alt me-2"></i>Letter Templates
+            </h1>
+            <p class="text-muted">Manage letter templates for different HR document types</p>
+        </div>
+        <div>
+            <a href="{% url 'hr_letters_documents:letter_template_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add Template
+            </a>
+        </div>
+    </div>
+
+    <!-- Letter Templates Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Letter Templates ({{ object_list.count }})</h5>
+                </div>
+                <div class="col-auto">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search templates...">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if object_list %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Template</th>
+                            <th>Letter Type</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Usage</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for template in object_list %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ template.title }}</h6>
+                                        {% if template.description %}
+                                            <small class="text-muted">{{ template.description|truncatewords:5 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ template.letter_type.name }}</span>
+                            </td>
+                            <td>
+                                {% if template.subject %}
+                                    {{ template.subject|truncatewords:8 }}
+                                {% else %}
+                                    <span class="text-muted">No subject</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if template.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                                {% if template.requires_approval %}
+                                    <span class="badge bg-warning ms-1">Approval Required</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ template.generatedletter_set.count }} letters</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ template.created_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'hr_letters_documents:letter_template_update' template.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'hr_letters_documents:letter_template_delete' template.pk %}" 
+                                       class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="fas fa-file-alt fa-3x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No Letter Templates Found</h5>
+                <p class="text-muted">Get started by creating your first letter template.</p>
+                <a href="{% url 'hr_letters_documents:letter_template_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Template
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('tbody tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

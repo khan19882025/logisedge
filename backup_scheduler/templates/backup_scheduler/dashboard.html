@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load backup_filters %}
+
+{% block title %}Backup Scheduler Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'backup_scheduler/css/dashboard.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-database me-2"></i>Backup Management Dashboard
+                </h1>
+                <p class="text-muted">Monitor and manage your ERP backup operations</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Active Schedules
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_schedules }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Successful Backups
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ successful_executions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Failed Backups
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ failed_executions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Storage Usage
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ storage_percentage }}%</div>
+                        <div class="text-xs text-muted">{{ used_storage_gb }} GB / {{ total_storage_gb }} GB</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-hdd fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'backup_scheduler:manual_backup' %}" class="btn btn-primary btn-block w-100">
+                                <i class="fas fa-play me-2"></i>Manual Backup
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'backup_scheduler:schedule_create' %}" class="btn btn-success btn-block w-100">
+                                <i class="fas fa-plus me-2"></i>New Schedule
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'backup_scheduler:execution_list' %}" class="btn btn-info btn-block w-100">
+                                <i class="fas fa-list me-2"></i>View Executions
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'backup_scheduler:logs_list' %}" class="btn btn-secondary btn-block w-100">
+                                <i class="fas fa-file-alt me-2"></i>View Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Backup Executions -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Backup Executions</h6>
+                    <a href="{% url 'backup_scheduler:execution_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_executions %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Execution ID</th>
+                                        <th>Type</th>
+                                        <th>Scope</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for execution in recent_executions %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'backup_scheduler:execution_detail' execution.pk %}">
+                                                {{ execution.execution_id|truncatechars:12 }}
+                                            </a>
+                                        </td>
+                                        <td>{{ execution.backup_type.name }}</td>
+                                        <td>{{ execution.backup_scope.name }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ execution.status|status_badge }}">
+                                                {{ execution.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if execution.started_at %}
+                                                {{ execution.started_at|date:"M d, H:i" }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if execution.duration_seconds %}
+                                                {{ execution.duration_seconds }}s
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No backup executions found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Schedules -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Upcoming Schedules</h6>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_schedules %}
+                        {% for schedule in upcoming_schedules %}
+                        <div class="schedule-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ schedule.name }}</h6>
+                                    <p class="text-muted mb-1">{{ schedule.backup_type.name }} - {{ schedule.backup_scope.name }}</p>
+                                    <small class="text-muted">
+                                        {{ schedule.frequency|title }} at {{ schedule.start_time|time:"H:i" }}
+                                    </small>
+                                </div>
+                                <span class="badge badge-{{ schedule.is_active|yesno:'success,secondary' }}">
+                                    {{ schedule.is_active|yesno:'Active,Inactive' }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center py-4">No upcoming schedules.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage Usage Chart -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Storage Usage Overview</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="storageChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Logs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity Logs</h6>
+                    <a href="{% url 'backup_scheduler:logs_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_logs %}
+                        <div class="log-container" style="max-height: 300px; overflow-y: auto;">
+                            {% for log in recent_logs %}
+                            <div class="log-entry mb-2 p-2 border-left border-{{ log.level|log_level_border }} pl-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge badge-{{ log.level|log_level_badge }} me-2">
+                                            {{ log.level|upper }}
+                                        </span>
+                                        {{ log.message }}
+                                    </div>
+                                    <small class="text-muted">{{ log.timestamp|date:"M d, H:i:s" }}</small>
+                                </div>
+                                {% if log.user %}
+                                <small class="text-muted">by {{ log.user.username }}</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No recent logs found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'backup_scheduler/js/dashboard.js' %}"></script>
+{% endblock %}

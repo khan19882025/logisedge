@@ -1,0 +1,175 @@
+{% extends 'rf_scanner/base.html' %}
+{% load static %}
+
+{% block title %}Scanning - {{ session.get_session_type_display }}{% endblock %}
+{% block header_title %}Scanning: {{ session.get_session_type_display }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Session Info -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="rf-card">
+                <div class="rf-card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-1">
+                                <i class="bi bi-{% if session.session_type == 'inbound' %}box-arrow-in-down text-success{% elif session.session_type == 'outbound' %}box-arrow-up text-primary{% elif session.session_type == 'location_change' %}arrow-left-right text-warning{% else %}clipboard-check text-info{% endif %} me-2"></i>
+                                {{ session.get_session_type_display }} Session
+                            </h5>
+                            <p class="mb-0 text-muted">
+                                Started: {{ session.start_time|date:"H:i" }} | 
+                                Scans: {{ recent_scans.count }}
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'rf_scanner:end_session' session.id %}" class="btn btn-danger">
+                                <i class="bi bi-stop-circle me-1"></i>
+                                End Session
+                            </a>
+                            <a href="{% url 'rf_scanner:dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-house me-1"></i>
+                                Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Scanning Interface -->
+        <div class="col-12 col-lg-6">
+            <div class="rf-card">
+                <div class="rf-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-upc-scan me-2"></i>
+                        Scan Barcode
+                    </h5>
+                </div>
+                <div class="rf-card-body">
+                    <form method="post" id="scanForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.barcode.id_for_label }}" class="form-label">
+                                <i class="bi bi-upc me-1"></i>
+                                Barcode
+                            </label>
+                            {{ form.barcode }}
+                            {% if form.barcode.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.barcode.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.quantity.id_for_label }}" class="form-label">
+                                        <i class="bi bi-hash me-1"></i>
+                                        Quantity
+                                    </label>
+                                    {{ form.quantity }}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        Location
+                                    </label>
+                                    {{ form.location }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                <i class="bi bi-sticky me-1"></i>
+                                Notes
+                            </label>
+                            {{ form.notes }}
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn rf-btn rf-btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Record Scan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans -->
+        <div class="col-12 col-lg-6">
+            <div class="rf-card">
+                <div class="rf-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Recent Scans
+                    </h5>
+                </div>
+                <div class="rf-card-body">
+                    {% if recent_scans %}
+                    <div class="rf-scan-list">
+                        {% for scan in recent_scans %}
+                        <div class="rf-scan-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="rf-scan-barcode">{{ scan.barcode }}</div>
+                                    {% if scan.item_name %}
+                                    <div class="text-muted small">{{ scan.item_name }}</div>
+                                    {% endif %}
+                                    <div class="text-muted small">
+                                        Qty: {{ scan.quantity }}
+                                        {% if scan.location %} | Loc: {{ scan.location }}{% endif %}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="rf-scan-time">{{ scan.scan_time|date:"H:i:s" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <p class="text-muted mt-2">No scans yet</p>
+                        <small class="text-muted">Start scanning to see results here</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-focus on barcode input
+    document.addEventListener('DOMContentLoaded', function() {
+        const barcodeInput = document.getElementById('{{ form.barcode.id_for_label }}');
+        if (barcodeInput) {
+            barcodeInput.focus();
+        }
+    });
+    
+    // Auto-submit form when barcode is entered (for scanner devices)
+    document.getElementById('{{ form.barcode.id_for_label }}').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('scanForm').submit();
+        }
+    });
+    
+    // Auto-refresh recent scans every 10 seconds
+    setInterval(function() {
+        location.reload();
+    }, 10000);
+</script>
+{% endblock %} 

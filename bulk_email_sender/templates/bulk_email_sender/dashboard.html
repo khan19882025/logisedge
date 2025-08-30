@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Email Sender Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    
+    .stat-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stat-card.info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .quick-action {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .quick-action:hover {
+        border-color: #007bff;
+        background: #e7f3ff;
+        transform: scale(1.02);
+    }
+    
+    .quick-action i {
+        font-size: 2rem;
+        color: #6c757d;
+        margin-bottom: 12px;
+    }
+    
+    .quick-action:hover i {
+        color: #007bff;
+    }
+    
+    .activity-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f3f4;
+        display: flex;
+        align-items: center;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        font-size: 1.1rem;
+    }
+    
+    .activity-icon.open { background: #d4edda; color: #155724; }
+    .activity-icon.click { background: #cce5ff; color: #004085; }
+    .activity-icon.bounce { background: #f8d7da; color: #721c24; }
+    .activity-icon.unsubscribe { background: #fff3cd; color: #856404; }
+    
+    .campaign-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-draft { background: #e2e3e5; color: #383d41; }
+    .status-scheduled { background: #cce5ff; color: #004085; }
+    .status-queued { background: #fff3cd; color: #856404; }
+    .status-sending { background: #d1ecf1; color: #0c5460; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.6s ease;
+    }
+    
+    .chart-container {
+        height: 300px;
+        margin: 20px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-envelope-open-text fa-fw"></i> Bulk Email Sender Dashboard
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'bulk_email_sender:campaign_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> New Campaign
+            </a>
+            <a href="{% url 'bulk_email_sender:template_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-file-alt fa-fw"></i> New Template
+            </a>
+            <a href="{% url 'bulk_email_sender:recipient_list_create' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-users fa-fw"></i> New List
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_campaigns }}</div>
+                <div class="stat-label">Total Campaigns</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card success">
+                <div class="stat-value">{{ active_campaigns }}</div>
+                <div class="stat-label">Active Campaigns</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card info">
+                <div class="stat-value">{{ total_templates }}</div>
+                <div class="stat-label">Email Templates</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card warning">
+                <div class="stat-value">{{ total_lists }}</div>
+                <div class="stat-label">Recipient Lists</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campaign Performance Summary -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <h5 class="card-title mb-4">
+                    <i class="fas fa-chart-line fa-fw"></i> Campaign Performance Overview
+                </h5>
+                
+                {% if campaign_stats.total_sent or campaign_stats.total_delivered %}
+                <div class="row mb-4">
+                    <div class="col-md-6 text-center">
+                        <div class="h4 text-success">{{ campaign_stats.total_sent|default:0 }}</div>
+                        <small class="text-muted">Total Emails Sent</small>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <div class="h4 text-info">{{ campaign_stats.total_delivered|default:0 }}</div>
+                        <small class="text-muted">Total Delivered</small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">No campaign data available</h6>
+                    <p class="text-muted">Start your first campaign to see performance metrics</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="dashboard-card">
+                <h5 class="card-title mb-4">
+                    <i class="fas fa-tasks fa-fw"></i> Quick Actions
+                </h5>
+                
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <a href="{% url 'bulk_email_sender:campaign_create' %}" class="quick-action d-block">
+                            <i class="fas fa-rocket"></i>
+                            <div class="small">New Campaign</div>
+                        </a>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <a href="{% url 'bulk_email_sender:template_create' %}" class="quick-action d-block">
+                            <i class="fas fa-file-alt"></i>
+                            <div class="small">New Template</div>
+                        </a>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <a href="{% url 'bulk_email_sender:recipient_list_create' %}" class="quick-action d-block">
+                            <i class="fas fa-users"></i>
+                            <div class="small">New List</div>
+                        </a>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <a href="{% url 'bulk_email_sender:recipient_upload' %}" class="quick-action d-block">
+                            <i class="fas fa-upload"></i>
+                            <div class="small">Upload Recipients</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Campaigns and Activity -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <h5 class="card-title mb-4">
+                    <i class="fas fa-bullhorn fa-fw"></i> Recent Campaigns
+                </h5>
+                
+                {% if recent_campaigns %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Campaign</th>
+                                <th>Status</th>
+                                <th>Template</th>
+                                <th>Recipients</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for campaign in recent_campaigns %}
+                            <tr>
+                                <td>
+                                    <strong>{{ campaign.name }}</strong>
+                                    {% if campaign.description %}
+                                    <br><small class="text-muted">{{ campaign.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="campaign-status status-{{ campaign.status }}">
+                                        {{ campaign.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ campaign.template.name }}</td>
+                                <td>{{ campaign.total_recipients }}</td>
+                                <td>{{ campaign.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'bulk_email_sender:campaign_detail' campaign.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'bulk_email_sender:campaign_list' %}" class="btn btn-outline-primary">
+                        View All Campaigns
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bullhorn fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">No campaigns yet</h6>
+                    <p class="text-muted">Create your first email campaign to get started</p>
+                    <a href="{% url 'bulk_email_sender:campaign_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Campaign
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="dashboard-card">
+                <h5 class="card-title mb-4">
+                    <i class="fas fa-activity fa-fw"></i> Recent Activity
+                </h5>
+                
+                {% if recent_activity %}
+                <div class="activity-timeline">
+                    {% for event in recent_activity %}
+                    <div class="activity-item">
+                        <div class="activity-icon {{ event.tracking_type }}">
+                            {% if event.tracking_type == 'open' %}
+                                <i class="fas fa-eye"></i>
+                            {% elif event.tracking_type == 'click' %}
+                                <i class="fas fa-mouse-pointer"></i>
+                            {% elif event.tracking_type == 'bounce' %}
+                                <i class="fas fa-exclamation-triangle"></i>
+                            {% elif event.tracking_type == 'unsubscribe' %}
+                                <i class="fas fa-user-times"></i>
+                            {% else %}
+                                <i class="fas fa-circle"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="small">
+                                <strong>{{ event.recipient.email }}</strong>
+                                <br>
+                                <span class="text-muted">
+                                    {{ event.get_tracking_type_display }} - 
+                                    {{ event.timestamp|timesince }} ago
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'bulk_email_sender:tracking_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                        View All Activity
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-activity fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No recent activity</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status and Health -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <h5 class="card-title mb-4">
+                    <i class="fas fa-server fa-fw"></i> System Status
+                </h5>
+                
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h5 text-success mb-1">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <small class="text-muted">Email Service</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h5 text-success mb-1">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <small class="text-muted">Queue System</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h5 text-success mb-1">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <small class="text-muted">Tracking</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="text-center">
+                            <div class="h5 text-success mb-1">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <small class="text-muted">Database</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">Last checked: {{ "now"|date:"M d, H:i" }}</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="dashboard-card">
+                <h5 class="card-title mb-4">
+                    <i class="fas fa-chart-pie fa-fw"></i> Campaign Distribution
+                </h5>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="h4 text-primary">{{ completed_campaigns }}</div>
+                        <small class="text-muted">Completed</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h4 text-warning">{{ active_campaigns }}</div>
+                        <small class="text-muted">Active</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h4 text-danger">{{ failed_campaigns }}</div>
+                        <small class="text-muted">Failed</small>
+                    </div>
+                </div>
+                
+                {% if total_campaigns > 0 %}
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Success Rate</small>
+                        <small>{{ completed_campaigns|floatformat:0 }}%</small>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ completed_campaigns|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Bulk Email Sender Dashboard loaded');
+    
+    // Add any interactive functionality here
+    // Example: Auto-refresh dashboard data every 30 seconds
+    // setInterval(function() {
+    //     location.reload();
+    // }, 30000);
+});
+</script>
+{% endblock %}

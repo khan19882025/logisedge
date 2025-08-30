@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tracking Details{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-geo-alt me-2"></i>Tracking Details
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:tracking_update' tracking.pk %}" class="btn btn-warning btn-sm me-2">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <a href="{% url 'container_management:tracking_list' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to Tracking
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Tracking Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Tracking Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Tracking Number:</strong></td>
+                                    <td>{{ tracking.tracking_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Milestone:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ tracking.get_milestone_display_class }}">
+                                            {{ tracking.get_milestone_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Location:</strong></td>
+                                    <td>{{ tracking.location }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Event Date:</strong></td>
+                                    <td>{{ tracking.event_date|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if tracking.status == 'on_time' %}
+                                            <span class="badge bg-success">On Time</span>
+                                        {% elif tracking.status == 'delayed' %}
+                                            <span class="badge bg-warning">Delayed</span>
+                                        {% elif tracking.status == 'completed' %}
+                                            <span class="badge bg-info">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Vessel Name:</strong></td>
+                                    <td>{{ tracking.vessel_name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Voyage Number:</strong></td>
+                                    <td>{{ tracking.voyage_number|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ETA:</strong></td>
+                                    <td>
+                                        {% if tracking.eta %}
+                                            {{ tracking.eta|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Actual Date:</strong></td>
+                                    <td>
+                                        {% if tracking.actual_date %}
+                                            {{ tracking.actual_date|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Is Completed:</strong></td>
+                                    <td>
+                                        {% if tracking.is_completed %}
+                                            <span class="badge bg-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-container me-2"></i>Container Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Container Number:</strong></td>
+                                    <td>{{ tracking.container.container_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Container Type:</strong></td>
+                                    <td>{{ tracking.container.get_container_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Size:</strong></td>
+                                    <td>{{ tracking.container.size }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Current Location:</strong></td>
+                                    <td>{{ tracking.container.current_location }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ tracking.container.get_status_display_class }}">
+                                            {{ tracking.container.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Line Operator:</strong></td>
+                                    <td>{{ tracking.container.line_operator|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tare Weight:</strong></td>
+                                    <td>{{ tracking.container.tare_weight }} kg</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Max Payload:</strong></td>
+                                    <td>{{ tracking.container.max_payload }} kg</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Information -->
+            {% if tracking.container_booking %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-calendar-check me-2"></i>Booking Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Booking Number:</strong></td>
+                                    <td>{{ tracking.container_booking.booking_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer:</strong></td>
+                                    <td>{{ tracking.container_booking.customer.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ tracking.container_booking.get_status_display_class }}">
+                                            {{ tracking.container_booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Pickup Date:</strong></td>
+                                    <td>{{ tracking.container_booking.pickup_date|date:"M d, Y" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Pickup Location:</strong></td>
+                                    <td>{{ tracking.container_booking.pickup_location }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Drop-off Port:</strong></td>
+                                    <td>{{ tracking.container_booking.drop_off_port }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Drop-off Date:</strong></td>
+                                    <td>{{ tracking.container_booking.drop_off_date|date:"M d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Amount:</strong></td>
+                                    <td>AED {{ tracking.container_booking.total_amount|floatformat:2 }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Delay Information -->
+            {% if tracking.is_delayed %}
+            <div class="card shadow mb-4 border-warning">
+                <div class="card-header py-3 bg-warning text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Delay Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">Container is delayed!</h6>
+                        {% if tracking.delay_reason %}
+                            <p class="mb-0"><strong>Reason:</strong> {{ tracking.delay_reason }}</p>
+                        {% else %}
+                            <p class="mb-0">No delay reason provided.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes -->
+            {% if tracking.notes %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-chat-text me-2"></i>Notes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ tracking.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Documents -->
+            {% if tracking.documents %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-file-earmark me-2"></i>Documents
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <a href="{{ tracking.documents.url }}" class="btn btn-outline-primary" target="_blank">
+                        <i class="bi bi-download me-1"></i>Download Document
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'container_management:tracking_update' tracking.pk %}" 
+                           class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Edit Tracking
+                        </a>
+                        <a href="{% url 'container_management:tracking_delete' tracking.pk %}" 
+                           class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i>Delete Tracking
+                        </a>
+                        <a href="{% url 'container_management:container_detail' tracking.container.pk %}" 
+                           class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-container me-1"></i>View Container
+                        </a>
+                        {% if tracking.container_booking %}
+                            <a href="{% url 'container_management:booking_detail' tracking.container_booking.pk %}" 
+                               class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-calendar-check me-1"></i>View Booking
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Statistics -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-graph-up me-2"></i>Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-primary">
+                                {% if tracking.is_completed %}1{% else %}0{% endif %}
+                            </div>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-warning">
+                                {% if tracking.is_delayed %}1{% else %}0{% endif %}
+                            </div>
+                            <small class="text-muted">Delayed</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-info">{{ tracking.milestone|title }}</div>
+                            <small class="text-muted">Milestone</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-success">{{ tracking.status|title }}</div>
+                            <small class="text-muted">Status</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-clock me-2"></i>Timeline
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Created</h6>
+                                <small class="text-muted">{{ tracking.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Event Date</h6>
+                                <small class="text-muted">{{ tracking.event_date|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% if tracking.eta %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">ETA</h6>
+                                <small class="text-muted">{{ tracking.eta|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if tracking.actual_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Actual Date</h6>
+                                <small class="text-muted">{{ tracking.actual_date|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-secondary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Last Updated</h6>
+                                <small class="text-muted">{{ tracking.last_updated|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+{% endblock %}

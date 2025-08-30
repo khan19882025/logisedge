@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quick Asset Entry - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'asset_register/css/asset_register.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="asset-register-container">
+    <!-- Header -->
+    <div class="asset-register-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-plus-circle"></i> Quick Asset Entry</h1>
+                <p>Rapidly add new assets to the register</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'asset_register:asset_list' %}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+                <a href="{% url 'asset_register:asset_create' %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Full Form
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Entry Form -->
+    <div class="form-container" style="max-width: 600px;">
+        <div class="asset-card">
+            <div class="asset-card-header">
+                <h3><i class="fas fa-bolt"></i> Quick Asset Entry</h3>
+                <p class="mb-0">Fill in the essential details to quickly add an asset</p>
+            </div>
+            <div class="asset-card-body">
+                <form method="post" id="quick-entry-form">
+                    {% csrf_token %}
+                    
+                    <!-- Asset Name -->
+                    <div class="form-group">
+                        <label for="asset_name">Asset Name *</label>
+                        <input type="text" name="asset_name" id="asset_name" class="form-control" 
+                               placeholder="Enter asset name" required>
+                    </div>
+
+                    <!-- Category and Location -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="category">Category *</label>
+                                <select name="category" id="category" class="form-control" required>
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="location">Location *</label>
+                                <select name="location" id="location" class="form-control" required>
+                                    <option value="">Select Location</option>
+                                    {% for location in locations %}
+                                    <option value="{{ location.id }}">{{ location.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Purchase Information -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="purchase_date">Purchase Date *</label>
+                                <input type="date" name="purchase_date" id="purchase_date" 
+                                       class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="purchase_value">Purchase Value *</label>
+                                <input type="number" name="purchase_value" id="purchase_value" 
+                                       class="form-control" step="0.01" min="0" 
+                                       placeholder="0.00" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Serial Number and Status -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="serial_number">Serial Number</label>
+                                <input type="text" name="serial_number" id="serial_number" 
+                                       class="form-control" placeholder="Enter serial number">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="status">Status *</label>
+                                <select name="status" id="status" class="form-control" required>
+                                    <option value="">Select Status</option>
+                                    {% for status in statuses %}
+                                    <option value="{{ status.id }}">{{ status.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assigned To -->
+                    <div class="form-group">
+                        <label for="assigned_to">Assigned To</label>
+                        <select name="assigned_to" id="assigned_to" class="form-control">
+                            <option value="">Select User</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea name="description" id="description" class="form-control" 
+                                  rows="3" placeholder="Brief description of the asset"></textarea>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-outline" onclick="clearForm()">
+                            <i class="fas fa-eraser"></i> Clear Form
+                        </button>
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="fas fa-plus"></i> Add Asset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="asset-card mt-4">
+            <div class="asset-card-header">
+                <h4><i class="fas fa-lightbulb"></i> Quick Tips</h4>
+            </div>
+            <div class="asset-card-body">
+                <ul class="list-unstyled mb-0">
+                    <li><i class="fas fa-check text-success"></i> Only essential fields are required</li>
+                    <li><i class="fas fa-check text-success"></i> Asset code will be auto-generated</li>
+                    <li><i class="fas fa-check text-success"></i> QR code and barcode will be created automatically</li>
+                    <li><i class="fas fa-check text-success"></i> You can edit additional details later</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'asset_register/js/asset_register.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default purchase date to today
+    const purchaseDateField = document.getElementById('purchase_date');
+    if (purchaseDateField) {
+        purchaseDateField.value = new Date().toISOString().split('T')[0];
+    }
+
+    // Form validation
+    const form = document.getElementById('quick-entry-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            // Validate purchase date
+            const purchaseDate = document.getElementById('purchase_date');
+            const today = new Date().toISOString().split('T')[0];
+            if (purchaseDate && purchaseDate.value > today) {
+                purchaseDate.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validate purchase value
+            const purchaseValue = document.getElementById('purchase_value');
+            if (purchaseValue && parseFloat(purchaseValue.value) < 0) {
+                purchaseValue.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                showAlert('Please fill in all required fields correctly', 'warning');
+            }
+        });
+    }
+});
+
+function clearForm() {
+    const form = document.getElementById('quick-entry-form');
+    if (form) {
+        form.reset();
+        // Set purchase date back to today
+        const purchaseDateField = document.getElementById('purchase_date');
+        if (purchaseDateField) {
+            purchaseDateField.value = new Date().toISOString().split('T')[0];
+        }
+        // Remove any error styling
+        form.querySelectorAll('.is-invalid').forEach(field => {
+            field.classList.remove('is-invalid');
+        });
+    }
+}
+
+function showAlert(message, type = 'info') {
+    const alertContainer = document.getElementById('alert-container');
+    if (alertContainer) {
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertContainer.appendChild(alert);
+        
+        setTimeout(() => alert.remove(), 5000);
+    }
+}
+</script>
+{% endblock %} 

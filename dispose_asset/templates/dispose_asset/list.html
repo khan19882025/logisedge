@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dispose Asset - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dispose_asset/css/dispose_asset.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dispose-asset-container">
+    <!-- Header -->
+    <div class="dispose-asset-header">
+        <h1>
+            <i class="bi bi-trash3"></i>
+            Dispose Asset Management
+        </h1>
+        <p>Comprehensive asset disposal system with approval workflow and accounting integration</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_requests }}</div>
+            <div class="stat-label">Total Requests</div>
+        </div>
+        <div class="stat-card pending">
+            <div class="stat-number">{{ pending_approval }}</div>
+            <div class="stat-label">Pending Approval</div>
+        </div>
+        <div class="stat-card approved">
+            <div class="stat-number">{{ approved_requests }}</div>
+            <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card disposed">
+            <div class="stat-number">{{ disposed_assets }}</div>
+            <div class="stat-label">Disposed Assets</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="content-card">
+        <div class="content-card-header">
+            <h3><i class="bi bi-gear"></i> Actions</h3>
+        </div>
+        <div class="content-card-body">
+            <div class="d-flex gap-3 flex-wrap">
+                <a href="{% url 'dispose_asset:disposal_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create Disposal Request
+                </a>
+                <a href="{% url 'dispose_asset:asset_selection' %}" class="btn btn-outline">
+                    <i class="bi bi-list-check"></i> Select Assets
+                </a>
+                <a href="{% url 'dispose_asset:bulk_disposal' %}" class="btn btn-outline">
+                    <i class="bi bi-collection"></i> Bulk Disposal
+                </a>
+                <button class="btn btn-outline" id="scan-asset">
+                    <i class="bi bi-qr-code-scan"></i> Scan Asset
+                </button>
+                <button class="btn btn-outline" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Panel -->
+    <div class="filter-panel">
+        <form method="get" class="filter-form">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="search">Search</label>
+                    <input type="text" id="search" name="search" class="form-control filter-control" 
+                           value="{{ search_form.search.value|default:'' }}" 
+                           placeholder="Search by request ID, title, or asset name...">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status" class="form-control filter-control">
+                        <option value="">All Statuses</option>
+                        {% for value, label in search_form.status.field.choices %}
+                            {% if value %}
+                                <option value="{{ value }}" {% if search_form.status.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="disposal_type">Disposal Type</label>
+                    <select id="disposal_type" name="disposal_type" class="form-control filter-control">
+                        <option value="">All Types</option>
+                        {% for disposal_type in disposal_types %}
+                            <option value="{{ disposal_type.id }}" 
+                                    {% if search_form.disposal_type.value == disposal_type.id %}selected{% endif %}>
+                                {{ disposal_type.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="created_by">Created By</label>
+                    <select id="created_by" name="created_by" class="form-control filter-control">
+                        <option value="">All Users</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}" 
+                                    {% if search_form.created_by.value == user.id %}selected{% endif %}>
+                                {{ user.get_full_name|default:user.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="date_from">Date From</label>
+                    <input type="date" id="date_from" name="date_from" class="form-control filter-control"
+                           value="{{ search_form.date_from.value|default:'' }}">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="date_to">Date To</label>
+                    <input type="date" id="date_to" name="date_to" class="form-control filter-control"
+                           value="{{ search_form.date_to.value|default:'' }}">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="is_batch">Type</label>
+                    <select id="is_batch" name="is_batch" class="form-control filter-control">
+                        <option value="">All</option>
+                        <option value="True" {% if search_form.is_batch.value == 'True' %}selected{% endif %}>Batch Only</option>
+                        <option value="False" {% if search_form.is_batch.value == 'False' %}selected{% endif %}>Individual Only</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <a href="{% url 'dispose_asset:disposal_list' %}" class="btn btn-outline">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Disposal Requests Table -->
+    <div class="content-card">
+        <div class="content-card-header">
+            <h3><i class="bi bi-list-ul"></i> Disposal Requests</h3>
+            <div class="d-flex gap-2">
+                <span class="badge bg-primary">{{ page_obj.paginator.count }} total</span>
+                {% if page_obj.has_other_pages %}
+                    <span class="badge bg-secondary">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="content-card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Assets</th>
+                                <th>Total Value</th>
+                                <th>Disposal Value</th>
+                                <th>Gain/Loss</th>
+                                <th>Created By</th>
+                                <th>Created Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for disposal in page_obj %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ disposal.request_id }}</strong>
+                                        {% if disposal.is_batch %}
+                                            <span class="badge bg-info ms-1">Batch</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ disposal.title }}</div>
+                                        {% if disposal.description %}
+                                            <small class="text-muted">{{ disposal.description|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ disposal.disposal_type.name }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge {{ disposal.status }}">
+                                            {{ disposal.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ disposal.disposal_items.count }} assets</span>
+                                    </td>
+                                    <td>
+                                        <strong>AED {{ disposal.total_asset_value|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <strong>AED {{ disposal.disposal_value|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if disposal.is_gain %}
+                                            <span class="text-success fw-bold">+AED {{ disposal.gain_loss_amount|floatformat:2 }}</span>
+                                        {% elif disposal.is_loss %}
+                                            <span class="text-danger fw-bold">-AED {{ disposal.gain_loss_amount|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="text-muted">AED 0.00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <i class="bi bi-person-circle"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ disposal.created_by.get_full_name|default:disposal.created_by.username }}</div>
+                                                <small class="text-muted">{{ disposal.created_by.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>{{ disposal.created_at|date:"M d, Y" }}</div>
+                                        <small class="text-muted">{{ disposal.created_at|date:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'dispose_asset:disposal_detail' disposal.id %}" 
+                                               class="btn btn-sm btn-outline" 
+                                               data-bs-toggle="tooltip" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            
+                                            {% if disposal.status == 'draft' and user == disposal.created_by %}
+                                                <a href="{% url 'dispose_asset:disposal_edit' disposal.id %}" 
+                                                   class="btn btn-sm btn-outline" 
+                                                   data-bs-toggle="tooltip" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if disposal.status == 'draft' %}
+                                                <a href="{% url 'dispose_asset:disposal_submit' disposal.id %}" 
+                                                   class="btn btn-sm btn-success" 
+                                                   data-bs-toggle="tooltip" title="Submit for Approval"
+                                                   onclick="return confirm('Are you sure you want to submit this disposal request?')">
+                                                    <i class="bi bi-send"></i>
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if disposal.status == 'pending_approval' and can_approve_disposal %}
+                                                <a href="{% url 'dispose_asset:disposal_approve' disposal.id %}" 
+                                                   class="btn btn-sm btn-warning" 
+                                                   data-bs-toggle="tooltip" title="Approve/Reject">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if disposal.status == 'approved' and can_dispose_asset %}
+                                                <a href="{% url 'dispose_asset:disposal_execute' disposal.id %}" 
+                                                   class="btn btn-sm btn-danger" 
+                                                   data-bs-toggle="tooltip" title="Execute Disposal"
+                                                   onclick="return confirm('Are you sure you want to execute this disposal? This action cannot be undone.')">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Disposal requests pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.disposal_type %}&disposal_type={{ request.GET.disposal_type }}{% endif %}{% if request.GET.created_by %}&created_by={{ request.GET.created_by }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_batch %}&is_batch={{ request.GET.is_batch }}{% endif %}">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.disposal_type %}&disposal_type={{ request.GET.disposal_type }}{% endif %}{% if request.GET.created_by %}&created_by={{ request.GET.created_by }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_batch %}&is_batch={{ request.GET.is_batch }}{% endif %}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.disposal_type %}&disposal_type={{ request.GET.disposal_type }}{% endif %}{% if request.GET.created_by %}&created_by={{ request.GET.created_by }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_batch %}&is_batch={{ request.GET.is_batch }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.disposal_type %}&disposal_type={{ request.GET.disposal_type }}{% endif %}{% if request.GET.created_by %}&created_by={{ request.GET.created_by }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_batch %}&is_batch={{ request.GET.is_batch }}{% endif %}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.disposal_type %}&disposal_type={{ request.GET.disposal_type }}{% endif %}{% if request.GET.created_by %}&created_by={{ request.GET.created_by }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.is_batch %}&is_batch={{ request.GET.is_batch }}{% endif %}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No disposal requests found</h4>
+                    <p class="text-muted">Create your first disposal request to get started.</p>
+                    <a href="{% url 'dispose_asset:disposal_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create Disposal Request
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dispose_asset/js/dispose_asset.js' %}"></script>
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %} 

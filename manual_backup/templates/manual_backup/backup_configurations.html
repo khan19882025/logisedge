@@ -1,0 +1,463 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Backup Configurations - Manual Backup{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'manual_backup/css/dashboard.css' %}">
+<style>
+    .config-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .config-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .config-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .config-name {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+    
+    .config-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 500;
+    }
+    
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .status-inactive {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .config-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .detail-label {
+        font-size: 0.85em;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    
+    .detail-value {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .config-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.9em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background-color: #c82333;
+    }
+    
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background-color: #1e7e34;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state h3 {
+        margin-bottom: 10px;
+        color: #2c3e50;
+    }
+    
+    .search-filters {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        align-items: end;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .form-control {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Backup Configurations</h1>
+                <a href="{% url 'manual_backup:create_configuration' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Configuration
+                </a>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="search-filters">
+                <form method="get" id="configSearchForm">
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ request.GET.search }}" placeholder="Search configurations...">
+                        </div>
+                        <div class="form-group">
+                            <label for="backup_type" class="form-label">Backup Type</label>
+                            <select class="form-control" id="backup_type" name="backup_type">
+                                <option value="">All Types</option>
+                                <option value="full" {% if request.GET.backup_type == 'full' %}selected{% endif %}>Full</option>
+                                <option value="incremental" {% if request.GET.backup_type == 'incremental' %}selected{% endif %}>Incremental</option>
+                                <option value="differential" {% if request.GET.backup_type == 'differential' %}selected{% endif %}>Differential</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="compression" class="form-label">Compression</label>
+                            <select class="form-control" id="compression" name="compression">
+                                <option value="">All Levels</option>
+                                <option value="none" {% if request.GET.compression == 'none' %}selected{% endif %}>None</option>
+                                <option value="low" {% if request.GET.compression == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if request.GET.compression == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if request.GET.compression == 'high' %}selected{% endif %}>High</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            <a href="{% url 'manual_backup:backup_configurations' %}" class="btn btn-secondary">Clear</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Configurations List -->
+            {% if configurations %}
+                <div class="configurations-list">
+                    {% for config in configurations %}
+                        <div class="config-card">
+                            <div class="config-header">
+                                <h3 class="config-name">{{ config.name }}</h3>
+                                <span class="config-status {% if config.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                    {% if config.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="config-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Backup Type</span>
+                                    <span class="detail-value">{{ config.get_backup_type_display }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Compression</span>
+                                    <span class="detail-value">{{ config.get_compression_level_display }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Encryption</span>
+                                    <span class="detail-value">{{ config.get_encryption_type_display }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Retention (Days)</span>
+                                    <span class="detail-value">{{ config.retention_days }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Components</span>
+                                    <span class="detail-value">
+                                        {% if config.include_database %}DB{% endif %}
+                                        {% if config.include_media %}{% if config.include_database %}, {% endif %}Media{% endif %}
+                                        {% if config.include_static %}{% if config.include_database or config.include_media %}, {% endif %}Static{% endif %}
+                                        {% if config.include_config %}{% if config.include_database or config.include_media or config.include_static %}, {% endif %}Config{% endif %}
+                                    </span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Created</span>
+                                    <span class="detail-value">{{ config.created_at|date:"M d, Y" }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if config.description %}
+                                <p class="text-muted mb-3">{{ config.description }}</p>
+                            {% endif %}
+                            
+                            <div class="config-actions">
+                                <a href="{% url 'manual_backup:edit_configuration' config.id %}" class="btn btn-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <button class="btn btn-success" onclick="duplicateConfig({{ config.id }})">
+                                    <i class="fas fa-copy"></i> Duplicate
+                                </button>
+                                <button class="btn btn-secondary" onclick="testConfig({{ config.id }})">
+                                    <i class="fas fa-play"></i> Test
+                                </button>
+                                {% if config.is_active %}
+                                    <button class="btn btn-danger" onclick="deactivateConfig({{ config.id }})">
+                                        <i class="fas fa-pause"></i> Deactivate
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-success" onclick="activateConfig({{ config.id }})">
+                                        <i class="fas fa-play"></i> Activate
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                    <nav aria-label="Configurations pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.compression %}&compression={{ request.GET.compression }}{% endif %}">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.compression %}&compression={{ request.GET.compression }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.compression %}&compression={{ request.GET.compression }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.backup_type %}&backup_type={{ request.GET.backup_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.compression %}&compression={{ request.GET.compression }}{% endif %}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <h3>No configurations found</h3>
+                    <p>Get started by creating your first backup configuration.</p>
+                    <a href="{% url 'manual_backup:create_configuration' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Configuration
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function duplicateConfig(configId) {
+        if (confirm('Are you sure you want to duplicate this configuration?')) {
+            // Redirect to create form with pre-filled data
+            window.location.href = `{% url 'manual_backup:create_configuration' %}?duplicate=${configId}`;
+        }
+    }
+
+    function testConfig(configId) {
+        if (confirm('This will create a test backup using this configuration. Continue?')) {
+            // Create a test backup session
+            fetch(`/manual-backup/api/test-config/${configId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Test backup started successfully!');
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert('Error starting test backup: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error starting test backup');
+            });
+        }
+    }
+
+    function activateConfig(configId) {
+        if (confirm('Are you sure you want to activate this configuration?')) {
+            fetch(`/manual-backup/api/config/${configId}/activate/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error activating configuration: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error activating configuration');
+            });
+        }
+    }
+
+    function deactivateConfig(configId) {
+        if (confirm('Are you sure you want to deactivate this configuration?')) {
+            fetch(`/manual-backup/api/config/${configId}/deactivate/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error deactivating configuration: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deactivating configuration');
+            });
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Auto-submit form on filter change
+    document.getElementById('backup_type').addEventListener('change', function() {
+        document.getElementById('configSearchForm').submit();
+    });
+
+    document.getElementById('status').addEventListener('change', function() {
+        document.getElementById('configSearchForm').submit();
+    });
+
+    document.getElementById('compression').addEventListener('change', function() {
+        document.getElementById('configSearchForm').submit();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Fiscal Periods - Fiscal Year Settings{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fiscal_year/fiscal_year.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-calendar-week me-2"></i>Fiscal Periods
+            </h1>
+            <p class="text-muted mb-0">Manage and view all fiscal periods</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'fiscal_year:fiscal_period_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Create Period
+            </a>
+            <a href="{% url 'fiscal_year:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="search-form">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="{{ search_form.search.id_for_label }}" class="form-label">Search</label>
+                {{ search_form.search }}
+            </div>
+            <div class="col-md-2">
+                <label for="{{ search_form.fiscal_year.id_for_label }}" class="form-label">Fiscal Year</label>
+                {{ search_form.fiscal_year }}
+            </div>
+            <div class="col-md-2">
+                <label for="{{ search_form.period_type.id_for_label }}" class="form-label">Period Type</label>
+                {{ search_form.period_type }}
+            </div>
+            <div class="col-md-2">
+                <label for="{{ search_form.status.id_for_label }}" class="form-label">Status</label>
+                {{ search_form.status }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                    <a href="{% url 'fiscal_year:fiscal_period_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Clear
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <div class="form-check">
+                    {{ search_form.is_current }}
+                    <label class="form-check-label" for="{{ search_form.is_current.id_for_label }}">
+                        Current Only
+                    </label>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="text-muted">Showing {{ page_obj.paginator.count }} period{{ page_obj.paginator.count|pluralize }}</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="exportToCSV('fiscal-period-table', 'fiscal_periods.csv')" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Fiscal Periods Table -->
+    <div class="fiscal-year-table">
+        <table class="table table-hover" id="fiscal-period-table">
+            <thead>
+                <tr>
+                    <th data-sortable="true" data-column="name">Name</th>
+                    <th data-sortable="true" data-column="fiscal_year">Fiscal Year</th>
+                    <th data-sortable="true" data-column="start_date">Start Date</th>
+                    <th data-sortable="true" data-column="end_date">End Date</th>
+                    <th data-sortable="true" data-column="period_type">Type</th>
+                    <th data-sortable="true" data-column="status">Status</th>
+                    <th data-sortable="true" data-column="is_current">Current</th>
+                    <th data-sortable="true" data-column="created_at">Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for period in page_obj %}
+                <tr data-period-id="{{ period.pk }}">
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-calendar-week me-2 text-primary"></i>
+                            <div>
+                                <strong>{{ period.name }}</strong>
+                                {% if period.description %}
+                                <br><small class="text-muted">{{ period.description|truncatechars:50 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <a href="{% url 'fiscal_year:fiscal_year_detail' period.fiscal_year.pk %}" class="text-decoration-none">
+                            {{ period.fiscal_year.name }}
+                        </a>
+                    </td>
+                    <td>{{ period.start_date|date:"M d, Y" }}</td>
+                    <td>{{ period.end_date|date:"M d, Y" }}</td>
+                    <td>
+                        <span class="badge bg-info">{{ period.get_period_type_display }}</span>
+                    </td>
+                    <td>
+                        <span class="period-status {{ period.status }}">
+                            {{ period.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if period.is_current %}
+                        <span class="current-badge">
+                            <i class="bi bi-star-fill"></i>Current
+                        </span>
+                        {% else %}
+                        <button class="btn btn-outline-secondary btn-sm toggle-period-status" 
+                                data-period-id="{{ period.pk }}"
+                                data-bs-toggle="tooltip" 
+                                title="Set as current period">
+                            <i class="bi bi-star"></i>
+                        </button>
+                        {% endif %}
+                    </td>
+                    <td>{{ period.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'fiscal_year:fiscal_period_detail' period.pk %}" 
+                               class="btn btn-outline-primary btn-sm"
+                               data-bs-toggle="tooltip" 
+                               title="View Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'fiscal_year:fiscal_period_update' period.pk %}" 
+                               class="btn btn-outline-warning btn-sm"
+                               data-bs-toggle="tooltip" 
+                               title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'fiscal_year:fiscal_period_delete' period.pk %}" 
+                               class="btn btn-outline-danger btn-sm"
+                               data-bs-toggle="tooltip" 
+                               title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <i class="bi bi-calendar-x fa-3x text-muted mb-3 d-block"></i>
+                        <h6 class="text-muted">No Fiscal Periods Found</h6>
+                        <p class="text-muted">Create your first fiscal period to get started</p>
+                        <a href="{% url 'fiscal_year:fiscal_period_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Create Period
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Fiscal periods pagination">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.period_type %}&period_type={{ request.GET.period_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_current %}&is_current={{ request.GET.is_current }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.period_type %}&period_type={{ request.GET.period_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_current %}&is_current={{ request.GET.is_current }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.period_type %}&period_type={{ request.GET.period_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_current %}&is_current={{ request.GET.is_current }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.period_type %}&period_type={{ request.GET.period_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_current %}&is_current={{ request.GET.is_current }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.period_type %}&period_type={{ request.GET.period_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.is_current %}&is_current={{ request.GET.is_current }}{% endif %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/fiscal_year/fiscal_year.js' %}"></script>
+{% endblock %} 

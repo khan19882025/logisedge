@@ -1,0 +1,222 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ currency.code }} - Currency Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/multi_currency/multi_currency.css' %}">
+<link rel="stylesheet" href="{% static 'css/currency_icons.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-currency-exchange me-2"></i>{{ currency.code }} - {{ currency.name }}
+            </h1>
+            <p class="text-muted mb-0">Currency details and related exchange rates</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'multi_currency:currency_update' currency.pk %}" class="btn btn-warning">
+                <i class="bi bi-pencil me-2"></i>Edit Currency
+            </a>
+            <a href="{% url 'multi_currency:currency_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Currencies
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Currency Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Currency Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <p class="mb-1 text-muted">Currency Code</p>
+                            <p class="mb-3"><strong>{{ currency.code }}</strong></p>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="mb-1 text-muted">Currency Name</p>
+                            <p class="mb-3"><strong>{{ currency.name }}</strong></p>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="mb-1 text-muted">Symbol</p>
+                            <p class="mb-3">
+                                {% if currency.symbol == 'static/img/aed_currency.svg' %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{% static 'img/aed_currency.svg' %}" alt="AED" class="currency-icon currency-icon-aed">
+                                        <span class="text-muted">AED Icon</span>
+                                    </div>
+                                {% else %}
+                                    <strong class="currency-symbol">{{ currency.symbol }}</strong>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <p class="mb-1 text-muted">Decimal Places</p>
+                            <p class="mb-3"><strong>{{ currency.decimal_places }}</strong></p>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="mb-1 text-muted">Status</p>
+                            <p class="mb-3">
+                                {% if currency.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="mb-1 text-muted">Base Currency</p>
+                            <p class="mb-3">
+                                {% if currency.is_base_currency %}
+                                <i class="bi bi-star-fill text-warning base-currency-indicator"></i>
+                                <span class="text-warning">Yes</span>
+                                {% else %}
+                                <span class="text-muted">No</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="mb-1 text-muted">Created</p>
+                            <p class="mb-3">{{ currency.created_at|date:"F d, Y H:i" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="mb-1 text-muted">Last Updated</p>
+                            <p class="mb-3">{{ currency.updated_at|date:"F d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'multi_currency:exchange_rate_create' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add Exchange Rate
+                        </a>
+                        <a href="{% url 'multi_currency:exchange_rate_list' %}" class="btn btn-outline-info">
+                            <i class="bi bi-graph-up me-2"></i>View All Exchange Rates
+                        </a>
+                        <button class="btn btn-outline-{% if currency.is_active %}success{% else %}secondary{% endif %} toggle-currency-status"
+                                data-currency-id="{{ currency.pk }}">
+                            {% if currency.is_active %}
+                            <i class="bi bi-check-circle me-2"></i>Deactivate Currency
+                            {% else %}
+                            <i class="bi bi-x-circle me-2"></i>Activate Currency
+                            {% endif %}
+                        </button>
+                        <a href="{% url 'multi_currency:currency_delete' currency.pk %}" class="btn btn-outline-danger">
+                            <i class="bi bi-trash me-2"></i>Delete Currency
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Exchange Rates -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-graph-up me-2"></i>Related Exchange Rates
+            </h6>
+            <a href="{% url 'multi_currency:exchange_rate_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body">
+            {% if exchange_rates %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>From Currency</th>
+                            <th>To Currency</th>
+                            <th>Rate</th>
+                            <th>Type</th>
+                            <th>Effective Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in exchange_rates %}
+                        <tr>
+                            <td>
+                                <strong>{{ rate.from_currency.code }}</strong>
+                                {% if rate.from_currency.is_base_currency %}
+                                <i class="bi bi-star-fill text-warning ms-1"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ rate.to_currency.code }}</strong>
+                                {% if rate.to_currency.is_base_currency %}
+                                <i class="bi bi-star-fill text-warning ms-1"></i>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ rate.rate }}</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ rate.get_rate_type_display }}</span>
+                            </td>
+                            <td>{{ rate.effective_date|date:"M d, Y" }}</td>
+                            <td>
+                                {% if rate.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'multi_currency:exchange_rate_detail' rate.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'multi_currency:exchange_rate_update' rate.pk %}" 
+                                       class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-graph-up fa-2x text-muted mb-3"></i>
+                <h6 class="text-muted">No exchange rates found</h6>
+                <p class="text-muted">This currency doesn't have any exchange rates configured yet.</p>
+                <a href="{% url 'multi_currency:exchange_rate_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add Exchange Rate
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/multi_currency/multi_currency.js' %}"></script>
+{% endblock %} 

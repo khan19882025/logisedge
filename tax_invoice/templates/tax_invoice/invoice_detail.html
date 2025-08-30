@@ -1,0 +1,223 @@
+{% extends 'tax_invoice/base.html' %}
+{% load static %}
+
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'tax_invoice:invoice_list' %}">Invoices</a></li>
+<li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
+{% endblock %}
+
+{% block tax_invoice_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Tax Invoice: {{ invoice.invoice_number }}</h1>
+            <div>
+                <a href="{% url 'tax_invoice:invoice_update' pk=invoice.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-2"></i>Edit
+                </a>
+                <a href="{% url 'tax_invoice:export_invoice' pk=invoice.pk %}" class="btn btn-outline-info">
+                    <i class="bi bi-download me-2"></i>Export
+                </a>
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i class="bi bi-printer me-2"></i>Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Invoice Details -->
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Invoice Details</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Invoice Number:</strong> {{ invoice.invoice_number }}</p>
+                        <p><strong>Invoice Date:</strong> {{ invoice.invoice_date|date:"M d, Y" }}</p>
+                        <p><strong>Due Date:</strong> {{ invoice.due_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            {% if invoice.status == 'draft' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif invoice.status == 'sent' %}
+                                <span class="badge bg-primary">Sent</span>
+                            {% elif invoice.status == 'paid' %}
+                                <span class="badge bg-success">Paid</span>
+                            {% elif invoice.status == 'overdue' %}
+                                <span class="badge bg-danger">Overdue</span>
+                            {% elif invoice.status == 'cancelled' %}
+                                <span class="badge bg-warning">Cancelled</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Currency:</strong> {{ invoice.currency }}</p>
+                        <p><strong>Created:</strong> {{ invoice.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Company Details -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Company Details</h6>
+            </div>
+            <div class="card-body">
+                <h6>{{ invoice.company_name }}</h6>
+                <p class="mb-1">{{ invoice.company_address|linebreaks }}</p>
+                {% if invoice.company_trn %}
+                    <p class="mb-1"><strong>TRN/VAT:</strong> {{ invoice.company_trn }}</p>
+                {% endif %}
+                {% if invoice.company_phone %}
+                    <p class="mb-1"><strong>Phone:</strong> {{ invoice.company_phone }}</p>
+                {% endif %}
+                {% if invoice.company_email %}
+                    <p class="mb-1"><strong>Email:</strong> {{ invoice.company_email }}</p>
+                {% endif %}
+                {% if invoice.company_website %}
+                    <p class="mb-1"><strong>Website:</strong> {{ invoice.company_website }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Customer Details -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Customer Details</h6>
+            </div>
+            <div class="card-body">
+                <h6>{{ invoice.customer_name }}</h6>
+                <p class="mb-1">{{ invoice.customer_address|linebreaks }}</p>
+                {% if invoice.customer_trn %}
+                    <p class="mb-1"><strong>TRN/VAT:</strong> {{ invoice.customer_trn }}</p>
+                {% endif %}
+                {% if invoice.customer_phone %}
+                    <p class="mb-1"><strong>Phone:</strong> {{ invoice.customer_phone }}</p>
+                {% endif %}
+                {% if invoice.customer_email %}
+                    <p class="mb-1"><strong>Email:</strong> {{ invoice.customer_email }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Invoice Items -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Invoice Items</h6>
+            </div>
+            <div class="card-body">
+                {% if items %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-center">VAT %</th>
+                                    <th class="text-end">Taxable Amount</th>
+                                    <th class="text-end">VAT Amount</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>{{ item.description }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end">{{ item.unit_price|floatformat:2 }}</td>
+                                    <td class="text-center">{{ item.vat_percentage|floatformat:2 }}%</td>
+                                    <td class="text-end">{{ item.taxable_amount|floatformat:2 }}</td>
+                                    <td class="text-end">{{ item.vat_amount|floatformat:2 }}</td>
+                                    <td class="text-end">{{ item.total_amount|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No items found for this invoice.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Summary -->
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Invoice Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal:</span>
+                    <span>{{ invoice.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>VAT:</span>
+                    <span>{{ invoice.total_vat|floatformat:2 }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between fw-bold">
+                    <span>Grand Total:</span>
+                    <span>{{ invoice.grand_total|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        {% if invoice.notes or invoice.terms_conditions or invoice.payment_instructions %}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Additional Information</h6>
+            </div>
+            <div class="card-body">
+                {% if invoice.notes %}
+                    <h6>Notes</h6>
+                    <p>{{ invoice.notes|linebreaks }}</p>
+                {% endif %}
+                
+                {% if invoice.payment_instructions %}
+                    <h6>Payment Instructions</h6>
+                    <p>{{ invoice.payment_instructions|linebreaks }}</p>
+                {% endif %}
+                
+                {% if invoice.terms_conditions %}
+                    <h6>Terms & Conditions</h6>
+                    <p>{{ invoice.terms_conditions|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Export History -->
+        {% if exports %}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Export History</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for export in exports %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">{{ export.export_format|upper }}</small>
+                            <br>
+                            <small>{{ export.exported_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                        <small class="text-muted">{{ export.exported_by.username }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

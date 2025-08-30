@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Backup Schedules{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'backup_scheduler/css/schedule_list.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        <i class="fas fa-calendar me-2"></i>Backup Schedules
+                    </h1>
+                    <p class="text-muted">Manage automated backup schedules</p>
+                </div>
+                <a href="{% url 'backup_scheduler:schedule_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>New Schedule
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="{{ filter_form.frequency.id_for_label }}" class="form-label">Frequency</label>
+                            {{ filter_form.frequency }}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ filter_form.is_active.id_for_label }}" class="form-label">Status</label>
+                            {{ filter_form.is_active }}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ filter_form.storage_location.id_for_label }}" class="form-label">Storage Location</label>
+                            {{ filter_form.storage_location }}
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search me-2"></i>Filter
+                            </button>
+                            <a href="{% url 'backup_scheduler:schedule_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedules List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">All Schedules</h6>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Scope</th>
+                                        <th>Frequency</th>
+                                        <th>Next Run</th>
+                                        <th>Storage</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for schedule in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ schedule.name }}</strong>
+                                            {% if schedule.description %}
+                                                <br><small class="text-muted">{{ schedule.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ schedule.backup_type.name }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-secondary">{{ schedule.backup_scope.name }}</span>
+                                        </td>
+                                        <td>
+                                            {{ schedule.frequency|title }}
+                                            {% if schedule.frequency == 'weekly' and schedule.weekday is not None %}
+                                                <br><small class="text-muted">{{ schedule.get_weekday_display }}</small>
+                                            {% elif schedule.frequency == 'monthly' and schedule.day_of_month %}
+                                                <br><small class="text-muted">Day {{ schedule.day_of_month }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ schedule.start_time|time:"H:i" }}
+                                            {% if schedule.start_date %}
+                                                <br><small class="text-muted">{{ schedule.start_date|date:"M d, Y" }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-dark">{{ schedule.storage_location.name }}</span>
+                                            <br><small class="text-muted">{{ schedule.storage_location.storage_type }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ schedule.is_active|yesno:'success,secondary' }}">
+                                                {{ schedule.is_active|yesno:'Active,Inactive' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'backup_scheduler:schedule_edit' schedule.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'backup_scheduler:schedule_delete' schedule.pk %}" 
+                                                   class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.storage_location %}&storage_location={{ request.GET.storage_location }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.storage_location %}&storage_location={{ request.GET.storage_location }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.storage_location %}&storage_location={{ request.GET.storage_location }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.storage_location %}&storage_location={{ request.GET.storage_location }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.frequency %}&frequency={{ request.GET.frequency }}{% endif %}{% if request.GET.is_active %}&is_active={{ request.GET.is_active }}{% endif %}{% if request.GET.storage_location %}&storage_location={{ request.GET.storage_location }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No backup schedules found</h5>
+                            <p class="text-muted">Create your first backup schedule to get started.</p>
+                            <a href="{% url 'backup_scheduler:schedule_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Schedule
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'backup_scheduler/js/schedule_list.js' %}"></script>
+{% endblock %}

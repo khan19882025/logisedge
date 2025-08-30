@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirm Recipient Upload{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-check-circle fa-fw"></i> Confirm Recipient Upload
+        </h1>
+        <a href="{% url 'bulk_email_sender:recipient_upload' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left fa-fw"></i> Back to Upload
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Upload Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle fa-fw"></i>
+                        Successfully processed <strong>{{ recipients_data|length }}</strong> recipients from the uploaded file.
+                    </div>
+                    
+                    <h6>Sample Data:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for recipient in recipients_data|slice:":5" %}
+                                <tr>
+                                    <td>{{ recipient.email }}</td>
+                                    <td>{{ recipient.first_name|default:"-" }}</td>
+                                    <td>{{ recipient.last_name|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% if recipients_data|length > 5 %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">
+                                        ... and {{ recipients_data|length|add:"-5" }} more
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="campaign_id" class="form-label">Select Campaign</label>
+                            <select class="form-control" id="campaign_id" name="campaign_id" required>
+                                <option value="">Choose a campaign...</option>
+                                {% for campaign in campaigns %}
+                                <option value="{{ campaign.pk }}">{{ campaign.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Select which campaign these recipients will be added to</small>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save fa-fw"></i> Save Recipients
+                            </button>
+                            <a href="{% url 'bulk_email_sender:recipient_upload' %}" class="btn btn-secondary btn-lg ml-2">
+                                <i class="fas fa-times fa-fw"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Next Steps</h6>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>Review the sample data above</li>
+                        <li>Select the target campaign</li>
+                        <li>Click "Save Recipients" to confirm</li>
+                        <li>Recipients will be added to the campaign</li>
+                        <li>You can then start the campaign</li>
+                    </ol>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle fa-fw"></i>
+                        <strong>Note:</strong> Duplicate emails within the same campaign will be automatically filtered out.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

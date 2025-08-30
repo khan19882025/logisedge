@@ -1,0 +1,495 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ role.name }} - Role Details{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'roles_permissions/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-user-tag text-primary"></i> {{ role.name }}
+            </h1>
+            <p class="mb-0 text-muted">{{ role.description|default:"Role details and permissions" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'roles_permissions:role_update' role.pk %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Role
+            </a>
+            <a href="{% url 'roles_permissions:role_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Roles
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'roles_permissions:dashboard' %}">Roles & Permissions</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'roles_permissions:role_list' %}">Roles</a></li>
+            <li class="breadcrumb-item active">{{ role.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Role Information Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Role Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ role.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{% if role.role_type == 'system' %}danger{% elif role.role_type == 'custom' %}success{% else %}info{% endif %}">
+                                            {{ role.get_role_type_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if role.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ role.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Parent Role:</strong></td>
+                                    <td>
+                                        {% if role.parent_role %}
+                                            <a href="{% url 'roles_permissions:role_detail' role.parent_role.pk %}">
+                                                {{ role.parent_role.name }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Department:</strong></td>
+                                    <td>
+                                        {% if role.department %}
+                                            {{ role.department.name }}
+                                        {% else %}
+                                            <span class="text-muted">All Departments</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Cost Center:</strong></td>
+                                    <td>
+                                        {% if role.cost_center %}
+                                            {{ role.cost_center.name }}
+                                        {% else %}
+                                            <span class="text-muted">All Cost Centers</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Updated:</strong></td>
+                                    <td>{{ role.updated_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if role.description %}
+                    <div class="mt-3">
+                        <h6><strong>Description:</strong></h6>
+                        <p class="text-muted">{{ role.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Permissions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-key"></i> Permissions ({{ role_permissions.count }})
+                    </h6>
+                    <a href="{% url 'roles_permissions:role_permissions' role.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-cog"></i> Manage Permissions
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if role_permissions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Permission</th>
+                                    <th>Module</th>
+                                    <th>Action</th>
+                                    <th>Group</th>
+                                    <th>Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for role_permission in role_permissions %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ role_permission.permission.name }}</strong>
+                                        {% if role_permission.permission.description %}
+                                            <br><small class="text-muted">{{ role_permission.permission.description|truncatechars:40 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ role_permission.permission.module }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ role_permission.permission.action }}</span>
+                                    </td>
+                                    <td>
+                                        {% if role_permission.permission.group %}
+                                            <span class="badge badge-light">{{ role_permission.permission.group.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if role_permission.permission.priority == 'critical' %}
+                                            <span class="badge badge-danger">Critical</span>
+                                        {% elif role_permission.permission.priority == 'high' %}
+                                            <span class="badge badge-warning">High</span>
+                                        {% elif role_permission.permission.priority == 'medium' %}
+                                            <span class="badge badge-info">Medium</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Low</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-key fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">No permissions assigned</h6>
+                        <p class="text-muted">This role doesn't have any permissions yet</p>
+                        <a href="{% url 'roles_permissions:role_permissions' role.pk %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Add Permissions
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Assigned Users Card -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-users"></i> Assigned Users ({{ user_roles.count }})
+                    </h6>
+                    <a href="{% url 'roles_permissions:user_role_create' %}" class="btn btn-sm btn-outline-success">
+                        <i class="fas fa-plus"></i> Assign User
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if user_roles %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Type</th>
+                                    <th>Assigned</th>
+                                    <th>Expires</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_role in user_roles %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm mr-2">
+                                                <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user_role.user.get_full_name|default:user_role.user.username }}</strong>
+                                                <br><small class="text-muted">{{ user_role.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if user_role.is_primary %}primary{% else %}secondary{% endif %}">
+                                            {% if user_role.is_primary %}Primary{% else %}Secondary{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ user_role.assigned_at|date:"M d, Y" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if user_role.expires_at %}
+                                            <small class="{% if user_role.expires_at < now %}text-danger{% endif %}">
+                                                {{ user_role.expires_at|date:"M d, Y" }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user_role.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'roles_permissions:user_role_update' user_role.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmRemoveUser('{{ user_role.id }}', '{{ user_role.user.get_full_name|default:user_role.user.username }}')" 
+                                                    title="Remove">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">No users assigned</h6>
+                        <p class="text-muted">This role hasn't been assigned to any users yet</p>
+                        <a href="{% url 'roles_permissions:user_role_create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Assign User
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Quick Actions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'roles_permissions:role_permissions' role.pk %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-key text-primary"></i> Manage Permissions
+                        </a>
+                        <a href="{% url 'roles_permissions:user_role_create' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-user-plus text-success"></i> Assign User
+                        </a>
+                        <a href="{% url 'roles_permissions:role_update' role.pk %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-edit text-warning"></i> Edit Role
+                        </a>
+                        <button type="button" class="list-group-item list-group-item-action text-danger" 
+                                onclick="confirmDeleteRole('{{ role.id }}', '{{ role.name }}')">
+                            <i class="fas fa-trash"></i> Delete Role
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Statistics Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar"></i> Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-right">
+                                <div class="h4 text-primary">{{ role_permissions.count }}</div>
+                                <div class="small text-muted">Permissions</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 text-success">{{ user_roles.count }}</div>
+                            <div class="small text-muted">Users</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small">
+                        <div class="d-flex justify-content-between">
+                            <span>Active Users:</span>
+                            <span class="font-weight-bold">{{ active_users_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Primary Assignments:</span>
+                            <span class="font-weight-bold">{{ primary_assignments_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Expired Assignments:</span>
+                            <span class="font-weight-bold text-danger">{{ expired_assignments_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Card -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history"></i> Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for log in recent_activity %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ log.action }}</h6>
+                                <small class="text-muted">{{ log.timestamp|timesince }} ago</small>
+                            </div>
+                            <p class="mb-1 small text-muted">{{ log.description }}</p>
+                            <small class="text-muted">By {{ log.user.get_full_name|default:log.user.username }}</small>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small">No recent activity</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Role Confirmation Modal -->
+<div class="modal fade" id="deleteRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete Role</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the role "<strong id="roleName"></strong>"?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Warning:</strong> This will also remove all user assignments and permission associations for this role.
+                </div>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteRole">Delete Role</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove User Confirmation Modal -->
+<div class="modal fade" id="removeUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Remove User</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove the user "<strong id="userName"></strong>" from this role?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveUser">Remove User</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'roles_permissions/js/dashboard.js' %}"></script>
+<script>
+let roleToDelete = null;
+let userRoleToRemove = null;
+
+function confirmDeleteRole(roleId, roleName) {
+    roleToDelete = roleId;
+    document.getElementById('roleName').textContent = roleName;
+    $('#deleteRoleModal').modal('show');
+}
+
+function confirmRemoveUser(userRoleId, userName) {
+    userRoleToRemove = userRoleId;
+    document.getElementById('userName').textContent = userName;
+    $('#removeUserModal').modal('show');
+}
+
+document.getElementById('confirmDeleteRole').addEventListener('click', function() {
+    if (roleToDelete) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/settings/roles-permissions/roles/${roleToDelete}/delete/`;
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        form.appendChild(csrfToken);
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+
+document.getElementById('confirmRemoveUser').addEventListener('click', function() {
+    if (userRoleToRemove) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/settings/roles-permissions/user-roles/${userRoleToRemove}/delete/`;
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        form.appendChild(csrfToken);
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+</script>
+{% endblock %}

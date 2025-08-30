@@ -1,0 +1,453 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ledger Entries - {{ company.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ledger/ledger.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-journal-text text-primary"></i>
+                Ledger Entries
+            </h1>
+            <p class="text-muted">Manage and view all ledger entries for {{ fiscal_year.name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'ledger:ledger_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                New Ledger Entry
+            </a>
+            <a href="{% url 'ledger:ledger_import' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-upload"></i>
+                Import
+            </a>
+            <a href="{% url 'ledger:ledger_export_csv' %}" class="btn btn-outline-success">
+                <i class="bi bi-download"></i>
+                Export CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Entries</h6>
+                            <h3 class="mb-0">{{ total_entries }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-journal-text fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Debit</h6>
+                            <h3 class="mb-0">{{ total_debit|floatformat:2 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-arrow-up-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Credit</h6>
+                            <h3 class="mb-0">{{ total_credit|floatformat:2 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-arrow-down-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card {% if balance >= 0 %}bg-info{% else %}bg-warning{% endif %} text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Balance</h6>
+                            <h3 class="mb-0">{{ balance|floatformat:2 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-scale fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Panel -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-search"></i>
+                Search & Filter
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search-term" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search-term" name="search_term" 
+                           value="{{ search_form.search_term.value|default:'' }}" 
+                           placeholder="Search ledger entries...">
+                </div>
+                <div class="col-md-2">
+                    <label for="search-by" class="form-label">Search By</label>
+                    <select class="form-select" id="search-by" name="search_by">
+                        {% for value, label in search_form.search_by.field.choices %}
+                            <option value="{{ value }}" {% if search_form.search_by.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="account" class="form-label">Account</label>
+                    <select class="form-select" id="account" name="account">
+                        <option value="">All Accounts</option>
+                        {% for account_type in account_types %}
+                            <optgroup label="{{ account_type.get_category_display }} - {{ account_type.name }}">
+                                {% for account in account_type.accounts.all %}
+                                    {% if account.is_active and not account.is_group %}
+                                        <option value="{{ account.id }}" 
+                                                {% if search_form.account.value == account.id %}selected{% endif %}>
+                                            {{ account.account_code }} - {{ account.name }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="entry-type" class="form-label">Entry Type</label>
+                    <select class="form-select" id="entry-type" name="entry_type">
+                        {% for value, label in search_form.entry_type.field.choices %}
+                            <option value="{{ value }}" {% if search_form.entry_type.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        {% for value, label in search_form.status.field.choices %}
+                            <option value="{{ value }}" {% if search_form.status.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                
+                <!-- Advanced Filters (Collapsible) -->
+                <div class="col-12">
+                    <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                        <i class="bi bi-funnel"></i> Advanced Filters
+                    </button>
+                </div>
+                
+                <div class="collapse" id="advancedFilters">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="date-from" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="date-from" name="date_from" 
+                                   value="{{ search_form.date_from.value|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date-to" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="date-to" name="date_to" 
+                                   value="{{ search_form.date_to.value|default:'' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="amount-min" class="form-label">Min Amount</label>
+                            <input type="number" class="form-control" id="amount-min" name="amount_min" 
+                                   step="0.01" value="{{ search_form.amount_min.value|default:'' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="amount-max" class="form-label">Max Amount</label>
+                            <input type="number" class="form-control" id="amount-max" name="amount_max" 
+                                   step="0.01" value="{{ search_form.amount_max.value|default:'' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="is-reconciled" class="form-label">Reconciled</label>
+                            <select class="form-select" id="is-reconciled" name="is_reconciled">
+                                {% for value, label in search_form.is_reconciled.field.choices %}
+                                    <option value="{{ value }}" {% if search_form.is_reconciled.value == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ledger Entries Table -->
+    {% if page_obj %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-table"></i>
+                    Ledger Entries ({{ page_obj.paginator.count }} total)
+                </h5>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="printLedger()">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 ledger-table">
+                        <thead>
+                            <tr>
+                                <th>Ledger Number</th>
+                                <th>Date</th>
+                                <th>Account</th>
+                                <th>Reference</th>
+                                <th>Description</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Running Balance</th>
+                                <th>Status</th>
+                                <th>Reconciled</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in page_obj %}
+                            <tr data-entry-id="{{ entry.pk }}">
+                                <td>
+                                    <span class="ledger-number">{{ entry.ledger_number }}</span>
+                                </td>
+                                <td>
+                                    <span class="entry-date">{{ entry.entry_date|date:"M d, Y" }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="account-code me-2">{{ entry.account.account_code }}</span>
+                                        <span class="account-name">{{ entry.account.name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="reference">{{ entry.reference|default:"-" }}</span>
+                                </td>
+                                <td>
+                                    <span class="description">{{ entry.description|truncatechars:50 }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if entry.entry_type == 'DR' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ entry.entry_type_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="amount {% if entry.entry_type == 'DR' %}text-success{% else %}text-danger{% endif %}">
+                                        {{ entry.formatted_amount }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="running-balance {% if entry.running_balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ entry.formatted_balance }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if entry.status == 'POSTED' %}bg-primary{% elif entry.status == 'DRAFT' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ entry.status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if entry.is_reconciled %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Yes
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">
+                                            <i class="bi bi-x-circle"></i> No
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'ledger:ledger_detail' entry.pk %}" 
+                                           class="btn btn-outline-primary" 
+                                           data-bs-toggle="tooltip" 
+                                           title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'ledger:ledger_update' entry.pk %}" 
+                                           class="btn btn-outline-warning" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Edit Entry">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% if entry.status == 'DRAFT' %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger delete-entry-btn" 
+                                                    data-entry-id="{{ entry.pk }}"
+                                                    data-entry-number="{{ entry.ledger_number }}"
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Delete Entry">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        {% endif %}
+                                        {% if not entry.is_reconciled %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-info reconcile-entry-btn" 
+                                                    data-entry-id="{{ entry.pk }}"
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Reconcile Entry">
+                                                <i class="bi bi-check2-square"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Ledger pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-journal-text display-1 text-muted"></i>
+            <h3 class="mt-3">No ledger entries found</h3>
+            <p class="text-muted">Try adjusting your search criteria or create a new ledger entry.</p>
+            <a href="{% url 'ledger:ledger_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                Create First Entry
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteEntryModal" tabindex="-1" aria-labelledby="deleteEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteEntryModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the ledger entry "<span id="entryNumberToDelete"></span>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Entry</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reconciliation Modal -->
+<div class="modal fade" id="reconcileEntryModal" tabindex="-1" aria-labelledby="reconcileEntryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reconcileEntryModalLabel">Reconcile Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="reconcileForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="reconciliation-date" class="form-label">Reconciliation Date</label>
+                        <input type="date" class="form-control" id="reconciliation-date" name="reconciliation_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reconciliation-notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="reconciliation-notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Reconcile Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ledger/ledger.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,1839 @@
+{% extends 'grn/base.html' %}
+{% load static %}
+
+{% block grn_title %}{{ title }}{% endblock %}
+
+{% block grn_content %}
+<div class="grn-form-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="page-title">
+                <i class="bi bi-file-earmark-plus me-2"></i>
+                {{ title }}
+            </h1>
+            <div class="page-actions">
+                <a href="{% url 'grn:grn_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRN Form -->
+    <form method="post" class="grn-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Debug Information (remove in production) -->
+        {% if existing_grn_items %}
+        <div class="alert alert-info">
+            <strong>Debug Info:</strong> Editing GRN {{ form.instance.grn_number|default:"Unknown" }}
+            <br>Customer: {{ form.instance.customer.customer_name|default:"Not set" }}
+            <br>Total Qty: {{ form.instance.total_qty|default:"Not set" }}
+            <br>Existing Items: {{ existing_grn_items|length }}
+        </div>
+        {% endif %}
+        
+        <!-- Main Form Fields -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    GRN Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Title Field Removed -->
+                
+                <div class="row">
+                    <!-- Left Side -->
+                    <div class="col-md-6">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="grn_number" class="form-label">
+                                        <i class="bi bi-hash me-1"></i>GRN No
+                                    </label>
+                                    {% if form.grn_number %}
+                                        <input type="text" class="form-control" id="grn_number" name="grn_number" 
+                                               value="{{ form.grn_number.value|default:'' }}" placeholder="Auto-generated after save" readonly>
+                                        {% if form.grn_number.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.grn_number.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <input type="text" class="form-control" id="grn_number" 
+                                               value="{{ grn.grn_number|default:'' }}" placeholder="Auto-generated after save" readonly>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.job_ref.id_for_label }}" class="form-label">
+                                        <i class="bi bi-briefcase me-1"></i>Job Ref
+                                    </label>
+                                    {{ form.job_ref }}
+                                    {% if form.job_ref.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.job_ref.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person me-1"></i>Customer <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.customer }}
+                                    {% if form.customer.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.customer_ref.id_for_label }}" class="form-label">
+                                        <i class="bi bi-tag me-1"></i>Customer Ref
+                                    </label>
+                                    {{ form.customer_ref }}
+                                    {% if form.customer_ref.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_ref.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.bl_number.id_for_label }}" class="form-label">
+                                        <i class="bi bi-file-text me-1"></i>BL
+                                    </label>
+                                    {{ form.bl_number }}
+                                    {% if form.bl_number.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.bl_number.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.grn_date.id_for_label }}" class="form-label">
+                                        <i class="bi bi-calendar me-1"></i>Date <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.grn_date }}
+                                    {% if form.grn_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.grn_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Side -->
+                    <div class="col-md-6">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.mode.id_for_label }}" class="form-label">
+                                        <i class="bi bi-truck me-1"></i>Mode
+                                    </label>
+                                    {{ form.mode }}
+                                    {% if form.mode.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.mode.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.facility.id_for_label }}" class="form-label">
+                                        <i class="bi bi-building me-1"></i>Facility
+                                    </label>
+                                    {{ form.facility }}
+                                    {% if form.facility.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.facility.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.assigned_to.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person-badge me-1"></i>Salesman
+                                    </label>
+                                    {{ form.assigned_to }}
+                                    {% if form.assigned_to.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.assigned_to.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.driver_name.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person me-1"></i>Driver Name
+                                    </label>
+                                    {{ form.driver_name }}
+                                    {% if form.driver_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.driver_name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.contact_no.id_for_label }}" class="form-label">
+                                        <i class="bi bi-telephone me-1"></i>Contact No
+                                    </label>
+                                    {{ form.contact_no }}
+                                    {% if form.contact_no.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.contact_no.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.vehicle_no.id_for_label }}" class="form-label">
+                                        <i class="bi bi-truck me-1"></i>Vehicle No
+                                    </label>
+                                    {{ form.vehicle_no }}
+                                    {% if form.vehicle_no.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.vehicle_no.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.total_qty.id_for_label }}" class="form-label">
+                                        <i class="bi bi-boxes me-1"></i>Total Qty
+                                    </label>
+                                    {{ form.total_qty }}
+                                    {% if form.total_qty.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.total_qty.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label">
+                                        <i class="bi bi-flag me-1"></i>Status
+                                    </label>
+                                    {{ form.status }}
+                                    {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.status.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Priority
+                                    </label>
+                                    {{ form.priority }}
+                                    {% if form.priority.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.priority.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRN Items and Pallet Details Tabs -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="grnTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="items-tab" data-bs-toggle="tab" data-bs-target="#items-tab-pane" type="button" role="tab" aria-controls="items-tab-pane" aria-selected="true">
+                            <i class="bi bi-box me-2"></i>
+                            GRN Items
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pallets-tab" data-bs-toggle="tab" data-bs-target="#pallets-tab-pane" type="button" role="tab" aria-controls="pallets-tab-pane" aria-selected="false">
+                            <i class="bi bi-boxes me-2"></i>
+                            Pallet Details
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="grnTabsContent">
+                    <!-- GRN Items Tab -->
+                    <div class="tab-pane fade show active" id="items-tab-pane" role="tabpanel" aria-labelledby="items-tab" tabindex="0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">GRN Items</h6>
+                            <button type="button" class="btn btn-primary btn-sm" id="add-item-row">
+                                <i class="bi bi-plus-circle me-1"></i> Add Item
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" id="grn-items-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="50">Sr No</th>
+                                        <th width="120">Item Code</th>
+                                        <th width="200">Items</th>
+                                        <th width="100">HS Code</th>
+                                        <th width="80">COO</th>
+                                        <th width="80">Unit</th>
+                                        <th width="80">Qty</th>
+                                        <th width="100">G-weight</th>
+                                        <th width="100">N-weight</th>
+                                        <th width="80">CBM</th>
+                                        <th width="100">P-Date</th>
+                                        <th width="100">E-Date</th>
+                                        <th width="80">Color</th>
+                                        <th width="80">Size</th>
+                                        <th width="120">Barcode</th>
+                                        <th width="80">ED</th>
+                                        <th width="100">CTNR</th>
+                                        <th width="120">Remark</th>
+                                        <th width="80">LOT</th>
+                                        <th width="80">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="grn-items-tbody">
+                                    <!-- Items will be added here dynamically -->
+                                    {% if existing_grn_items %}
+                                        {% for grn_item in existing_grn_items %}
+                                        <tr class="grn-item-row">
+                                            <td class="sr-no">{{ forloop.counter }}</td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="item_code[]" placeholder="Item code" value="{{ grn_item.item_code }}">
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm item-select" name="item[]">
+                                                    <option value="">Select Item</option>
+                                                    {% for item in items %}
+                                                        <option value="{{ item.id }}" data-code="{{ item.item_code }}" data-name="{{ item.item_name }}" {% if grn_item.item and grn_item.item.id == item.id %}selected{% endif %}>
+                                                            {{ item.item_name }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="hs_code[]" placeholder="HS Code" value="{{ grn_item.hs_code }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="coo[]" placeholder="COO" value="{{ grn_item.coo }}">
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm" name="unit[]">
+                                                    <option value="">Unit</option>
+                                                    <option value="PCS" {% if grn_item.unit == 'PCS' %}selected{% endif %}>PCS</option>
+                                                    <option value="KGS" {% if grn_item.unit == 'KGS' %}selected{% endif %}>KGS</option>
+                                                    <option value="CBM" {% if grn_item.unit == 'CBM' %}selected{% endif %}>CBM</option>
+                                                    <option value="BOX" {% if grn_item.unit == 'BOX' %}selected{% endif %}>BOX</option>
+                                                    <option value="CARTON" {% if grn_item.unit == 'CARTON' %}selected{% endif %}>CARTON</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm qty-input" name="qty[]" placeholder="Qty" step="0.01" value="{{ grn_item.expected_qty|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm g-weight-input" name="g_weight[]" placeholder="G-weight" step="0.01" value="{{ grn_item.gross_weight|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm n-weight-input" name="n_weight[]" placeholder="N-weight" step="0.01" value="{{ grn_item.net_weight|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm cbm-input" name="cbm[]" placeholder="CBM" step="0.01" value="{{ grn_item.volume|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="date" class="form-control form-control-sm" name="p_date[]" value="{{ grn_item.p_date|date:'Y-m-d'|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="date" class="form-control form-control-sm" name="e_date[]" value="{{ grn_item.expiry_date|date:'Y-m-d'|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="color[]" placeholder="Color" value="{{ grn_item.color|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="size[]" placeholder="Size" value="{{ grn_item.size|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="barcode[]" placeholder="Barcode" value="{{ grn_item.batch_number|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm ed-select" name="ed[]">
+                                                    <option value="">Select ED</option>
+                                                    {% if grn_item.ed %}
+                                                        <option value="{{ grn_item.ed }}" selected>{{ grn_item.ed }}</option>
+                                                    {% endif %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm ctnr-select" name="ctnr[]">
+                                                    <option value="">Select CTNR</option>
+                                                    {% if grn_item.ctnr %}
+                                                        <option value="{{ grn_item.ctnr }}" selected>{{ grn_item.ctnr }}</option>
+                                                    {% endif %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="remark[]" placeholder="Remark" value="{{ grn_item.remark|default:'' }}">
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-info lot-btn" title="Manage Lots">
+                                                    <i class="bi bi-collection"></i>
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-row">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pallet Details Tab -->
+                    <div class="tab-pane fade" id="pallets-tab-pane" role="tabpanel" aria-labelledby="pallets-tab" tabindex="0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Pallet Details</h6>
+                            <button type="button" class="btn btn-primary btn-sm" id="add-pallet-row">
+                                <i class="bi bi-plus-circle me-1"></i> Add Pallet
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" id="pallet-details-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="50">Sr No</th>
+                                        <th width="150">Pallet No</th>
+                                        <th width="200">Select Item</th>
+                                        <th width="200">Item Description</th>
+                                        <th width="100">Qty</th>
+                                        <th width="150">Location</th>
+                                        <th width="200">Remark</th>
+                                        <th width="80">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pallet-details-tbody">
+                                    {% if existing_grn_pallets %}
+                                        {% for pallet in existing_grn_pallets %}
+                                        <tr class="pallet-row">
+                                            <td class="pallet-sr-no">{{ forloop.counter }}</td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="pallet_no[]" placeholder="Pallet No" value="{{ pallet.pallet_no }}">
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm pallet-item-select" name="pallet_item_select[]">
+                                                    <option value="">Choose Item</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="pallet_description[]" placeholder="Auto-populated from item" value="{{ pallet.description }}" readonly>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm" name="pallet_qty[]" placeholder="Qty" step="0.01" value="{{ pallet.quantity }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="pallet_location[]" placeholder="Location" value="{{ pallet.location }}">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm" name="pallet_remark[]" placeholder="Remark" value="{{ pallet.remark }}">
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-pallet-row">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <!-- Additional pallets will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden template for new GRN item rows -->
+        <template id="grn-item-template">
+            <tr class="grn-item-row">
+                <td class="sr-no"></td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="item_code[]" placeholder="Item code">
+                </td>
+                <td>
+                    <select class="form-select form-select-sm item-select" name="item[]">
+                        <option value="">Select Item</option>
+                        {% for item in items %}
+                            <option value="{{ item.id }}" data-code="{{ item.item_code }}" data-name="{{ item.item_name }}">
+                                {{ item.item_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="hs_code[]" placeholder="HS Code">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="coo[]" placeholder="COO">
+                </td>
+                <td>
+                    <select class="form-select form-select-sm" name="unit[]">
+                        <option value="">Unit</option>
+                        <option value="PCS">PCS</option>
+                        <option value="KGS">KGS</option>
+                        <option value="CBM">CBM</option>
+                        <option value="BOX">BOX</option>
+                        <option value="CARTON">CARTON</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm qty-input" name="qty[]" placeholder="Qty" step="0.01">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm g-weight-input" name="g_weight[]" placeholder="G-weight" step="0.01">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm n-weight-input" name="n_weight[]" placeholder="N-weight" step="0.01">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm cbm-input" name="cbm[]" placeholder="CBM" step="0.01">
+                </td>
+                <td>
+                    <input type="date" class="form-control form-control-sm" name="p_date[]">
+                </td>
+                <td>
+                    <input type="date" class="form-control form-control-sm" name="e_date[]">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="color[]" placeholder="Color">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="size[]" placeholder="Size">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="barcode[]" placeholder="Barcode">
+                </td>
+                <td>
+                    <select class="form-select form-select-sm ed-select" name="ed[]">
+                        <option value="">Select ED</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="form-select form-select-sm ctnr-select" name="ctnr[]">
+                        <option value="">Select CTNR</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="remark[]" placeholder="Remark">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-info lot-btn" title="Manage Lots">
+                        <i class="bi bi-collection"></i>
+                    </button>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-row">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        </template>
+
+        <!-- Hidden template for new pallet rows -->
+        <template id="pallet-template">
+            <tr class="pallet-row">
+                <td class="pallet-sr-no"></td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="pallet_no[]" placeholder="Pallet No">
+                </td>
+                <td>
+                    <select class="form-select form-select-sm pallet-item-select" name="pallet_item_select[]">
+                        <option value="">Choose Item</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="pallet_description[]" placeholder="Auto-populated from item" value="{{ pallet.description }}" readonly>
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" name="pallet_qty[]" placeholder="Qty" step="0.01">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="pallet_location[]" placeholder="Location">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" name="pallet_remark[]" placeholder="Remark">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-pallet-row">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        </template>
+
+        <!-- LOT Modal -->
+        <div class="modal fade" id="lotModal" tabindex="-1" aria-labelledby="lotModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="lotModalLabel">
+                            <i class="bi bi-collection me-2"></i>
+                            Manage Lots
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">LOT 1</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Lot Number</label>
+                                            <input type="text" class="form-control form-control-sm" name="lot1_number" placeholder="LOT1 Number">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Quantity</label>
+                                            <input type="number" class="form-control form-control-sm" name="lot1_qty" placeholder="Qty" step="0.01">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Expiry Date</label>
+                                            <input type="date" class="form-control form-control-sm" name="lot1_expiry">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Remarks</label>
+                                            <textarea class="form-control form-control-sm" name="lot1_remarks" rows="2" placeholder="Remarks"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">LOT 2</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Lot Number</label>
+                                            <input type="text" class="form-control form-control-sm" name="lot2_number" placeholder="LOT2 Number">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Quantity</label>
+                                            <input type="number" class="form-control form-control-sm" name="lot2_qty" placeholder="Qty" step="0.01">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Expiry Date</label>
+                                            <input type="date" class="form-control form-control-sm" name="lot2_expiry">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Remarks</label>
+                                            <textarea class="form-control form-control-sm" name="lot2_remarks" rows="2" placeholder="Remarks"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">LOT 3</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Lot Number</label>
+                                            <input type="text" class="form-control form-control-sm" name="lot3_number" placeholder="LOT3 Number">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Quantity</label>
+                                            <input type="number" class="form-control form-control-sm" name="lot3_qty" placeholder="Qty" step="0.01">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Expiry Date</label>
+                                            <input type="date" class="form-control form-control-sm" name="lot3_expiry">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Remarks</label>
+                                            <textarea class="form-control form-control-sm" name="lot3_remarks" rows="2" placeholder="Remarks"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveLotData">Save Lot Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions mt-4">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a href="{% url 'grn:grn_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Cancel
+                    </a>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i> {{ submit_text }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+<style>
+/* Tabbed Interface Styling */
+.nav-tabs .nav-link {
+    color: #495057;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #667eea;
+    border-color: transparent;
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+.nav-tabs .nav-link.active {
+    color: #667eea;
+    background-color: white;
+    border-bottom: 2px solid #667eea;
+    font-weight: 600;
+}
+
+.nav-tabs .nav-link i {
+    margin-right: 0.5rem;
+}
+
+.tab-content {
+    padding-top: 1rem;
+}
+
+.tab-pane {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card Header Tabs Styling */
+.card-header-tabs {
+    margin-right: 0;
+    margin-left: 0;
+    border-bottom: 0;
+}
+
+.card-header-tabs .nav-link {
+    border-radius: 0.375rem 0.375rem 0 0;
+    margin-right: 0.25rem;
+}
+
+/* Table Styling Improvements */
+.table-responsive {
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: #343a40;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: none;
+    padding: 0.75rem 0.5rem;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 0.5rem;
+    border-color: #dee2e6;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+/* Form Control Styling */
+.form-control-sm, .form-select-sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.form-control-sm:focus, .form-select-sm:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Button Styling */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-outline-info:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+/* Tab Content Animation */
+.tab-pane.fade {
+    transition: opacity 0.15s linear;
+}
+
+.tab-pane.fade.show {
+    opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-tabs .nav-link {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.75rem;
+    }
+    
+    .form-control-sm, .form-select-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.375rem;
+    }
+}
+</style>
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form functionality
+    console.log('GRN Form initialized');
+    
+    // Set default date to today if empty
+    const dateField = document.getElementById('grn_date');
+    if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+    
+    // Initialize job selection functionality
+    initJobSelection();
+    
+    // Initialize item table functionality
+    initItemTable();
+    
+    // Initialize pallet table functionality
+    initPalletTable();
+    
+    // Initialize form validation
+    initFormValidation();
+    
+    // Initialize ED and CTNR dropdowns for existing items
+    initExistingEDCTNRDropdowns();
+});
+
+function initJobSelection() {
+    const jobSelect = document.getElementById('job_ref');
+    console.log('Job select element found:', jobSelect);
+    
+    // Debug: List all form fields to help identify correct IDs
+    console.log('Debug: All form fields:');
+    const allInputs = document.querySelectorAll('input, select, textarea');
+    allInputs.forEach(input => {
+        if (input.id) {
+            console.log(`Field: ${input.name} -> ID: ${input.id}`);
+        }
+    });
+    
+    if (jobSelect) {
+        jobSelect.addEventListener('change', function() {
+            console.log('Job selection changed to:', this.value);
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                // Get job data via AJAX
+                fetchJobData(selectedOption.value);
+            } else {
+                clearJobFields();
+            }
+        });
+        console.log('Job selection event listener attached');
+    } else {
+        console.log('Job select element not found');
+        // Try alternative ID
+        const altJobSelect = document.getElementById('id_job_ref');
+        console.log('Alternative job select element found:', altJobSelect);
+        if (altJobSelect) {
+            console.log('Using alternative job select ID');
+            altJobSelect.addEventListener('change', function() {
+                console.log('Job selection changed to:', this.value);
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    // Get job data via AJAX
+                    fetchJobData(selectedOption.value);
+                } else {
+                    clearJobFields();
+                }
+            });
+            console.log('Alternative job selection event listener attached');
+        }
+    }
+}
+
+function fetchJobData(jobId) {
+    console.log('Fetching job data for ID:', jobId);
+    // Fetch job data via AJAX
+    fetch(`/grn/get-job-data/${jobId}/`)
+        .then(response => {
+            console.log('Job data response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Job data received:', data);
+            if (data.success) {
+                populateFieldsFromJobData(data.job);
+            } else {
+                console.error('Job data fetch failed:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching job data:', error);
+        });
+}
+
+function populateFieldsFromJobData(jobData) {
+    console.log('Populating fields with job data:', jobData);
+    
+    // Debug: Check all field IDs before populating
+    console.log('Debug: Checking field IDs for population:');
+    const fieldIds = ['customer-select', 'id_customer_ref', 'id_bl_number', 'id_mode', 'id_facility', 'id_assigned_to', 'id_total_qty'];
+    fieldIds.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        console.log(`Field ${fieldId}: ${field ? 'Found' : 'Not found'}`);
+    });
+    
+    // Ensure job reference field is set to the selected job
+    const jobRefSelect = document.getElementById('job_ref') || document.getElementById('id_job_ref');
+    if (jobRefSelect) {
+        console.log('Setting job reference to:', jobData.id);
+        jobRefSelect.value = jobData.id;
+    }
+    
+    // Populate Customer field
+    const customerSelect = document.getElementById('customer-select');
+    console.log('Customer select element found:', customerSelect);
+    
+    if (customerSelect && jobData.customer_id) {
+        console.log('Setting customer to:', jobData.customer_id);
+        customerSelect.value = String(jobData.customer_id);
+        customerSelect.dispatchEvent(new Event('change'));
+    }
+    
+    // Populate Customer Ref field
+    const customerRefInput = document.getElementById('id_customer_ref');
+    if (customerRefInput) {
+        console.log('Setting customer ref to:', jobData.customer_ref);
+        customerRefInput.value = jobData.customer_ref || '';
+    }
+    
+    // Populate BL field
+    const blInput = document.getElementById('id_bl_number');
+    if (blInput) {
+        console.log('Setting BL to:', jobData.bl_number);
+        blInput.value = jobData.bl_number || '';
+    }
+    
+    // Populate Mode field
+    const modeSelect = document.getElementById('id_mode');
+    if (modeSelect && jobData.mode) {
+        console.log('Setting mode to:', jobData.mode);
+        modeSelect.value = jobData.mode;
+    }
+    
+    // Populate Facility field
+    const facilitySelect = document.getElementById('id_facility');
+    if (facilitySelect && jobData.facility_id) {
+        console.log('Setting facility to:', jobData.facility_id);
+        facilitySelect.value = jobData.facility_id;
+    }
+    
+    // Populate Salesman field
+    const salesmanSelect = document.getElementById('id_assigned_to');
+    if (salesmanSelect && jobData.salesman_id) {
+        console.log('Setting salesman to:', jobData.salesman_id);
+        salesmanSelect.value = jobData.salesman_id;
+    }
+    
+    // Populate Total Qty field
+    const totalQtyInput = document.getElementById('id_total_qty');
+    if (totalQtyInput) {
+        console.log('Setting total qty to:', jobData.total_quantity);
+        totalQtyInput.value = jobData.total_quantity || '';
+    }
+    
+    // Populate ED and CTNR dropdowns with job data
+    if (jobData.ed_values && jobData.ed_values.length > 0) {
+        console.log('=== POPULATING ED DROPDOWNS ===');
+        console.log('ED values from job data:', jobData.ed_values);
+    } else {
+        console.log('No ED values in job data');
+    }
+
+    if (jobData.ctnr_values && jobData.ctnr_values.length > 0) {
+        console.log('=== POPULATING CTNR DROPDOWNS ===');
+        console.log('CTNR values from job data:', jobData.ctnr_values);
+    } else {
+        console.log('No CTNR values in job data');
+    }
+    
+    // Populate GRN Items table with cargo data
+    if (jobData.cargo_items && jobData.cargo_items.length > 0) {
+        console.log('Populating cargo items:', jobData.cargo_items.length);
+        populateGRNItemsTable(jobData.cargo_items);
+        
+        // Populate ED and CTNR dropdowns AFTER the table is populated
+        if (jobData.ed_values && jobData.ed_values.length > 0) {
+            console.log('=== POPULATING ED DROPDOWNS AFTER TABLE ===');
+            populateEDDropdowns(jobData.ed_values);
+        }
+        
+        if (jobData.ctnr_values && jobData.ctnr_values.length > 0) {
+            console.log('=== POPULATING CTNR DROPDOWNS AFTER TABLE ===');
+            populateCTNRDropdowns(jobData.ctnr_values);
+        }
+    } else {
+        console.log('No cargo items found in job data');
+    }
+    
+    // Test dropdown functionality after everything is populated
+    setTimeout(() => {
+        testDropdownFunctionality();
+    }, 300);
+    
+    // Show success notification
+    showNotification('Job data loaded successfully!', 'success');
+}
+
+function clearJobFields() {
+    // Clear all job-related fields
+    const fieldsToClear = ['id_customer_ref', 'id_bl_number', 'id_mode', 'id_total_qty'];
+    fieldsToClear.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.value = '';
+        }
+    });
+    
+    // Clear dropdowns
+    const dropdownsToClear = ['customer-select', 'id_facility', 'id_assigned_to'];
+    dropdownsToClear.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.value = '';
+        }
+    });
+}
+
+function populateGRNItemsTable(cargoItems) {
+    const tbody = document.getElementById('grn-items-tbody');
+    if (!tbody) return;
+
+    console.log('=== POPULATE GRN ITEMS TABLE STARTED ===');
+    console.log('Cargo items:', cargoItems);
+
+    // Clear existing items
+    tbody.innerHTML = '';
+
+    // Add cargo items to the table
+    cargoItems.forEach((cargo, index) => {
+        const row = createItemRow(index + 1);
+
+        // Populate the row with cargo data
+        row.querySelector('input[name="item_code[]"]').value = cargo.item_code || '';
+        row.querySelector('select[name="item[]"]').value = cargo.item_id || '';
+        row.querySelector('input[name="hs_code[]"]').value = cargo.hs_code || '';
+        row.querySelector('input[name="coo[]"]').value = cargo.coo || '';
+        row.querySelector('select[name="unit[]"]').value = cargo.unit || '';
+        row.querySelector('input[name="qty[]"]').value = cargo.quantity || '';
+        row.querySelector('input[name="g_weight[]"]').value = cargo.gross_weight || '';
+        row.querySelector('input[name="n_weight[]"]').value = cargo.net_weight || '';
+        row.querySelector('input[name="remark[]"]').value = cargo.remark || '';
+
+        tbody.appendChild(row);
+    });
+
+    // Update row numbers
+    updateSerialNumbers();
+
+    console.log('GRN items table populated successfully!');
+    console.log('Note: ED and CTNR dropdowns are populated separately in populateFieldsFromJobData function');
+}
+
+function createItemRow(serialNumber) {
+    const template = document.getElementById('grn-item-template');
+    if (!template) return null;
+    
+    const newRow = template.content.cloneNode(true);
+    const row = newRow.querySelector('.grn-item-row');
+    
+    // Set serial number
+    const srNoCell = row.querySelector('.sr-no');
+    if (srNoCell) {
+        srNoCell.textContent = serialNumber;
+    }
+    
+    return row;
+}
+
+function updateSerialNumbers() {
+    const rows = document.querySelectorAll('.grn-item-row');
+    rows.forEach((row, index) => {
+        const srNoCell = row.querySelector('.sr-no');
+        if (srNoCell) {
+            srNoCell.textContent = index + 1;
+        }
+    });
+}
+
+function loadItemDetails(itemId, row) {
+    // This function would typically make an AJAX call to get item details
+    // For now, we'll simulate it with the data attributes
+    const itemSelect = row.querySelector('.item-select');
+    const selectedOption = itemSelect.querySelector(`option[value="${itemId}"]`);
+    
+    if (selectedOption) {
+        const itemCode = selectedOption.getAttribute('data-code');
+        const itemName = selectedOption.getAttribute('data-name');
+        
+        // Auto-fill item code
+        const itemCodeInput = row.querySelector('input[name="item_code[]"]');
+        if (itemCodeInput) {
+            itemCodeInput.value = itemCode || '';
+        }
+    }
+}
+
+function updateTotalQuantity() {
+    const qtyInputs = document.querySelectorAll('.qty-input');
+    let totalQty = 0;
+    
+    qtyInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        totalQty += value;
+    });
+    
+    // Update total quantity field in main form
+    const totalQtyField = document.getElementById('total_qty');
+    if (totalQtyField) {
+        totalQtyField.value = totalQty.toFixed(2);
+    }
+}
+
+function populateEDDropdowns(edValues) {
+    console.log('=== POPULATE ED DROPDOWNS FUNCTION ===');
+    console.log('ED values to populate:', edValues);
+    
+    // Get all ED dropdowns in the form
+    const edDropdowns = document.querySelectorAll('.ed-select');
+    console.log('Found ED dropdowns:', edDropdowns.length);
+    
+    edDropdowns.forEach((dropdown, index) => {
+        console.log(`Processing ED dropdown ${index + 1}:`, dropdown);
+        
+        // Clear existing options except the first one
+        const firstOption = dropdown.querySelector('option');
+        dropdown.innerHTML = '';
+        if (firstOption) {
+            dropdown.appendChild(firstOption);
+        }
+        
+        // Add new options from job data
+        edValues.forEach(edValue => {
+            const option = document.createElement('option');
+            option.value = edValue;
+            option.textContent = edValue;
+            dropdown.appendChild(option);
+            console.log('Added ED option:', edValue);
+        });
+        
+        console.log(`ED dropdown ${index + 1} populated with ${edValues.length} options`);
+        console.log('ED dropdown HTML after population:', dropdown.outerHTML);
+        console.log('ED dropdown options count:', dropdown.options.length);
+    });
+}
+
+function populateCTNRDropdowns(ctnrValues) {
+    console.log('=== POPULATE CTNR DROPDOWNS FUNCTION ===');
+    console.log('CTNR values to populate:', ctnrValues);
+    
+    // Get all CTNR dropdowns in the form
+    const ctnrDropdowns = document.querySelectorAll('.ctnr-select');
+    console.log('Found CTNR dropdowns:', ctnrDropdowns.length);
+    
+    ctnrDropdowns.forEach((dropdown, index) => {
+        console.log(`Processing CTNR dropdown ${index + 1}:`, dropdown);
+        
+        // Clear existing options except the first one
+        const firstOption = dropdown.querySelector('option');
+        dropdown.innerHTML = '';
+        if (firstOption) {
+            dropdown.appendChild(firstOption);
+        }
+        
+        // Add new options from job data
+        ctnrValues.forEach(ctnrValue => {
+            const option = document.createElement('option');
+            option.value = ctnrValue;
+            option.textContent = ctnrValue;
+            dropdown.appendChild(option);
+            console.log('Added CTNR option:', ctnrValue);
+        });
+        
+        console.log(`CTNR dropdown ${index + 1} populated with ${ctnrValues.length} options`);
+        console.log('CTNR dropdown HTML after population:', dropdown.outerHTML);
+        console.log('CTNR dropdown options count:', dropdown.options.length);
+    });
+}
+
+function openLotModal(row) {
+    // Store reference to the current row
+    window.currentLotRow = row;
+    
+    // Get item details from the row
+    const itemSelect = row.querySelector('.item-select');
+    const itemName = itemSelect ? itemSelect.options[itemSelect.selectedIndex].text : 'Unknown Item';
+    const itemCode = row.querySelector('input[name="item_code[]"]').value;
+    
+    // Update modal title with item details
+    const modalTitle = document.getElementById('lotModalLabel');
+    if (modalTitle) {
+        modalTitle.innerHTML = `<i class="bi bi-collection me-2"></i>Manage Lots - ${itemName} (${itemCode})`;
+    }
+    
+    // Load existing LOT data if any
+    loadExistingLotData(row);
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('lotModal'));
+    modal.show();
+}
+
+function loadExistingLotData(row) {
+    // This function would load existing LOT data for the row
+    // For now, we'll clear the form
+    const modal = document.getElementById('lotModal');
+    const inputs = modal.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.value = '';
+    });
+}
+
+function saveLotData() {
+    const row = window.currentLotRow;
+    if (!row) return;
+    
+    // Collect LOT data from modal
+    const lotData = {
+        lot1: {
+            number: document.querySelector('input[name="lot1_number"]').value,
+            qty: document.querySelector('input[name="lot1_qty"]').value,
+            expiry: document.querySelector('input[name="lot1_expiry"]').value,
+            remarks: document.querySelector('textarea[name="lot1_remarks"]').value
+        },
+        lot2: {
+            number: document.querySelector('input[name="lot2_number"]').value,
+            qty: document.querySelector('input[name="lot2_qty"]').value,
+            expiry: document.querySelector('input[name="lot2_expiry"]').value,
+            remarks: document.querySelector('textarea[name="lot2_remarks"]').value
+        },
+        lot3: {
+            number: document.querySelector('input[name="lot3_number"]').value,
+            qty: document.querySelector('input[name="lot3_qty"]').value,
+            expiry: document.querySelector('input[name="lot3_expiry"]').value,
+            remarks: document.querySelector('textarea[name="lot3_remarks"]').value
+        }
+    };
+    
+    // Store LOT data in the row (you can use data attributes or hidden inputs)
+    row.setAttribute('data-lot-data', JSON.stringify(lotData));
+    
+    // Update LOT button to show it has data
+    const lotBtn = row.querySelector('.lot-btn');
+    if (lotBtn) {
+        lotBtn.classList.remove('btn-outline-info');
+        lotBtn.classList.add('btn-info');
+        lotBtn.innerHTML = '<i class="bi bi-collection-fill"></i>';
+        lotBtn.title = 'LOT Data Saved - Click to Edit';
+    }
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('lotModal'));
+    modal.hide();
+    
+    // Show success message
+    showNotification('LOT data saved successfully!', 'success');
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+function initItemTable() {
+    const addButton = document.getElementById('add-item-row');
+    const tbody = document.getElementById('grn-items-tbody');
+    const template = document.getElementById('grn-item-template');
+    
+    if (addButton && tbody && template) {
+        addButton.addEventListener('click', function() {
+            addNewItemRow();
+        });
+    }
+    
+    // Remove row functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-row') || e.target.closest('.remove-row')) {
+            const row = e.target.closest('.grn-item-row');
+            if (row) {
+                row.remove();
+                updateSerialNumbers();
+                // Refresh pallet item dropdowns after removing an item
+                refreshPalletItemDropdowns();
+            }
+        }
+        
+        // LOT button functionality
+        if (e.target.classList.contains('lot-btn') || e.target.closest('.lot-btn')) {
+            const row = e.target.closest('.grn-item-row');
+            if (row) {
+                openLotModal(row);
+            }
+        }
+    });
+    
+    // Save LOT data functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'saveLotData') {
+            saveLotData();
+        }
+    });
+    
+    // Item selection change event
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-select')) {
+            const row = e.target.closest('.grn-item-row');
+            const itemId = e.target.value;
+            if (itemId) {
+                loadItemDetails(itemId, row);
+            }
+            // Refresh pallet item dropdowns when item selection changes
+            refreshPalletItemDropdowns();
+        }
+    });
+    
+    // Auto-calculate totals when quantities change
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('qty-input') || 
+            e.target.classList.contains('g-weight-input') || 
+            e.target.classList.contains('n-weight-input') || 
+            e.target.classList.contains('cbm-input')) {
+            updateTotalQuantity();
+            // Refresh pallet item dropdowns when item details change
+            refreshPalletItemDropdowns();
+        }
+    });
+    
+    // Only add initial row if there are no existing items
+    const existingRows = tbody.querySelectorAll('.grn-item-row');
+    if (existingRows.length === 0) {
+        addNewItemRow();
+    } else {
+        // Update serial numbers for existing rows
+        updateSerialNumbers();
+    }
+}
+
+function initPalletTable() {
+    const addPalletButton = document.getElementById('add-pallet-row');
+    const palletTbody = document.getElementById('pallet-details-tbody');
+    const palletTemplate = document.getElementById('pallet-template');
+    
+    if (addPalletButton && palletTbody && palletTemplate) {
+        addPalletButton.addEventListener('click', function() {
+            addNewPalletRow();
+        });
+    }
+    
+    // Remove pallet row functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-pallet-row') || e.target.closest('.remove-pallet-row')) {
+            const row = e.target.closest('.pallet-row');
+            if (row) {
+                row.remove();
+                updatePalletSerialNumbers();
+            }
+        }
+    });
+    
+    // Populate item dropdowns for existing pallets
+    populateExistingPalletItemDropdowns();
+    
+    // Add initial pallet row if no existing pallets
+    const existingPallets = document.querySelectorAll('.pallet-row');
+    if (existingPallets.length === 0) {
+        addNewPalletRow();
+    }
+}
+
+function populateExistingPalletItemDropdowns() {
+    const existingPallets = document.querySelectorAll('.pallet-row');
+    existingPallets.forEach(palletRow => {
+        autoPopulatePalletFields(palletRow);
+    });
+}
+
+function autoPopulatePalletFields(palletRow) {
+    // Get all GRN items to populate pallet fields
+    const grnItems = document.querySelectorAll('.grn-item-row');
+    const availableItems = [];
+    
+    grnItems.forEach((itemRow, index) => {
+        const itemCode = itemRow.querySelector('input[name="item_code[]"]')?.value;
+        const itemSelect = itemRow.querySelector('select[name="item[]"]');
+        const receivedQty = itemRow.querySelector('input[name="received_qty[]"]')?.value || 
+                           itemRow.querySelector('input[name="qty[]"]')?.value;
+        
+        // Get item name from selected dropdown option
+        let itemName = '';
+        if (itemSelect && itemSelect.value) {
+            const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+            itemName = selectedOption ? selectedOption.textContent : '';
+        }
+        
+        if (itemCode || itemName) {
+            availableItems.push({
+                index: index + 1,
+                code: itemCode || '',
+                name: itemName || '',
+                qty: receivedQty || '0'
+            });
+        }
+    });
+    
+    // Populate the item dropdown
+    const itemSelect = palletRow.querySelector('.pallet-item-select');
+    if (itemSelect) {
+        // Clear existing options except the first one
+        itemSelect.innerHTML = '<option value="">Choose Item</option>';
+        
+        // Add options for each available item
+        availableItems.forEach((item, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            // Show item name prominently, with code in smaller text if available
+            let displayText = '';
+            if (item.name) {
+                displayText = item.name;
+                if (item.code) {
+                    displayText += ` (${item.code})`;
+                }
+            } else {
+                displayText = item.code;
+            }
+            displayText += ` - Qty: ${item.qty}`;
+            option.textContent = displayText;
+            option.dataset.itemData = JSON.stringify(item);
+            itemSelect.appendChild(option);
+        });
+        
+        // Add event listener for item selection
+        itemSelect.addEventListener('change', function() {
+            const selectedIndex = this.value;
+            if (selectedIndex !== '') {
+                const selectedItem = availableItems[selectedIndex];
+                const descriptionField = palletRow.querySelector('input[name="pallet_description[]"]');
+                const qtyField = palletRow.querySelector('input[name="pallet_qty[]"]');
+                
+                if (descriptionField) {
+                    // Use item name if available, otherwise use code
+                    descriptionField.value = selectedItem.name || selectedItem.code;
+                }
+                
+                if (qtyField) {
+                    qtyField.value = selectedItem.qty;
+                }
+            } else {
+                // Clear fields if no item is selected
+                const descriptionField = palletRow.querySelector('input[name="pallet_description[]"]');
+                const qtyField = palletRow.querySelector('input[name="pallet_qty[]"]');
+                
+                if (descriptionField) {
+                    descriptionField.value = '';
+                }
+                
+                if (qtyField) {
+                    qtyField.value = '';
+                }
+            }
+        });
+        
+        // Auto-select the first item if available
+        if (availableItems.length > 0) {
+            itemSelect.value = '0';
+            itemSelect.dispatchEvent(new Event('change'));
+        }
+    }
+}
+
+function getAvailableItemsForPallet() {
+    const grnItems = document.querySelectorAll('.grn-item-row');
+    const availableItems = [];
+    
+    grnItems.forEach((itemRow, index) => {
+        const itemCode = itemRow.querySelector('input[name="item_code[]"]')?.value;
+        const itemSelect = itemRow.querySelector('select[name="item[]"]');
+        const receivedQty = itemRow.querySelector('input[name="received_qty[]"]')?.value || 
+                           itemRow.querySelector('input[name="qty[]"]')?.value;
+        
+        // Get item name from selected dropdown option
+        let itemName = '';
+        if (itemSelect && itemSelect.value) {
+            const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+            itemName = selectedOption ? selectedOption.textContent : '';
+        }
+        
+        if (itemCode || itemName) {
+            availableItems.push({
+                index: index + 1,
+                code: itemCode || '',
+                name: itemName || '',
+                qty: receivedQty || '0'
+            });
+        }
+    });
+    
+    return availableItems;
+}
+
+function updatePalletSerialNumbers() {
+    const rows = document.querySelectorAll('.pallet-row');
+    rows.forEach((row, index) => {
+        const srNoCell = row.querySelector('.pallet-sr-no');
+        if (srNoCell) {
+            srNoCell.textContent = index + 1;
+        }
+    });
+}
+
+function addNewItemRow() {
+    const tbody = document.getElementById('grn-items-tbody');
+    const template = document.getElementById('grn-item-template');
+    
+    if (tbody && template) {
+        const newRow = template.content.cloneNode(true);
+        const row = newRow.querySelector('.grn-item-row');
+        
+        // Set serial number
+        const srNoCell = row.querySelector('.sr-no');
+        if (srNoCell) {
+            srNoCell.textContent = tbody.children.length + 1;
+        }
+        
+        tbody.appendChild(row);
+        
+        // Populate ED and CTNR dropdowns for the new row if job data is available
+        const jobSelect = document.getElementById('id_job_ref');
+        if (jobSelect && jobSelect.value) {
+            // Get the current ED and CTNR values from existing dropdowns
+            const existingEDDropdown = document.querySelector('.ed-select');
+            const existingCTNRDropdown = document.querySelector('.ctnr-select');
+            
+            if (existingEDDropdown && existingEDDropdown.options.length > 1) {
+                const newEDDropdown = row.querySelector('.ed-select');
+                if (newEDDropdown) {
+                    // Copy options from existing dropdown
+                    Array.from(existingEDDropdown.options).forEach(option => {
+                        const newOption = option.cloneNode(true);
+                        newEDDropdown.appendChild(newOption);
+                    });
+                }
+            }
+            
+            if (existingCTNRDropdown && existingCTNRDropdown.options.length > 1) {
+                const newCTNRDropdown = row.querySelector('.ctnr-select');
+                if (newCTNRDropdown) {
+                    // Copy options from existing dropdown
+                    Array.from(existingCTNRDropdown.options).forEach(option => {
+                        const newOption = option.cloneNode(true);
+                        newCTNRDropdown.appendChild(newOption);
+                    });
+                }
+            }
+        }
+        
+        // Refresh pallet item dropdowns to include the new item
+        refreshPalletItemDropdowns();
+    }
+}
+
+function initFormValidation() {
+    const form = document.querySelector('.grn-form');
+    if (form) {
+        console.log('Form found, adding submit listener');
+        form.addEventListener('submit', function(e) {
+            console.log('=== FORM SUBMISSION ATTEMPTED ===');
+            console.log('Form action:', form.action);
+            console.log('Form method:', form.method);
+            
+            // Log all form data
+            const formData = new FormData(form);
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            
+            if (!validateForm()) {
+                console.log('Form validation failed, preventing submission');
+                e.preventDefault();
+                showNotification('Please fill in all required fields.', 'warning');
+            } else {
+                console.log('Form validation passed, allowing submission');
+            }
+        });
+    } else {
+        console.log('Form not found');
+    }
+}
+
+function validateForm() {
+    let isValid = true;
+    
+    // Check required fields with correct IDs
+    const requiredFields = [
+        { id: 'customer-select', name: 'Customer' },
+        { id: 'id_grn_date', name: 'Date' },
+    ];
+    
+    requiredFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        console.log(`Checking field ${field.id}:`, element);
+        if (element && !element.value.trim()) {
+            isValid = false;
+            showFieldError(element, `${field.name} is required`);
+            console.log(`Field ${field.id} is empty`);
+        } else if (element) {
+            console.log(`Field ${field.id} has value:`, element.value);
+        } else {
+            console.log(`Field ${field.id} not found`);
+        }
+    });
+    
+    // Check if at least one item is added (optional for now)
+    const itemRows = document.querySelectorAll('.grn-item-row');
+    let hasItems = false;
+    
+    itemRows.forEach((row, index) => {
+        const itemCode = row.querySelector('input[name="item_code[]"]')?.value;
+        const itemSelect = row.querySelector('select[name="item[]"]')?.value;
+        if (itemCode || itemSelect) {
+            hasItems = true;
+        }
+    });
+    
+    // Make item validation optional for now
+    if (!hasItems) {
+        // Don't prevent form submission, just show a warning
+        showNotification('No items added to GRN. You can add items later.', 'info');
+    }
+    
+    console.log('Form validation result:', isValid);
+    return isValid;
+}
+
+function showFieldError(field, message) {
+    // Remove existing error
+    const existingError = field.parentNode.querySelector('.invalid-feedback');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add new error
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'invalid-feedback d-block';
+    errorDiv.textContent = message;
+    field.parentNode.appendChild(errorDiv);
+    field.classList.add('is-invalid');
+}
+
+function initExistingEDCTNRDropdowns() {
+    // Check if we're editing an existing GRN with items
+    const existingItems = document.querySelectorAll('.grn-item-row');
+    if (existingItems.length > 0) {
+        // Get the job reference to fetch ED and CTNR data
+        const jobSelect = document.getElementById('id_job_ref');
+        if (jobSelect && jobSelect.value) {
+            // Fetch ED and CTNR data for the selected job
+            fetch(`/grn/get-job-ed-ctnr-data/${jobSelect.value}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.ed_values && data.ed_values.length > 0) {
+                            populateEDDropdowns(data.ed_values);
+                        }
+                        if (data.ctnr_values && data.ctnr_values.length > 0) {
+                            populateCTNRDropdowns(data.ctnr_values);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching ED/CTNR data for existing items:', error);
+                });
+        }
+    }
+}
+
+function testDropdownFunctionality() {
+    console.log('=== TESTING DROPDOWN FUNCTIONALITY ===');
+    
+    // Get all ED and CTNR dropdowns in the GRN items table specifically
+    const grnItemsTable = document.getElementById('grn-items-tbody');
+    const edDropdowns = grnItemsTable ? grnItemsTable.querySelectorAll('.ed-select') : [];
+    const ctnrDropdowns = grnItemsTable ? grnItemsTable.querySelectorAll('.ctnr-select') : [];
+    
+    console.log('GRN items table found:', !!grnItemsTable);
+    console.log('ED dropdowns found in table:', edDropdowns.length);
+    console.log('CTNR dropdowns found in table:', ctnrDropdowns.length);
+    
+    edDropdowns.forEach((dropdown, index) => {
+        console.log(`ED dropdown ${index + 1} in table:`);
+        console.log('  - Visible:', dropdown.offsetParent !== null);
+        console.log('  - Disabled:', dropdown.disabled);
+        console.log('  - Options count:', dropdown.options.length);
+        console.log('  - Current value:', dropdown.value);
+        console.log('  - Computed style display:', window.getComputedStyle(dropdown).display);
+        console.log('  - Computed style visibility:', window.getComputedStyle(dropdown).visibility);
+        console.log('  - HTML:', dropdown.outerHTML);
+    });
+    
+    ctnrDropdowns.forEach((dropdown, index) => {
+        console.log(`CTNR dropdown ${index + 1} in table:`);
+        console.log('  - Visible:', dropdown.offsetParent !== null);
+        console.log('  - Disabled:', dropdown.disabled);
+        console.log('  - Options count:', dropdown.options.length);
+        console.log('  - Current value:', dropdown.value);
+        console.log('  - Computed style display:', window.getComputedStyle(dropdown).display);
+        console.log('  - Computed style visibility:', window.getComputedStyle(dropdown).visibility);
+        console.log('  - HTML:', dropdown.outerHTML);
+    });
+}
+
+function addNewPalletRow() {
+    const tbody = document.getElementById('pallet-details-tbody');
+    const template = document.getElementById('pallet-template');
+    
+    if (tbody && template) {
+        const newRow = template.content.cloneNode(true);
+        const row = newRow.querySelector('.pallet-row');
+        
+        // Set serial number
+        const srNoCell = row.querySelector('.pallet-sr-no');
+        if (srNoCell) {
+            srNoCell.textContent = tbody.children.length + 1;
+        }
+        
+        // Auto-populate Description and Qty from GRN items
+        autoPopulatePalletFields(row);
+        
+        tbody.appendChild(row);
+    }
+}
+
+function refreshPalletItemDropdowns() {
+    const palletRows = document.querySelectorAll('.pallet-row');
+    palletRows.forEach(palletRow => {
+        autoPopulatePalletFields(palletRow);
+    });
+}
+</script>
+{% endblock %} 

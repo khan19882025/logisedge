@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load notification_template_filters %}
+
+{% block title %}Export Templates - Notification Templates{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-upload fa-fw"></i> Export Templates
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'notification_templates:template_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-fw"></i> Back to Templates
+            </a>
+            <a href="{% url 'notification_templates:dashboard' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-tachometer-alt fa-fw"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <!-- Export Form -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-download fa-fw"></i> Export Templates
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Export Format -->
+                        <div class="mb-3">
+                            <label for="{{ form.export_format.id_for_label }}" class="form-label">
+                                Export Format <span class="text-danger">*</span>
+                            </label>
+                            {{ form.export_format }}
+                            {% if form.export_format.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.export_format.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.export_format.help_text %}
+                                <small class="form-text text-muted">{{ form.export_format.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Export Options -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.include_inactive }}
+                                    <label class="form-check-label" for="{{ form.include_inactive.id_for_label }}">
+                                        {{ form.include_inactive.label }}
+                                    </label>
+                                    {% if form.include_inactive.help_text %}
+                                        <small class="form-text text-muted d-block">{{ form.include_inactive.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.include_versions }}
+                                    <label class="form-check-label" for="{{ form.include_versions.id_for_label }}">
+                                        {{ form.include_versions.label }}
+                                    </label>
+                                    {% if form.include_versions.help_text %}
+                                        <small class="form-text text-muted d-block">{{ form.include_versions.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.include_audit_logs }}
+                                    <label class="form-check-label" for="{{ form.include_audit_logs.id_for_label }}">
+                                        {{ form.include_audit_logs.label }}
+                                    </label>
+                                    {% if form.include_audit_logs.help_text %}
+                                        <small class="form-text text-muted d-block">{{ form.include_audit_logs.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Template Selection -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.export_all }}
+                                <label class="form-check-label" for="{{ form.export_all.id_for_label }}">
+                                    {{ form.export_all.label }}
+                                </label>
+                                {% if form.export_all.help_text %}
+                                    <small class="form-text text-muted d-block">{{ form.export_all.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Selected Templates -->
+                        <div class="mb-3" id="selectedTemplatesSection" style="display: none;">
+                            <label for="{{ form.selected_templates.id_for_label }}" class="form-label">
+                                Select Templates
+                            </label>
+                            {{ form.selected_templates }}
+                            {% if form.selected_templates.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.selected_templates.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.selected_templates.help_text %}
+                                <small class="form-text text-muted">{{ form.selected_templates.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'notification_templates:template_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times fa-fw"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download fa-fw"></i> Export Templates
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help Card -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-question-circle fa-fw"></i> Export Help
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>Export Formats:</h6>
+                    <ul class="small">
+                        <li><strong>JSON:</strong> Best for data exchange and APIs</li>
+                        <li><strong>CSV:</strong> Good for spreadsheet analysis</li>
+                        <li><strong>XML:</strong> Structured markup format</li>
+                        <li><strong>Excel:</strong> Spreadsheet with multiple sheets</li>
+                        <li><strong>ZIP:</strong> Compressed archive with all formats</li>
+                    </ul>
+                    
+                    <h6>Export Options:</h6>
+                    <ul class="small">
+                        <li><strong>Include Inactive:</strong> Export disabled templates</li>
+                        <li><strong>Include Versions:</strong> Export version history</li>
+                        <li><strong>Include Audit Logs:</strong> Export change tracking</li>
+                    </ul>
+                    
+                    <h6>Template Selection:</h6>
+                    <ul class="small">
+                        <li><strong>Export All:</strong> Include all templates</li>
+                        <li><strong>Select Specific:</strong> Choose individual templates</li>
+                    </ul>
+                    
+                    <hr>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle fa-fw"></i>
+                        <strong>Tip:</strong> Use JSON format for the most complete data export, including all metadata and relationships.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+
+#selectedTemplatesSection {
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    padding: 1rem;
+    background-color: #f8f9fc;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const exportAllCheckbox = document.getElementById('{{ form.export_all.id_for_label }}');
+    const selectedTemplatesSection = document.getElementById('selectedTemplatesSection');
+    
+    if (exportAllCheckbox && selectedTemplatesSection) {
+        // Toggle selected templates section visibility
+        function toggleSelectedTemplates() {
+            if (exportAllCheckbox.checked) {
+                selectedTemplatesSection.style.display = 'none';
+            } else {
+                selectedTemplatesSection.style.display = 'block';
+            }
+        }
+        
+        // Initial state
+        toggleSelectedTemplates();
+        
+        // Event listener for checkbox changes
+        exportAllCheckbox.addEventListener('change', toggleSelectedTemplates);
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const exportAll = document.getElementById('{{ form.export_all.id_for_label }}');
+        const selectedTemplates = document.getElementById('{{ form.selected_templates.id_for_label }}');
+        
+        if (!exportAll.checked && (!selectedTemplates || selectedTemplates.selectedOptions.length === 0)) {
+            e.preventDefault();
+            alert('Please select templates to export or choose "Export All"');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

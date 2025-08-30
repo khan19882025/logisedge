@@ -1,0 +1,258 @@
+{% extends 'rf_scanner/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+{% block header_title %}RF Scanner Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="rf-card">
+                <div class="rf-card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-2">
+                                <i class="bi bi-person-circle me-2"></i>
+                                Welcome, {{ rf_user.user.get_full_name|default:rf_user.user.username }}
+                            </h4>
+                            <p class="mb-0 text-muted">
+                                Employee ID: {{ rf_user.employee_id }} | Department: {{ rf_user.department }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small class="text-muted">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ today|date:"l, F j, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Session Alert -->
+    {% if active_session %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <div>
+                        <strong>Active Session:</strong> {{ active_session.get_session_type_display }} 
+                        (Started: {{ active_session.start_time|date:"H:i" }})
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a href="{% url 'rf_scanner:scan' active_session.id %}" class="btn btn-sm btn-warning me-2">
+                        <i class="bi bi-upc-scan me-1"></i>
+                        Continue Scanning
+                    </a>
+                    <a href="{% url 'rf_scanner:end_session' active_session.id %}" class="btn btn-sm btn-danger">
+                        <i class="bi bi-stop-circle me-1"></i>
+                        End Session
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-6 col-md-3">
+            <div class="rf-stats-card rf-stats-inbound">
+                <div class="rf-stats-number">{{ session_stats.inbound }}</div>
+                <div class="rf-stats-label">Inbound Sessions</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="rf-stats-card rf-stats-outbound">
+                <div class="rf-stats-number">{{ session_stats.outbound }}</div>
+                <div class="rf-stats-label">Outbound Sessions</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="rf-stats-card rf-stats-location">
+                <div class="rf-stats-number">{{ session_stats.location_change }}</div>
+                <div class="rf-stats-label">Location Changes</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="rf-stats-card rf-stats-check">
+                <div class="rf-stats-number">{{ session_stats.physical_check }}</div>
+                <div class="rf-stats-label">Physical Checks</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation -->
+    <div class="row">
+        <div class="col-12">
+            <div class="rf-card">
+                <div class="rf-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-grid me-2"></i>
+                        Select Operation
+                    </h5>
+                </div>
+                <div class="rf-card-body">
+                    <div class="row">
+                        <!-- Inbound -->
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="rf-nav-item">
+                                <a href="{% url 'rf_scanner:start_session' %}?type=inbound" class="rf-nav-link">
+                                    <div class="rf-nav-icon text-success">
+                                        <i class="bi bi-box-arrow-in-down"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Inbound</div>
+                                        <small class="text-muted">Receive & Putaway</small>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Outbound -->
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="rf-nav-item">
+                                <a href="{% url 'rf_scanner:start_session' %}?type=outbound" class="rf-nav-link">
+                                    <div class="rf-nav-icon text-primary">
+                                        <i class="bi bi-box-arrow-up"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Outbound</div>
+                                        <small class="text-muted">Pick & Ship</small>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Location Change -->
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="rf-nav-item">
+                                <a href="{% url 'rf_scanner:start_session' %}?type=location_change" class="rf-nav-link">
+                                    <div class="rf-nav-icon text-warning">
+                                        <i class="bi bi-arrow-left-right"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Location Change</div>
+                                        <small class="text-muted">Move Items</small>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Physical Check -->
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="rf-nav-item">
+                                <a href="{% url 'rf_scanner:start_session' %}?type=physical_check" class="rf-nav-link">
+                                    <div class="rf-nav-icon text-info">
+                                        <i class="bi bi-clipboard-check"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Physical Check</div>
+                                        <small class="text-muted">Inventory Count</small>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="rf-card">
+                <div class="rf-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Recent Scans
+                    </h5>
+                </div>
+                <div class="rf-card-body">
+                    {% if recent_scans %}
+                    <div class="rf-scan-list">
+                        {% for scan in recent_scans %}
+                        <div class="rf-scan-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="rf-scan-barcode">{{ scan.barcode }}</div>
+                                    {% if scan.item_name %}
+                                    <small class="text-muted">{{ scan.item_name }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <div class="rf-scan-time">{{ scan.scan_time|date:"H:i" }}</div>
+                                    <small class="text-muted">{{ scan.session.get_session_type_display }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <p class="text-muted mt-2">No recent scans</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="rf-card">
+                <div class="rf-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="rf-card-body">
+                    <div class="row">
+                        <div class="col-6 col-md-3 mb-2">
+                            <a href="{% url 'rf_scanner:session_history' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-clock-history me-1"></i>
+                                History
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <a href="{% url 'rf_scanner:search_items' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-search me-1"></i>
+                                Search Items
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <a href="#" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-gear me-1"></i>
+                                Settings
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <a href="{% url 'rf_scanner:logout' %}" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-box-arrow-right me-1"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-refresh dashboard every 30 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %} 

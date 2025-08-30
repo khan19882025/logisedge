@@ -1,0 +1,317 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ customer.customer_name }} - Customer Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/customer/customer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-person me-2"></i>{{ customer.customer_name }}
+            </h1>
+            <p class="text-muted mb-0">Customer Code: {{ customer.customer_code }}</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{% url 'customer:customer_update' customer.pk %}" class="btn btn-warning">
+                <i class="bi bi-pencil me-2"></i>Edit
+            </a>
+            <a href="{% url 'customer:customer_delete' customer.pk %}" class="btn btn-danger">
+                <i class="bi bi-trash me-2"></i>Delete
+            </a>
+            <a href="{% url 'customer:customer_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Badges -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex gap-2">
+                <span class="badge bg-{{ customer.is_active|yesno:'success,danger' }} fs-6">
+                    <i class="bi bi-{{ customer.is_active|yesno:'check-circle,x-circle' }} me-1"></i>
+                    {{ customer.is_active|yesno:'Active,Inactive' }}
+                </span>
+                <span class="badge bg-{{ customer.portal_active|yesno:'success,secondary' }} fs-6">
+                    <i class="bi bi-{{ customer.portal_active|yesno:'lock-fill,lock' }} me-1"></i>
+                    Portal {{ customer.portal_active|yesno:'Active,Inactive' }}
+                </span>
+                <span class="badge bg-info fs-6">
+                    <i class="bi bi-tag me-1"></i>
+                    {{ customer.get_customer_type_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content - Left and Right Layout -->
+    <div class="row">
+        <!-- Left Column - Customer Information -->
+        <div class="col-lg-8">
+            <!-- Basic Information Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person me-2"></i>Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item mb-3">
+                                <label class="info-label">Customer Code:</label>
+                                <span class="info-value">{{ customer.customer_code }}</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Customer Name:</label>
+                                <span class="info-value">{{ customer.customer_name }}</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Contact Person:</label>
+                                <span class="info-value">{{ customer.contact_person|default:"-" }}</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Email:</label>
+                                <span class="info-value">
+                                    {% if customer.email %}
+                                    <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item mb-3">
+                                <label class="info-label">Phone:</label>
+                                <span class="info-value">{{ customer.phone|default:"-" }}</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Mobile:</label>
+                                <span class="info-value">{{ customer.mobile|default:"-" }}</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Website:</label>
+                                <span class="info-value">
+                                    {% if customer.website %}
+                                    <a href="{{ customer.website }}" target="_blank">{{ customer.website }}</a>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Industry:</label>
+                                <span class="info-value">{{ customer.industry|default:"-" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Addresses Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>Addresses
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Billing Address -->
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-building me-1"></i>Billing Address
+                            </h6>
+                            {% if customer.billing_address %}
+                            <div class="address-info">
+                                <p class="mb-1">{{ customer.billing_address }}</p>
+                                <p class="mb-1">{{ customer.billing_city }}{% if customer.billing_state %}, {{ customer.billing_state }}{% endif %}</p>
+                                <p class="mb-1">{{ customer.billing_country }}{% if customer.billing_postal_code %} {{ customer.billing_postal_code }}{% endif %}</p>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No billing address provided</p>
+                            {% endif %}
+                        </div>
+                        <!-- Shipping Address -->
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-truck me-1"></i>Shipping Address
+                            </h6>
+                            {% if customer.shipping_address %}
+                            <div class="address-info">
+                                <p class="mb-1">{{ customer.shipping_address }}</p>
+                                <p class="mb-1">{{ customer.shipping_city }}{% if customer.shipping_state %}, {{ customer.shipping_state }}{% endif %}</p>
+                                <p class="mb-1">{{ customer.shipping_country }}{% if customer.shipping_postal_code %} {{ customer.shipping_postal_code }}{% endif %}</p>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No shipping address provided</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Information Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-currency-dollar me-2"></i>Financial Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item mb-3">
+                                <label class="info-label">Credit Limit:</label>
+                                <span class="info-value">{{ customer.currency }} {{ customer.credit_limit|floatformat:2 }}</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Payment Terms:</label>
+                                <span class="info-value">{{ customer.payment_terms|default:"-" }}</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Currency:</label>
+                                <span class="info-value">{{ customer.currency }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item mb-3">
+                                <label class="info-label">Tax Exempt:</label>
+                                <span class="info-value">
+                                    <span class="badge bg-{{ customer.tax_exempt|yesno:'success,secondary' }}">
+                                        {{ customer.tax_exempt|yesno:'Yes,No' }}
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Tax Rate:</label>
+                                <span class="info-value">{{ customer.tax_rate|floatformat:2 }}%</span>
+                            </div>
+                            <div class="info-item mb-3">
+                                <label class="info-label">Discount:</label>
+                                <span class="info-value">{{ customer.discount_percentage|floatformat:2 }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Actions and Additional Info -->
+        <div class="col-lg-4">
+            <!-- Quick Actions Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'customer:customer_update' customer.pk %}" class="btn btn-warning">
+                            <i class="bi bi-pencil me-2"></i>Edit Customer
+                        </a>
+                        <button class="btn btn-outline-primary" onclick="generatePortalCredentials({{ customer.pk }})">
+                            <i class="bi bi-key me-2"></i>Generate Portal Credentials
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="togglePortalStatus({{ customer.pk }})">
+                            <i class="bi bi-toggle-{{ customer.portal_active|yesno:'on,off' }} me-2"></i>
+                            {{ customer.portal_active|yesno:'Deactivate,Activate' }} Portal
+                        </button>
+                        <a href="{% url 'customer:customer_delete' customer.pk %}" class="btn btn-outline-danger">
+                            <i class="bi bi-trash me-2"></i>Delete Customer
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Portal Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lock me-2"></i>Customer Portal
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="info-item mb-3">
+                        <label class="info-label">Portal Username:</label>
+                        <span class="info-value">
+                            <code>{{ customer.portal_username|default:"Not set" }}</code>
+                        </span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <label class="info-label">Portal Password:</label>
+                        <span class="info-value">
+                            <code>••••••••••••</code>
+                        </span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <label class="info-label">Portal Status:</label>
+                        <span class="info-value">
+                            <span class="badge bg-{{ customer.portal_active|yesno:'success,secondary' }}">
+                                {{ customer.portal_active|yesno:'Active,Inactive' }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <label class="info-label">Last Login:</label>
+                        <span class="info-value">{{ customer.portal_last_login|default:"Never" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Information Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>System Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="info-item mb-3">
+                        <label class="info-label">Created By:</label>
+                        <span class="info-value">{{ customer.created_by|default:"System" }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <label class="info-label">Created At:</label>
+                        <span class="info-value">{{ customer.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <label class="info-label">Updated By:</label>
+                        <span class="info-value">{{ customer.updated_by|default:"-" }}</span>
+                    </div>
+                    <div class="info-item mb-3">
+                        <label class="info-label">Updated At:</label>
+                        <span class="info-value">{{ customer.updated_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Card -->
+            {% if customer.notes %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-sticky me-2"></i>Notes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ customer.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/customer/customer.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load shipment_filters %}
+
+{% block title %}{{ shipment.shipment_id }} - Shipment Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shipment_tracking/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-ship fa-fw"></i> Shipment: {{ shipment.shipment_id }}
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+            {% if user.is_staff %}
+            <a href="{% url 'shipment_tracking:shipment_update' shipment.pk %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'shipment_tracking:add_status_update' shipment.pk %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Update Status
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Shipment Overview -->
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Shipment Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Shipment ID:</strong></td>
+                                    <td>{{ shipment.shipment_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Container Number:</strong></td>
+                                    <td>{{ shipment.container_number|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Booking ID:</strong></td>
+                                    <td>{{ shipment.booking_id|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>HBL Number:</strong></td>
+                                    <td>{{ shipment.hbl_number|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer Reference:</strong></td>
+                                    <td>{{ shipment.customer_reference|default:"Not specified" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Customer:</strong></td>
+                                    <td>{{ shipment.customer_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td>{{ shipment.customer_email|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Phone:</strong></td>
+                                    <td>{{ shipment.customer_phone|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Booking Date:</strong></td>
+                                    <td>{{ shipment.booking_date|date:"M d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tracking:</strong></td>
+                                    <td>
+                                        {% if shipment.is_tracking_enabled %}
+                                            <span class="badge badge-success">Enabled</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Route Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-danger"><i class="fas fa-map-marker-alt"></i> Origin</h6>
+                            <p><strong>Port:</strong> {{ shipment.origin_port }}</p>
+                            <p><strong>Country:</strong> {{ shipment.origin_country }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="fas fa-map-marker-alt"></i> Destination</h6>
+                            <p><strong>Port:</strong> {{ shipment.destination_port }}</p>
+                            <p><strong>Country:</strong> {{ shipment.destination_country }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mt-3">
+                        <h6>Journey Progress</h6>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-{{ shipment.current_status|status_badge_color }}" 
+                                 role="progressbar" 
+                                 style="width: {{ shipment|progress_percentage }}%"
+                                 aria-valuenow="{{ shipment|progress_percentage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ shipment|progress_percentage }}% Complete
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Timeline -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Status Timeline</h6>
+                    {% if user.is_staff %}
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#quickUpdateModal">
+                        <i class="fas fa-plus"></i> Quick Update
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if status_timeline %}
+                        <div class="timeline">
+                            {% for update in status_timeline %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-{{ update.status|status_badge_color }}"></div>
+                                <div class="timeline-content">
+                                    <h6 class="timeline-title">{{ update.get_status_display }}</h6>
+                                    <p class="timeline-text">
+                                        <i class="fas fa-map-marker-alt"></i> {{ update.location }}<br>
+                                        <i class="fas fa-clock"></i> {{ update.timestamp|date:"M d, Y H:i" }}<br>
+                                        {% if update.description %}
+                                            <i class="fas fa-info-circle"></i> {{ update.description }}<br>
+                                        {% endif %}
+                                        {% if update.updated_by %}
+                                            <small class="text-muted">Updated by: {{ update.updated_by.get_full_name|default:update.updated_by.username }}</small>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No status updates yet.</p>
+                            {% if user.is_staff %}
+                            <a href="{% url 'shipment_tracking:add_status_update' shipment.pk %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add First Update
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Current Status -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Current Status</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="badge badge-{{ shipment.current_status|status_badge_color }} fs-5">
+                            {{ shipment.get_current_status_display }}
+                        </span>
+                    </div>
+                    <p><i class="fas fa-map-marker-alt"></i> {{ shipment.current_location|default:"Location not specified" }}</p>
+                    <p><i class="fas fa-clock"></i> Last updated: {{ shipment.last_updated|date:"M d, Y H:i" }}</p>
+                    
+                    {% if shipment|is_delayed %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Delayed!</strong> {{ shipment|delay_days }} days overdue
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Vessel Information -->
+            {% if shipment.vessel_name or shipment.voyage_number or shipment.shipping_line %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Vessel Information</h6>
+                </div>
+                <div class="card-body">
+                    {% if shipment.vessel_name %}
+                    <p><strong>Vessel:</strong> {{ shipment.vessel_name }}</p>
+                    {% endif %}
+                    {% if shipment.voyage_number %}
+                    <p><strong>Voyage:</strong> {{ shipment.voyage_number }}</p>
+                    {% endif %}
+                    {% if shipment.shipping_line %}
+                    <p><strong>Shipping Line:</strong> {{ shipment.shipping_line }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Cargo Information -->
+            {% if shipment.cargo_description or shipment.cargo_weight or shipment.cargo_volume %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Cargo Information</h6>
+                </div>
+                <div class="card-body">
+                    {% if shipment.cargo_description %}
+                    <p><strong>Description:</strong> {{ shipment.cargo_description|truncate_text:100 }}</p>
+                    {% endif %}
+                    {% if shipment.cargo_weight %}
+                    <p><strong>Weight:</strong> {{ shipment.cargo_weight|format_weight }}</p>
+                    {% endif %}
+                    {% if shipment.cargo_volume %}
+                    <p><strong>Volume:</strong> {{ shipment.cargo_volume|format_volume }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Attachments -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Attachments</h6>
+                    {% if user.is_staff %}
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#attachmentModal">
+                        <i class="fas fa-plus"></i> Upload
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if recent_attachments %}
+                        {% for attachment in recent_attachments %}
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="{{ attachment.file_type|attachment_type_icon }} text-primary me-2"></i>
+                            <div class="flex-grow-1">
+                                <a href="{{ attachment.file.url }}" target="_blank" class="text-decoration-none">
+                                    {{ attachment.description|default:attachment.file.name|truncate_text:30 }}
+                                </a>
+                                <br><small class="text-muted">{{ attachment.uploaded_at|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if shipment.attachments.count > 5 %}
+                        <a href="#" class="btn btn-sm btn-outline-primary">View All ({{ shipment.attachments.count }})</a>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted text-center">No attachments uploaded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Notes -->
+            {% if shipment.internal_notes or shipment.customer_notes %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Notes</h6>
+                </div>
+                <div class="card-body">
+                    {% if shipment.internal_notes %}
+                    <h6>Internal Notes</h6>
+                    <p class="text-muted">{{ shipment.internal_notes|linebreaks }}</p>
+                    {% endif %}
+                    
+                    {% if shipment.customer_notes %}
+                    <h6>Customer Notes</h6>
+                    <p class="text-muted">{{ shipment.customer_notes|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Update Modal -->
+{% if user.is_staff %}
+<div class="modal fade" id="quickUpdateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Status Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'shipment_tracking:quick_status_update' shipment.pk %}" class="quick-update-form" data-shipment-id="{{ shipment.pk }}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        {{ quick_update_form.status }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        {{ quick_update_form.location }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        {{ quick_update_form.description }}
+                    </div>
+                    <div class="form-check">
+                        {{ quick_update_form.send_notification }}
+                        <label class="form-check-label" for="send_notification">
+                            Send notification to customer
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Attachment Upload Modal -->
+<div class="modal fade" id="attachmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Attachment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'shipment_tracking:upload_attachment' shipment.pk %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">File</label>
+                        {{ attachment_form.file }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="file_type" class="form-label">File Type</label>
+                        {{ attachment_form.file_type }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        {{ attachment_form.description }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'shipment_tracking/js/dashboard.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quick Report Result{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'general_ledger_report/css/report.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">
+                            <i class="fas fa-bolt text-warning me-2"></i>
+                            Quick Report Result
+                        </h1>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{% url 'general_ledger_report:report_list' %}">Reports</a></li>
+                                <li class="breadcrumb-item"><a href="{% url 'general_ledger_report:report_quick' %}">Quick Report</a></li>
+                                <li class="breadcrumb-item active">Result</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="header-actions">
+                        <a href="{% url 'general_ledger_report:report_quick' %}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Quick Report
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-1"></i>Export
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <form method="post" action="{% url 'general_ledger_report:report_quick' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="name" value="{{ report.name }}">
+                                        <input type="hidden" name="from_date" value="{{ report.from_date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="to_date" value="{{ report.to_date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="account" value="{{ report.account.id|default:'' }}">
+                                        <input type="hidden" name="report_type" value="{{ report.report_type }}">
+                                        <input type="hidden" name="include_opening_balance" value="{{ report.include_opening_balance|yesno:'on,' }}">
+                                        <input type="hidden" name="include_closing_balance" value="{{ report.include_closing_balance|yesno:'on,' }}">
+                                        <input type="hidden" name="export_format" value="pdf">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-file-pdf text-danger me-2"></i>PDF
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="post" action="{% url 'general_ledger_report:report_quick' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="name" value="{{ report.name }}">
+                                        <input type="hidden" name="from_date" value="{{ report.from_date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="to_date" value="{{ report.to_date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="account" value="{{ report.account.id|default:'' }}">
+                                        <input type="hidden" name="report_type" value="{{ report.report_type }}">
+                                        <input type="hidden" name="include_opening_balance" value="{{ report.include_opening_balance|yesno:'on,' }}">
+                                        <input type="hidden" name="include_closing_balance" value="{{ report.include_closing_balance|yesno:'on,' }}">
+                                        <input type="hidden" name="export_format" value="excel">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-file-excel text-success me-2"></i>Excel
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="post" action="{% url 'general_ledger_report:report_quick' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="name" value="{{ report.name }}">
+                                        <input type="hidden" name="from_date" value="{{ report.from_date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="to_date" value="{{ report.to_date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="account" value="{{ report.account.id|default:'' }}">
+                                        <input type="hidden" name="report_type" value="{{ report.report_type }}">
+                                        <input type="hidden" name="include_opening_balance" value="{{ report.include_opening_balance|yesno:'on,' }}">
+                                        <input type="hidden" name="include_closing_balance" value="{{ report.include_closing_balance|yesno:'on,' }}">
+                                        <input type="hidden" name="export_format" value="csv">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-file-csv text-info me-2"></i>CSV
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card report-summary-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Report Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <label class="summary-label">Report Name:</label>
+                                <div class="summary-value">{{ report.name }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <label class="summary-label">Date Range:</label>
+                                <div class="summary-value">{{ report.from_date|date:"d/m/Y" }} - {{ report.to_date|date:"d/m/Y" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <label class="summary-label">Account:</label>
+                                <div class="summary-value">{{ report.account|default:"All Accounts" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <label class="summary-label">Report Type:</label>
+                                <div class="summary-value">{{ report.get_report_type_display }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card report-table-card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-table me-2"></i>General Ledger Entries
+                        </h6>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                                <i class="fas fa-print me-1"></i>Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover ledger-table">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="text-center" style="width: 100px;">Date</th>
+                                    <th style="width: 120px;">Voucher No.</th>
+                                    <th>Description</th>
+                                    <th class="text-end" style="width: 120px;">Debit</th>
+                                    <th class="text-end" style="width: 120px;">Credit</th>
+                                    <th class="text-end" style="width: 120px;">Balance</th>
+                                    <th class="text-center" style="width: 80px;">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if report.include_opening_balance and report_data.opening_balance != 0 %}
+                                <tr class="opening-balance-row">
+                                    <td class="text-center">{{ report.from_date|date:"d/m/Y" }}</td>
+                                    <td colspan="2" class="fw-bold text-success">
+                                        <i class="fas fa-arrow-up me-1"></i>Opening Balance
+                                    </td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end fw-bold">{{ report_data.opening_balance|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">Opening</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+
+                                {% for entry in report_data.entries %}
+                                <tr class="ledger-entry-row">
+                                    <td class="text-center">{{ entry.entry_date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="#" class="voucher-link" data-voucher="{{ entry.ledger_number }}">
+                                            {{ entry.ledger_number }}
+                                        </a>
+                                    </td>
+                                    <td class="description-cell">
+                                        <div class="description-text">{{ entry.description }}</div>
+                                        {% if entry.reference %}
+                                        <small class="text-muted">Ref: {{ entry.reference }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if entry.entry_type == 'DR' %}
+                                            <span class="debit-amount">{{ entry.amount|floatformat:2 }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if entry.entry_type == 'CR' %}
+                                            <span class="credit-amount">{{ entry.amount|floatformat:2 }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end balance-amount">{{ entry.running_balance|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{{ entry.entry_type|lower }}">
+                                            {{ entry.entry_type }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="empty-state">
+                                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">No entries found</h5>
+                                            <p class="text-muted">No ledger entries match the selected criteria.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                                {% if report.include_closing_balance and report_data.entries %}
+                                <tr class="closing-balance-row">
+                                    <td class="text-center">{{ report.to_date|date:"d/m/Y" }}</td>
+                                    <td colspan="2" class="fw-bold text-primary">
+                                        <i class="fas fa-arrow-down me-1"></i>Closing Balance
+                                    </td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end fw-bold">{{ report_data.closing_balance|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">Closing</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'general_ledger_report/js/report.js' %}"></script>
+{% endblock %}

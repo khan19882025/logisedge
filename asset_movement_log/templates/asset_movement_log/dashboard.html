@@ -1,0 +1,187 @@
+{% extends 'asset_movement_log/base.html' %}
+{% load static %}
+
+{% block title %}Asset Movement Log Dashboard{% endblock %}
+
+{% block asset_movement_content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ total_movements }}</h3>
+                <p>Total Movements</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
+            <a href="{% url 'asset_movement_log:movement_list' %}" class="small-box-footer">
+                More info <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ pending_movements }}</h3>
+                <p>Pending Movements</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <a href="{% url 'asset_movement_log:movement_list' %}?is_completed=False" class="small-box-footer">
+                More info <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>{{ overdue_movements }}</h3>
+                <p>Overdue Movements</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <a href="{% url 'asset_movement_log:movement_list' %}" class="small-box-footer">
+                More info <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ monthly_movements }}</h3>
+                <p>This Month</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-calendar"></i>
+            </div>
+            <a href="{% url 'asset_movement_log:movement_list' %}" class="small-box-footer">
+                More info <i class="fas fa-arrow-circle-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Movements -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-history"></i>
+                    Recent Movements
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'asset_movement_log:movement_list' %}" class="btn btn-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Type</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in recent_movements %}
+                            <tr>
+                                <td>
+                                    <strong>{{ movement.asset.asset_code }}</strong><br>
+                                    <small class="text-muted">{{ movement.asset.asset_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ movement.movement_type|lower }}">
+                                        {{ movement.get_movement_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ movement.from_location.name|default:"-" }}</td>
+                                <td>{{ movement.to_location.name|default:"-" }}</td>
+                                <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    {% if movement.is_completed %}
+                                        <span class="badge badge-success">Completed</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'asset_movement_log:movement_detail' movement.movement_id %}" 
+                                       class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No recent movements found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions and Stats -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-bolt"></i>
+                    Quick Actions
+                </h3>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'asset_movement_log:quick_movement_create' %}" class="btn btn-success btn-block mb-2">
+                    <i class="fas fa-plus"></i> Quick Movement
+                </a>
+                <a href="{% url 'asset_movement_log:movement_create' %}" class="btn btn-primary btn-block mb-2">
+                    <i class="fas fa-edit"></i> New Movement
+                </a>
+                <a href="{% url 'asset_movement_log:export' %}" class="btn btn-info btn-block mb-2">
+                    <i class="fas fa-download"></i> Export Data
+                </a>
+                <a href="{% url 'asset_movement_log:settings' %}" class="btn btn-secondary btn-block">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </div>
+        </div>
+        
+        <!-- Movement Types Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Movements by Type
+                </h3>
+            </div>
+            <div class="card-body">
+                {% for type_data in movements_by_type %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ type_data.movement_type|title }}</span>
+                    <span class="badge badge-primary">{{ type_data.count }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted">No movement data available.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

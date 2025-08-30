@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>General Ledger Report - {{ report.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .report-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .report-period {
+            font-size: 12px;
+            color: #666;
+        }
+        .report-info {
+            margin-bottom: 20px;
+        }
+        .info-row {
+            margin-bottom: 5px;
+        }
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 120px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .table th,
+        .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .amount {
+            text-align: right;
+            font-family: monospace;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        .summary {
+            margin-top: 30px;
+            border-top: 2px solid #333;
+            padding-top: 15px;
+        }
+        .summary-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .summary-label {
+            font-weight: bold;
+        }
+        .summary-amount {
+            font-family: monospace;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        @media print {
+            body {
+                margin: 0;
+            }
+            .header {
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        {% if report.company %}
+        <div class="company-name">{{ report.company.name }}</div>
+        {% endif %}
+        <div class="report-title">General Ledger Report</div>
+        <div class="report-period">
+            Period: {{ report.from_date|date:"d/m/Y" }} to {{ report.to_date|date:"d/m/Y" }}
+        </div>
+    </div>
+
+    <!-- Report Information -->
+    <div class="report-info">
+        <div class="info-row">
+            <span class="info-label">Report Name:</span>
+            {{ report.name }}
+        </div>
+        <div class="info-row">
+            <span class="info-label">Generated On:</span>
+            {{ report.created_at|date:"d/m/Y H:i" }}
+        </div>
+        {% if report.account %}
+        <div class="info-row">
+            <span class="info-label">Account:</span>
+            {{ report.account.account_code }} - {{ report.account.account_name }}
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <span class="info-label">Report Type:</span>
+            {{ report.get_report_type_display }}
+        </div>
+    </div>
+
+    <!-- Report Data -->
+    {% if report_data.entries %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Voucher No.</th>
+                <th>Ledger Code</th>
+                <th>Account Name</th>
+                <th>Description</th>
+                <th class="text-right">Debit</th>
+                <th class="text-right">Credit</th>
+                <th class="text-right">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if report.include_opening_balance and report_data.opening_balance %}
+            <tr>
+                <td>{{ report.from_date|date:"d/m/Y" }}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td><strong>Opening Balance</strong></td>
+                <td class="amount">
+                    {% if report_data.opening_balance > 0 %}
+                        {{ report_data.opening_balance|floatformat:2 }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="amount">
+                    {% if report_data.opening_balance < 0 %}
+                        {{ report_data.opening_balance|floatformat:2|slice:"1:" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="amount">{{ report_data.opening_balance|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+            
+            {% for entry in report_data.entries %}
+            <tr>
+                <td>{{ entry.entry_date|date:"d/m/Y" }}</td>
+                <td>{{ entry.ledger_number|default:"-" }}</td>
+                <td>{{ entry.account.account_code|default:"-" }}</td>
+                <td>{{ entry.account.account_name|default:"-" }}</td>
+                <td>{{ entry.description|truncatechars:30 }}</td>
+                <td class="amount">
+                    {% if entry.entry_type == 'DR' %}
+                        {{ entry.amount|floatformat:2 }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="amount">
+                    {% if entry.entry_type == 'CR' %}
+                        {{ entry.amount|floatformat:2 }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="amount">{{ entry.calculated_balance|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            
+            {% if report.include_closing_balance %}
+            <tr class="total-row">
+                <td>{{ report.to_date|date:"d/m/Y" }}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td><strong>Closing Balance</strong></td>
+                <td class="amount">-</td>
+                <td class="amount">-</td>
+                <td class="amount">{{ report_data.closing_balance|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: #666;">
+        <h3>No Data Found</h3>
+        <p>No ledger entries found for the selected criteria and date range.</p>
+    </div>
+    {% endif %}
+
+    <!-- Summary -->
+    {% if report_data.entries %}
+    <div class="summary">
+        <div class="summary-title">Summary</div>
+        <div class="summary-item">
+            <span class="summary-label">Total Debit:</span>
+            <span class="summary-amount">{{ report_data.total_debit|floatformat:2 }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Total Credit:</span>
+            <span class="summary-amount">{{ report_data.total_credit|floatformat:2 }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Net Movement:</span>
+            <span class="summary-amount">{{ report_data.net_movement|floatformat:2 }}</span>
+        </div>
+        {% if report.include_opening_balance %}
+        <div class="summary-item">
+            <span class="summary-label">Opening Balance:</span>
+            <span class="summary-amount">{{ report_data.opening_balance|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        {% if report.include_closing_balance %}
+        <div class="summary-item">
+            <span class="summary-label">Closing Balance:</span>
+            <span class="summary-amount">{{ report_data.closing_balance|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        <div class="summary-item">
+            <span class="summary-label">Total Entries:</span>
+            <span class="summary-amount">{{ report_data.entries|length }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Generated by LogisEdge ERP System on {{ "now"|date:"d/m/Y H:i:s" }}</p>
+        {% if report.company %}
+        <p>{{ report.company.name }} - General Ledger Report</p>
+        {% endif %}
+    </div>
+</body>
+</html>

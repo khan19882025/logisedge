@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Configuration Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'email_configuration/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="bi bi-envelope-check"></i>
+                    Email Configuration Dashboard
+                </h1>
+                <p class="page-description">
+                    Monitor and manage email configurations for your ERP system. Test SMTP, IMAP, and POP3 settings to ensure reliable email communication.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-gear"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ total_configs }}</h3>
+                    <p class="stat-label">Total Configurations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon active">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ active_configs }}</h3>
+                    <p class="stat-label">Active Configurations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ healthy_configs }}</h3>
+                    <p class="stat-label">Healthy Configurations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number">{{ problematic_configs }}</h3>
+                    <p class="stat-label">Problematic Configurations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Protocol Distribution -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart"></i>
+                        Protocol Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="protocol-stats">
+                        <div class="protocol-item">
+                            <span class="protocol-label">SMTP</span>
+                            <span class="protocol-count">{{ smtp_configs }}</span>
+                        </div>
+                        <div class="protocol-item">
+                            <span class="protocol-label">IMAP</span>
+                            <span class="protocol-count">{{ imap_configs }}</span>
+                        </div>
+                        <div class="protocol-item">
+                            <span class="protocol-label">POP3</span>
+                            <span class="protocol-count">{{ pop3_configs }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        Test Status Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="test-status-stats">
+                        {% for stat in test_stats %}
+                        <div class="status-item">
+                            <span class="status-label">{{ stat.last_test_status|title }}</span>
+                            <span class="status-count">{{ stat.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="quick-actions">
+                        <a href="{% url 'email_configuration:configuration_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i>
+                            Add New Configuration
+                        </a>
+                        <a href="{% url 'email_configuration:configuration_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i>
+                            View All Configurations
+                        </a>
+                        <a href="{% url 'email_configuration:create_notification' %}" class="btn btn-outline-success">
+                            <i class="bi bi-envelope-paper"></i>
+                            Send Test Notification
+                        </a>
+                        <a href="{% url 'email_configuration:test_results_list' %}" class="btn btn-outline-info">
+                            <i class="bi bi-clipboard-data"></i>
+                            View Test Results
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history"></i>
+                        Recent Test Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_tests %}
+                    <div class="recent-tests">
+                        {% for test in recent_tests %}
+                        <div class="test-item">
+                            <div class="test-info">
+                                <span class="test-config">{{ test.configuration.name }}</span>
+                                <span class="test-type">{{ test.test_type|title }}</span>
+                            </div>
+                            <div class="test-status">
+                                <span class="status-badge status-{{ test.status }}">{{ test.status|title }}</span>
+                                <small class="test-time">{{ test.started_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent test results</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-envelope"></i>
+                        Recent Notifications
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_notifications %}
+                    <div class="recent-notifications">
+                        {% for notification in recent_notifications %}
+                        <div class="notification-item">
+                            <div class="notification-info">
+                                <span class="notification-subject">{{ notification.subject }}</span>
+                                <span class="notification-type">{{ notification.type|title }}</span>
+                            </div>
+                            <div class="notification-status">
+                                <span class="status-badge status-{{ notification.status }}">{{ notification.status|title }}</span>
+                                <small class="notification-time">{{ notification.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent notifications</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Health Monitor -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-heart-pulse"></i>
+                        Configuration Health Monitor
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshHealthData()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="health-monitor">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Loading configuration health data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'email_configuration/js/dashboard.js' %}"></script>
+<script>
+    // Load health data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadHealthData();
+    });
+
+    function loadHealthData() {
+        fetch('{% url "email_configuration:configuration_health" %}')
+            .then(response => response.json())
+            .then(data => {
+                displayHealthData(data.health_data);
+            })
+            .catch(error => {
+                console.error('Error loading health data:', error);
+                document.getElementById('health-monitor').innerHTML = 
+                    '<div class="alert alert-danger">Failed to load health data</div>';
+            });
+    }
+
+    function refreshHealthData() {
+        document.getElementById('health-monitor').innerHTML = 
+            '<div class="text-center"><div class="spinner-border" role="status"></div><p>Refreshing...</p></div>';
+        loadHealthData();
+    }
+
+    function displayHealthData(healthData) {
+        if (!healthData || healthData.length === 0) {
+            document.getElementById('health-monitor').innerHTML = 
+                '<p class="text-muted">No configuration data available</p>';
+            return;
+        }
+
+        let html = '<div class="health-grid">';
+        healthData.forEach(config => {
+            const statusClass = config.status === 'success' ? 'success' : 
+                              config.status === 'failed' ? 'danger' : 'warning';
+            const statusIcon = config.status === 'success' ? 'check-circle' : 
+                             config.status === 'failed' ? 'x-circle' : 'exclamation-circle';
+            
+            html += `
+                <div class="health-item status-${statusClass}">
+                    <div class="health-header">
+                        <i class="bi bi-${statusIcon}"></i>
+                        <span class="health-name">${config.name}</span>
+                        <span class="health-protocol">${config.protocol.toUpperCase()}</span>
+                    </div>
+                    <div class="health-status">
+                        <span class="status-badge status-${config.status}">${config.status}</span>
+                    </div>
+                    <div class="health-details">
+                        <small class="health-message">${config.message || 'No message'}</small>
+                        <small class="health-time">${config.last_tested ? 'Last tested: ' + new Date(config.last_tested).toLocaleString() : 'Never tested'}</small>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        document.getElementById('health-monitor').innerHTML = html;
+    }
+</script>
+{% endblock %}

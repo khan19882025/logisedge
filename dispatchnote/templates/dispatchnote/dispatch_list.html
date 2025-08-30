@@ -1,0 +1,275 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Dispatch Notes - Dispatch Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dispatchnote/dispatchnote.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="dispatch-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-truck me-2"></i>Dispatch Notes
+                </h1>
+                <p class="mb-0">Manage and track dispatch notes</p>
+            </div>
+            <div>
+                <a href="{% url 'dispatchnote:dispatch_create' %}" class="btn btn-light">
+                    <i class="bi bi-plus-circle me-2"></i>Create Dispatch Note
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Filters -->
+    <div class="search-filters">
+        <form method="get" id="searchForm">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="{{ search_form.search.id_for_label }}">Search</label>
+                        {{ search_form.search }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="{{ search_form.status.id_for_label }}">Status</label>
+                        {{ search_form.status }}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="{{ search_form.customer.id_for_label }}">Customer</label>
+                        {{ search_form.customer }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="{{ search_form.date_from.id_for_label }}">From Date</label>
+                        {{ search_form.date_from }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="{{ search_form.date_to.id_for_label }}">To Date</label>
+                        {{ search_form.date_to }}
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-2"></i>Search
+                    </button>
+                    <button type="button" id="clearFilters" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-x-circle me-2"></i>Clear Filters
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Dispatch Notes Table -->
+    {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>GDN No</th>
+                        <th>GRN</th>
+                        <th>Customer</th>
+                        <th>Item Code</th>
+                        <th>Items</th>
+                        <th>Qty</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dispatch in page_obj %}
+                        {% if dispatch.dispatch_items.all %}
+                            {% for item in dispatch.dispatch_items.all %}
+                            <tr>
+                                <td>{{ dispatch.dispatch_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <strong>{{ dispatch.gdn_number }}</strong>
+                                </td>
+                                <td>{{ item.grn_no|default:"-" }}</td>
+                                <td>{{ dispatch.customer.customer_name }}</td>
+                                <td>{{ item.item_code|default:"-" }}</td>
+                                <td>{{ item.item_name|default:"-" }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>
+                                    <span class="badge {% if dispatch.status == 'draft' %}bg-secondary{% elif dispatch.status == 'ready' %}bg-warning{% elif dispatch.status == 'dispatched' %}bg-info{% elif dispatch.status == 'delivered' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ dispatch.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'dispatchnote:dispatch_detail' dispatch.pk %}" class="btn btn-sm btn-outline-primary" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'dispatchnote:dispatch_update' dispatch.pk %}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger delete-dispatch-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-dispatch-number="{{ dispatch.gdn_number }}"
+                                                title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% if dispatch.status == 'draft' %}
+                                        <button class="btn btn-sm btn-outline-success status-update-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-status="ready"
+                                                title="Mark as Ready">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        {% elif dispatch.status == 'ready' %}
+                                        <button class="btn btn-sm btn-outline-info status-update-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-status="dispatched"
+                                                title="Mark as Dispatched">
+                                            <i class="bi bi-truck"></i>
+                                        </button>
+                                        {% elif dispatch.status == 'dispatched' %}
+                                        <button class="btn btn-sm btn-outline-success status-update-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-status="delivered"
+                                                title="Mark as Delivered">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Show dispatch note even if no items -->
+                            <tr>
+                                <td>{{ dispatch.dispatch_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <strong>{{ dispatch.gdn_number }}</strong>
+                                </td>
+                                <td>-</td>
+                                <td>{{ dispatch.customer.customer_name }}</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>
+                                    <span class="badge {% if dispatch.status == 'draft' %}bg-secondary{% elif dispatch.status == 'ready' %}bg-warning{% elif dispatch.status == 'dispatched' %}bg-info{% elif dispatch.status == 'delivered' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ dispatch.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'dispatchnote:dispatch_detail' dispatch.pk %}" class="btn btn-sm btn-outline-primary" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'dispatchnote:dispatch_update' dispatch.pk %}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger delete-dispatch-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-dispatch-number="{{ dispatch.gdn_number }}"
+                                                title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% if dispatch.status == 'draft' %}
+                                        <button class="btn btn-sm btn-outline-success status-update-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-status="ready"
+                                                title="Mark as Ready">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        {% elif dispatch.status == 'ready' %}
+                                        <button class="btn btn-sm btn-outline-info status-update-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-status="dispatched"
+                                                title="Mark as Dispatched">
+                                            <i class="bi bi-truck"></i>
+                                        </button>
+                                        {% elif dispatch.status == 'dispatched' %}
+                                        <button class="btn btn-sm btn-outline-success status-update-btn" 
+                                                data-dispatch-id="{{ dispatch.pk }}" 
+                                                data-status="delivered"
+                                                title="Mark as Delivered">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Dispatch notes pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <i class="bi bi-truck display-1 text-muted mb-3"></i>
+            <h4 class="text-muted">No dispatch notes found</h4>
+            <p class="text-muted">Create your first dispatch note to get started.</p>
+            <a href="{% url 'dispatchnote:dispatch_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Create Dispatch Note
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dispatchnote/dispatchnote.js' %}"></script>
+{% endblock %} 

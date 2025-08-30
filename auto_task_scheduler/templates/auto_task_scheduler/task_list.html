@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scheduled Tasks - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'auto_task_scheduler/css/task_scheduler.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="task-list-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-list"></i>
+                Scheduled Tasks
+            </h1>
+            <p class="page-subtitle">Manage and monitor all your automated tasks</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'auto_task_scheduler:task_scheduler_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Create New Task
+            </a>
+            <a href="{% url 'auto_task_scheduler:task_scheduler_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-section">
+        <div class="filters-row">
+            <div class="search-box">
+                <input type="text" id="searchTasks" placeholder="Search tasks..." onkeyup="filterTasks()">
+                <i class="fas fa-search"></i>
+            </div>
+            
+            <div class="filter-controls">
+                <select id="statusFilter" onchange="filterTasks()">
+                    <option value="">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                
+                <select id="typeFilter" onchange="filterTasks()">
+                    <option value="">All Types</option>
+                    <option value="backup">Backup</option>
+                    <option value="report">Report</option>
+                    <option value="email">Email</option>
+                    <option value="sync">Sync</option>
+                    <option value="custom">Custom</option>
+                </select>
+                
+                <select id="scheduleFilter" onchange="filterTasks()">
+                    <option value="">All Schedules</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="specific_datetime">Specific Date/Time</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="view-controls">
+            <div class="view-toggle">
+                <button class="btn btn-sm" onclick="setViewMode('grid')" id="gridViewBtn">
+                    <i class="fas fa-th"></i> Grid
+                </button>
+                <button class="btn btn-sm" onclick="setViewMode('list')" id="listViewBtn">
+                    <i class="fas fa-list"></i> List
+                </button>
+            </div>
+            
+            <div class="sort-controls">
+                <select id="sortBy" onchange="sortTasks()">
+                    <option value="name">Sort by Name</option>
+                    <option value="created_at">Sort by Created Date</option>
+                    <option value="next_run_at">Sort by Next Run</option>
+                    <option value="last_run_at">Sort by Last Run</option>
+                    <option value="status">Sort by Status</option>
+                </select>
+                
+                <button class="btn btn-sm" onclick="toggleSortOrder()" id="sortOrderBtn">
+                    <i class="fas fa-sort-amount-down"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks List -->
+    <div class="tasks-container" id="tasksContainer">
+        {% if tasks %}
+            <div class="tasks-grid" id="tasksGrid">
+                {% for task in tasks %}
+                <div class="task-card" data-status="{{ task.status }}" data-type="{{ task.task_type }}" data-schedule="{{ task.schedule_type }}">
+                    <div class="task-header">
+                        <div class="task-status status-{{ task.status }}">
+                            <i class="fas fa-circle"></i>
+                            {{ task.get_status_display }}
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-sm btn-icon" onclick="toggleTaskMenu('{{ task.id }}')" title="More options">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="task-menu" id="taskMenu{{ task.id }}">
+                                <a href="{% url 'auto_task_scheduler:task_scheduler_detail' task.id %}" class="menu-item">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                                <a href="{% url 'auto_task_scheduler:task_scheduler_logs' task.id %}" class="menu-item">
+                                    <i class="fas fa-file-alt"></i> View Logs
+                                </a>
+                                <button class="menu-item" onclick="runTaskNow('{{ task.id }}')">
+                                    <i class="fas fa-play"></i> Run Now
+                                </button>
+                                <button class="menu-item" onclick="toggleTaskStatus('{{ task.id }}', '{{ task.status }}')">
+                                    {% if task.status == 'active' %}
+                                        <i class="fas fa-pause"></i> Deactivate
+                                    {% else %}
+                                        <i class="fas fa-play"></i> Activate
+                                    {% endif %}
+                                </button>
+                                <button class="menu-item text-danger" onclick="deleteTask('{{ task.id }}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="task-content">
+                        <h3 class="task-name">{{ task.name }}</h3>
+                        <p class="task-description">{{ task.description|default:"No description provided" }}</p>
+                        
+                        <div class="task-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-tag"></i>
+                                <span>{{ task.get_task_type_display }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-clock"></i>
+                                <span>{{ task.get_schedule_type_display }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="task-schedule">
+                            <div class="schedule-info">
+                                <strong>Next Run:</strong>
+                                {% if task.next_run_at %}
+                                    <span class="next-run-time">{{ task.next_run_at|date:"M d, Y H:i" }}</span>
+                                {% else %}
+                                    <span class="no-schedule">Not scheduled</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if task.last_run_at %}
+                            <div class="schedule-info">
+                                <strong>Last Run:</strong>
+                                <span class="last-run-time">{{ task.last_run_at|timesince }} ago</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="task-footer">
+                        <div class="task-stats">
+                            <span class="stat-item">
+                                <i class="fas fa-play"></i>
+                                {{ task.execution_count|default:0 }}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-check"></i>
+                                {{ task.success_count|default:0 }}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-times"></i>
+                                {{ task.failure_count|default:0 }}
+                            </span>
+                        </div>
+                        
+                        <div class="task-created">
+                            Created {{ task.created_at|timesince }} ago
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- List View (Hidden by default) -->
+            <div class="tasks-list" id="tasksList" style="display: none;">
+                <div class="list-header">
+                    <div class="list-column">Task Name</div>
+                    <div class="list-column">Type</div>
+                    <div class="list-column">Schedule</div>
+                    <div class="list-column">Status</div>
+                    <div class="list-column">Next Run</div>
+                    <div class="list-column">Last Run</div>
+                    <div class="list-column">Actions</div>
+                </div>
+                
+                {% for task in tasks %}
+                <div class="list-row" data-status="{{ task.status }}" data-type="{{ task.task_type }}" data-schedule="{{ task.schedule_type }}">
+                    <div class="list-cell task-name-cell">
+                        <div class="task-name">{{ task.name }}</div>
+                        <div class="task-description">{{ task.description|default:"No description" }}</div>
+                    </div>
+                    <div class="list-cell">
+                        <span class="task-type-badge type-{{ task.task_type }}">
+                            {{ task.get_task_type_display }}
+                        </span>
+                    </div>
+                    <div class="list-cell">
+                        {{ task.get_schedule_type_display }}
+                    </div>
+                    <div class="list-cell">
+                        <span class="status-badge status-{{ task.status }}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="list-cell">
+                        {% if task.next_run_at %}
+                            {{ task.next_run_at|date:"M d, H:i" }}
+                        {% else %}
+                            <span class="text-muted">Not scheduled</span>
+                        {% endif %}
+                    </div>
+                    <div class="list-cell">
+                        {% if task.last_run_at %}
+                            {{ task.last_run_at|timesince }} ago
+                        {% else %}
+                            <span class="text-muted">Never</span>
+                        {% endif %}
+                    </div>
+                    <div class="list-cell actions-cell">
+                        <div class="action-buttons">
+                            <a href="{% url 'auto_task_scheduler:task_scheduler_detail' task.id %}" class="btn btn-sm btn-icon" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button class="btn btn-sm btn-icon" onclick="runTaskNow('{{ task.id }}')" title="Run Now">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="btn btn-sm btn-icon" onclick="toggleTaskStatus('{{ task.id }}', '{{ task.status }}')" title="Toggle Status">
+                                {% if task.status == 'active' %}
+                                    <i class="fas fa-pause"></i>
+                                {% else %}
+                                    <i class="fas fa-play"></i>
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3>No Tasks Found</h3>
+                <p>You haven't created any scheduled tasks yet. Get started by creating your first automated task.</p>
+                <a href="{% url 'auto_task_scheduler:task_scheduler_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Create Your First Task
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if tasks.has_other_pages %}
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Showing {{ tasks.start_index }} to {{ tasks.end_index }} of {{ tasks.paginator.count }} tasks
+        </div>
+        
+        <div class="pagination">
+            {% if tasks.has_previous %}
+                <a href="?page=1" class="page-link">&laquo; First</a>
+                <a href="?page={{ tasks.previous_page_number }}" class="page-link">&lsaquo; Previous</a>
+            {% endif %}
+            
+            {% for num in tasks.paginator.page_range %}
+                {% if tasks.number == num %}
+                    <span class="page-link current">{{ num }}</span>
+                {% elif num > tasks.number|add:'-3' and num < tasks.number|add:'3' %}
+                    <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if tasks.has_next %}
+                <a href="?page={{ tasks.next_page_number }}" class="page-link">Next &rsaquo;</a>
+                <a href="?page={{ tasks.paginator.num_pages }}" class="page-link">Last &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle"></i> Confirm Action</h3>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage">Are you sure you want to perform this action?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Processing...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'auto_task_scheduler/js/task_scheduler.js' %}"></script>
+<script>
+    let currentViewMode = 'grid';
+    let currentSortOrder = 'asc';
+    let currentSortBy = 'name';
+    
+    // Initialize page when loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTaskList();
+        setupEventListeners();
+    });
+    
+    function initializeTaskList() {
+        // Set default view mode
+        setViewMode('grid');
+        
+        // Apply initial filters
+        filterTasks();
+    }
+    
+    function setupEventListeners() {
+        // Close task menus when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.task-actions')) {
+                document.querySelectorAll('.task-menu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            }
+        });
+    }
+    
+    function toggleTaskMenu(taskId) {
+        const menu = document.getElementById(`taskMenu${taskId}`);
+        const allMenus = document.querySelectorAll('.task-menu');
+        
+        // Close other menus
+        allMenus.forEach(m => {
+            if (m !== menu) {
+                m.style.display = 'none';
+            }
+        });
+        
+        // Toggle current menu
+        if (menu.style.display === 'block') {
+            menu.style.display = 'none';
+        } else {
+            menu.style.display = 'block';
+        }
+    }
+    
+    function setViewMode(mode) {
+        currentViewMode = mode;
+        
+        if (mode === 'grid') {
+            document.getElementById('tasksGrid').style.display = 'block';
+            document.getElementById('tasksList').style.display = 'none';
+            document.getElementById('gridViewBtn').classList.add('active');
+            document.getElementById('listViewBtn').classList.remove('active');
+        } else {
+            document.getElementById('tasksGrid').style.display = 'none';
+            document.getElementById('tasksList').style.display = 'block';
+            document.getElementById('gridViewBtn').classList.remove('active');
+            document.getElementById('listViewBtn').classList.add('active');
+        }
+    }
+    
+    function filterTasks() {
+        const searchTerm = document.getElementById('searchTasks').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const typeFilter = document.getElementById('typeFilter').value;
+        const scheduleFilter = document.getElementById('scheduleFilter').value;
+        
+        const taskElements = document.querySelectorAll('.task-card, .list-row');
+        
+        taskElements.forEach(element => {
+            let show = true;
+            
+            // Search filter
+            if (searchTerm) {
+                const taskName = element.querySelector('.task-name').textContent.toLowerCase();
+                const taskDesc = element.querySelector('.task-description')?.textContent.toLowerCase() || '';
+                if (!taskName.includes(searchTerm) && !taskDesc.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+            
+            // Status filter
+            if (statusFilter && element.dataset.status !== statusFilter) {
+                show = false;
+            }
+            
+            // Type filter
+            if (typeFilter && element.dataset.type !== typeFilter) {
+                show = false;
+            }
+            
+            // Schedule filter
+            if (scheduleFilter && element.dataset.schedule !== scheduleFilter) {
+                show = false;
+            }
+            
+            element.style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    function sortTasks() {
+        currentSortBy = document.getElementById('sortBy').value;
+        applySorting();
+    }
+    
+    function toggleSortOrder() {
+        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+        document.getElementById('sortOrderBtn').innerHTML = currentSortOrder === 'asc' ? 
+            '<i class="fas fa-sort-amount-down"></i>' : '<i class="fas fa-sort-amount-up"></i>';
+        applySorting();
+    }
+    
+    function applySorting() {
+        // Implementation would depend on the data structure
+        // For now, we'll just re-render the list
+        filterTasks();
+    }
+    
+    function runTaskNow(taskId) {
+        showLoading();
+        
+        fetch(`/utilities/auto-task-scheduler/api/scheduled-tasks/${taskId}/run_manually/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.status === 'success') {
+                showNotification('Task started successfully!', 'success');
+                // Refresh the page after a short delay
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification(data.message || 'Failed to start task', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showNotification('Error starting task: ' + error.message, 'error');
+        });
+    }
+    
+    function toggleTaskStatus(taskId, currentStatus) {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const action = newStatus === 'active' ? 'activate' : 'deactivate';
+        
+        showConfirmModal(
+            `Are you sure you want to ${action} this task?`,
+            () => updateTaskStatus(taskId, newStatus)
+        );
+    }
+    
+    function updateTaskStatus(taskId, newStatus) {
+        showLoading();
+        
+        fetch(`/utilities/auto-task-scheduler/api/scheduled-tasks/${taskId}/update_status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.status === 'success') {
+                showNotification(`Task ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Failed to update task status', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showNotification('Error updating task status: ' + error.message, 'error');
+        });
+    }
+    
+    function deleteTask(taskId) {
+        showConfirmModal(
+            'Are you sure you want to delete this task? This action cannot be undone.',
+            () => performDeleteTask(taskId)
+        );
+    }
+    
+    function performDeleteTask(taskId) {
+        showLoading();
+        
+        fetch(`/utilities/auto-task-scheduler/api/scheduled-tasks/${taskId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        })
+        .then(response => {
+            hideLoading();
+            if (response.ok) {
+                showNotification('Task deleted successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification('Failed to delete task', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showNotification('Error deleting task: ' + error.message, 'error');
+        });
+    }
+    
+    function showConfirmModal(message, onConfirm) {
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmActionBtn').onclick = onConfirm;
+        document.getElementById('confirmModal').style.display = 'block';
+    }
+    
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+    }
+    
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+    
+    function hideLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+    
+    function showNotification(message, type) {
+        // Simple notification implementation
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

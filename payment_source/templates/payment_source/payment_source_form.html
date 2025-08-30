@@ -1,0 +1,666 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if is_edit %}Edit{% else %}Create{% endif %} Payment Source - logisEdge
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border-left: 4px solid #007bff;
+    }
+    .success-message {
+        display: none;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    .error-message {
+        display: none;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    .field-group {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .field-group h6 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Success/Error Messages -->
+            <div id="successMessage" class="success-message">
+                <i class="bi bi-check-circle"></i>
+                <span id="successText"></span>
+            </div>
+            
+            <div id="errorMessage" class="error-message">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{% url 'payment_source:payment_source_list' %}">
+                                    <i class="bi bi-credit-card"></i> Payment Sources
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">
+                                {% if is_edit %}Edit{% else %}Create{% endif %}
+                            </li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-0">
+                        {% if is_edit %}
+                            <i class="bi bi-pencil text-primary"></i>
+                            Edit Payment Source
+                        {% else %}
+                            <i class="bi bi-plus-circle text-primary"></i>
+                            Create New Payment Source
+                        {% endif %}
+                    </h1>
+                </div>
+                <a href="{% url 'payment_source:payment_source_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card form-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Payment Source Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="paymentSourceForm" method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="field-group">
+                            <h6><i class="bi bi-card-text text-primary"></i> Basic Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">
+                                            Name <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                                               id="name" 
+                                               name="name" 
+                                               value="{% if payment_source %}{{ payment_source.name }}{% endif %}"
+                                               required 
+                                               maxlength="50"
+                                               placeholder="Enter payment source name">
+                                        {% if form.name.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.name.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Unique name for the payment source (max 50 characters)
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="code" class="form-label">Short Code</label>
+                                        <input type="text" 
+                                               class="form-control {% if form.code.errors %}is-invalid{% endif %}" 
+                                               id="code" 
+                                               name="code" 
+                                               value="{% if payment_source %}{{ payment_source.code }}{% endif %}"
+                                               maxlength="20"
+                                               placeholder="Enter short code (optional)">
+                                        {% if form.code.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.code.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Optional unique short code (max 20 characters)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                          id="description" 
+                                          name="description" 
+                                          rows="3"
+                                          placeholder="Enter optional description for the payment source">{% if payment_source %}{{ payment_source.description }}{% endif %}</textarea>
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.description.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Optional description to provide more context about this payment source
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Classification -->
+                        <div class="field-group">
+                            <h6><i class="bi bi-tags text-success"></i> Classification</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="payment_type" class="form-label">
+                                            Payment Type <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select {% if form.payment_type.errors %}is-invalid{% endif %}" 
+                                                id="payment_type" 
+                                                name="payment_type" 
+                                                required>
+                                            <option value="">Select payment type</option>
+                                            <option value="prepaid" {% if payment_source.payment_type == 'prepaid' %}selected{% endif %}>Prepaid</option>
+                                            <option value="postpaid" {% if payment_source.payment_type == 'postpaid' %}selected{% endif %}>Postpaid</option>
+                                            <option value="cash_bank" {% if payment_source.payment_type == 'cash_bank' %}selected{% endif %}>Cash/Bank</option>
+                                        </select>
+                                        {% if form.payment_type.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.payment_type.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="source_type" class="form-label">
+                                            Source Type <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select {% if form.source_type.errors %}is-invalid{% endif %}" 
+                                                id="source_type" 
+                                                name="source_type" 
+                                                required>
+                                            <option value="">Select source type</option>
+                                            <option value="prepaid" {% if payment_source.source_type == 'prepaid' %}selected{% endif %}>Prepaid</option>
+                                            <option value="postpaid" {% if payment_source.source_type == 'postpaid' %}selected{% endif %}>Postpaid</option>
+                                        </select>
+                                        {% if form.source_type.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.source_type.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Should match payment type for consistency
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="category" class="form-label">
+                                            Category <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select {% if form.category.errors %}is-invalid{% endif %}" 
+                                                id="category" 
+                                                name="category" 
+                                                required>
+                                            <option value="">Select category</option>
+                                            <option value="cash" {% if payment_source.category == 'cash' %}selected{% endif %}>Cash</option>
+                                            <option value="bank" {% if payment_source.category == 'bank' %}selected{% endif %}>Bank</option>
+                                            <option value="credit_card" {% if payment_source.category == 'credit_card' %}selected{% endif %}>Credit Card</option>
+                                            <option value="advance_account" {% if payment_source.category == 'advance_account' %}selected{% endif %}>Advance Account</option>
+                                            <option value="other_payable" {% if payment_source.category == 'other_payable' %}selected{% endif %}>Other Payable</option>
+                                        </select>
+                                        {% if form.category.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.category.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Settings -->
+                        <div class="field-group">
+                            <h6><i class="bi bi-currency-exchange text-warning"></i> Financial Settings</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="currency" class="form-label">Currency</label>
+                                        <select class="form-select {% if form.currency.errors %}is-invalid{% endif %}" 
+                                                id="currency" 
+                                                name="currency">
+                                            <option value="">Select currency (optional)</option>
+                                            {% for currency in currencies %}
+                                                <option value="{{ currency.id }}" 
+                                                        {% if payment_source.currency.id == currency.id %}selected{% endif %}>
+                                                    {{ currency.code }} - {{ currency.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        {% if form.currency.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.currency.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Required if multi-currency is enabled (defaults to AED)
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="linked_ledger" class="form-label">
+                                            Linked Ledger <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select {% if form.linked_ledger.errors %}is-invalid{% endif %}" 
+                                                id="linked_ledger" 
+                                                name="linked_ledger" 
+                                                required>
+                                            <option value="">Select linked ledger account</option>
+                                            {% for account in chart_accounts %}
+                                                <option value="{{ account.id }}" 
+                                                        {% if payment_source.linked_ledger.id == account.id %}selected{% endif %}>
+                                                    {{ account.account_code }} - {{ account.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        {% if form.linked_ledger.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.linked_ledger.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Chart of Account linked to this payment source
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="default_expense_ledger" class="form-label">Default Expense Ledger</label>
+                                <select class="form-select {% if form.default_expense_ledger.errors %}is-invalid{% endif %}" 
+                                        id="default_expense_ledger" 
+                                        name="default_expense_ledger">
+                                    <option value="">Select default expense account (optional)</option>
+                                    {% for account in expense_accounts %}
+                                        <option value="{{ account.id }}" 
+                                                {% if payment_source.default_expense_ledger.id == account.id %}selected{% endif %}>
+                                            {{ account.account_code }} - {{ account.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.default_expense_ledger.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.default_expense_ledger.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Optional default expense account for this payment source
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vendor Settings -->
+                        <div class="field-group">
+                            <h6><i class="bi bi-people text-info"></i> Vendor Settings</h6>
+                            <div class="mb-3">
+                                <label for="default_vendor" class="form-label">Default Vendor</label>
+                                <select class="form-select {% if form.default_vendor.errors %}is-invalid{% endif %}" 
+                                        id="default_vendor" 
+                                        name="default_vendor">
+                                    <option value="">Select default vendor (optional)</option>
+                                    {% for vendor in vendors %}
+                                        <option value="{{ vendor.id }}" 
+                                                {% if payment_source.default_vendor.id == vendor.id %}selected{% endif %}>
+                                            {{ vendor.customer_code }} - {{ vendor.customer_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.default_vendor.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.default_vendor.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Optional default vendor for this payment source
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status and Remarks -->
+                        <div class="field-group">
+                            <h6><i class="bi bi-gear text-secondary"></i> Status and Remarks</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="active" class="form-label">Status</label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   id="active" 
+                                                   name="active"
+                                                   {% if not payment_source or payment_source.active %}checked{% endif %}>
+                                            <label class="form-check-label" for="active">
+                                                Active
+                                            </label>
+                                        </div>
+                                        <div class="form-text">
+                                            Active payment sources can be used in invoices and ledger entries
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="remarks" class="form-label">Remarks</label>
+                                        <textarea class="form-control {% if form.remarks.errors %}is-invalid{% endif %}" 
+                                                  id="remarks" 
+                                                  name="remarks" 
+                                                  rows="3"
+                                                  placeholder="Enter optional remarks">{% if payment_source %}{{ payment_source.remarks }}{% endif %}</textarea>
+                                        {% if form.remarks.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.remarks.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            Optional additional notes or remarks
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{% url 'payment_source:payment_source_list' %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                            <div class="btn-group" role="group">
+                                {% if is_edit and payment_source %}
+                                    <a href="{% url 'payment_source:payment_source_detail' payment_source.pk %}" 
+                                       class="btn btn-outline-info">
+                                        <i class="bi bi-eye"></i> View Details
+                                    </a>
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if is_edit %}Update{% else %}Create{% endif %} Payment Source
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-question-circle text-info"></i>
+                        Help & Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Required Fields</h6>
+                            <ul class="small text-muted">
+                                <li><strong>Name:</strong> Must be unique across all payment sources</li>
+                                <li><strong>Payment Type:</strong> Defines the payment arrangement</li>
+                                <li><strong>Source Type:</strong> Should match payment type for consistency</li>
+                                <li><strong>Category:</strong> Classifies the payment source</li>
+                                <li><strong>Linked Ledger:</strong> Chart of Account for this source</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Optional Fields</h6>
+                            <ul class="small text-muted">
+                                <li><strong>Code:</strong> Short unique identifier</li>
+                                <li><strong>Currency:</strong> For multi-currency support</li>
+                                <li><strong>Default Expense Ledger:</strong> Pre-filled expense account</li>
+                                <li><strong>Default Vendor:</strong> Pre-filled vendor selection</li>
+                                <li><strong>Remarks:</strong> Additional notes and context</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> Payment sources are used to categorize and track how payments are made 
+                        in invoices and ledger entries. This helps with financial reporting and analysis.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('paymentSourceForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const successText = document.getElementById('successText');
+    const errorText = document.getElementById('errorText');
+    
+    // Hide messages initially
+    successMessage.style.display = 'none';
+    errorMessage.style.display = 'none';
+    
+    function showMessage(type, message) {
+        if (type === 'success') {
+            successText.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        } else {
+            errorText.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+    }
+    
+    function hideMessages() {
+        successMessage.style.display = 'none';
+        errorMessage.style.display = 'none';
+    }
+    
+    // Auto-sync source_type with payment_type
+    const paymentTypeSelect = document.getElementById('payment_type');
+    const sourceTypeSelect = document.getElementById('source_type');
+    
+    paymentTypeSelect.addEventListener('change', function() {
+        const selectedValue = this.value;
+        if (selectedValue === 'prepaid') {
+            sourceTypeSelect.value = 'prepaid';
+        } else if (selectedValue === 'postpaid' || selectedValue === 'cash_bank') {
+            sourceTypeSelect.value = 'postpaid';
+        }
+    });
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Hide any existing messages
+        hideMessages();
+        
+        // Get form data
+        const formData = {
+            name: document.getElementById('name').value.trim(),
+            code: document.getElementById('code').value.trim(),
+            description: document.getElementById('description').value.trim(),
+            payment_type: document.getElementById('payment_type').value,
+            source_type: document.getElementById('source_type').value,
+            category: document.getElementById('category').value,
+            currency: document.getElementById('currency').value || null,
+            linked_ledger: document.getElementById('linked_ledger').value,
+            default_expense_ledger: document.getElementById('default_expense_ledger').value || null,
+            default_vendor: document.getElementById('default_vendor').value || null,
+            active: document.getElementById('active').checked,
+            remarks: document.getElementById('remarks').value.trim()
+        };
+        
+        // Validation
+        if (!formData.name) {
+            showMessage('error', 'Payment source name is required');
+            document.getElementById('name').focus();
+            return;
+        }
+        
+        if (!formData.payment_type) {
+            showMessage('error', 'Payment type is required');
+            document.getElementById('payment_type').focus();
+            return;
+        }
+        
+        if (!formData.source_type) {
+            showMessage('error', 'Source type is required');
+            document.getElementById('source_type').focus();
+            return;
+        }
+        
+        if (!formData.category) {
+            showMessage('error', 'Category is required');
+            document.getElementById('category').focus();
+            return;
+        }
+        
+        if (!formData.linked_ledger) {
+            showMessage('error', 'Linked ledger is required');
+            document.getElementById('linked_ledger').focus();
+            return;
+        }
+        
+        try {
+            // Show loading state
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+            submitBtn.disabled = true;
+            
+            {% if is_edit %}
+                // Update existing payment source
+                const response = await fetch(`/payment-source/api/payment-sources/{{ payment_source.pk }}/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(formData)
+                });
+            {% else %}
+                // Create new payment source
+                const response = await fetch('/payment-source/api/payment-sources/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(formData)
+                });
+            {% endif %}
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || errorData.error || 'Failed to save payment source');
+            }
+            
+            const data = await response.json();
+            
+            // Show success message
+            const successMsg = '{% if is_edit %}Payment source updated{% else %}Payment source created{% endif %} successfully!';
+            showMessage('success', successMsg);
+            
+            // Wait a moment for user to see success message, then redirect
+            setTimeout(() => {
+                // Force page refresh by redirecting to the list page
+                window.location.href = "{% url 'payment_source:payment_source_list' %}";
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error saving payment source:', error);
+            showMessage('error', error.message || 'An error occurred while saving the payment source');
+            
+            // Reset button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+    
+    // Auto-save draft functionality (optional)
+    let autoSaveTimeout;
+    const inputs = form.querySelectorAll('input, textarea, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', () => {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                // You can implement auto-save functionality here
+                console.log('Auto-save triggered');
+            }, 2000);
+        });
+    });
+    
+    // Hide messages when user starts typing
+    inputs.forEach(input => {
+        input.addEventListener('input', hideMessages);
+    });
+});
+</script>
+{% endblock %}

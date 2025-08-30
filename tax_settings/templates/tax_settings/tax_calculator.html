@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tax Calculator{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tax_settings/css/tax_calculator.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-calculator text-primary"></i>
+                    Tax Calculator
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'tax_settings:dashboard' %}">Tax Settings</a></li>
+                        <li class="breadcrumb-item active">Tax Calculator</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tax Calculator Form -->
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calculator text-primary"></i>
+                        Calculate Tax Amount
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="taxCalculatorForm">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="{{ form.taxable_amount.id_for_label }}">Taxable Amount</label>
+                            {{ form.taxable_amount }}
+                            {% if form.taxable_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.taxable_amount.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.tax_rate.id_for_label }}">Tax Rate</label>
+                            {{ form.tax_rate }}
+                            {% if form.tax_rate.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.tax_rate.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.currency.id_for_label }}">Currency</label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.currency.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-calculator"></i> Calculate Tax
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculation Result -->
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie text-success"></i>
+                        Calculation Result
+                    </h5>
+                </div>
+                <div class="card-body" id="calculatorResult">
+                    {% if calculation_result %}
+                        <div class="calculation-result">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="result-item">
+                                        <label>Taxable Amount:</label>
+                                        <span class="amount">{{ calculation_result.currency }} {{ calculation_result.taxable_amount|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <label>Tax Rate:</label>
+                                        <span class="rate">{{ calculation_result.tax_rate.name }} ({{ calculation_result.tax_rate.rate_percentage }}%)</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="result-item">
+                                        <label>Tax Amount:</label>
+                                        <span class="tax-amount">{{ calculation_result.currency }} {{ calculation_result.tax_amount|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="result-item">
+                                        <label>Total Amount:</label>
+                                        <span class="total-amount">{{ calculation_result.currency }} {{ calculation_result.total_amount|floatformat:2 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-calculator fa-3x mb-3"></i>
+                            <p>Enter values and click "Calculate Tax" to see the result.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Tax Rates Reference -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-info"></i>
+                        Quick Tax Rates Reference
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="tax-rate-card">
+                                <div class="rate-percentage">0%</div>
+                                <div class="rate-label">Zero-Rated</div>
+                                <div class="rate-description">Exports, international services</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="tax-rate-card">
+                                <div class="rate-percentage">5%</div>
+                                <div class="rate-label">Reduced Rate</div>
+                                <div class="rate-description">Some goods and services</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="tax-rate-card">
+                                <div class="rate-percentage">12%</div>
+                                <div class="rate-label">Standard Rate</div>
+                                <div class="rate-description">Most goods and services</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="tax-rate-card">
+                                <div class="rate-percentage">Exempt</div>
+                                <div class="rate-label">Exempt</div>
+                                <div class="rate-description">Financial services, healthcare</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'tax_settings/js/tax_calculator.js' %}"></script>
+{% endblock %}

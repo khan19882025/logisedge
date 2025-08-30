@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Notification - {{ notification.id|default:"New" }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'email_configuration/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    {% if notification.id %}
+                        Edit Email Notification
+                    {% else %}
+                        Create Email Notification
+                    {% endif %}
+                </h1>
+                <a href="{% url 'email_configuration:notifications_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Notifications
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-envelope-paper me-2"></i>
+                        Notification Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="notificationForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        <i class="bi bi-tag me-2"></i>Notification Name
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">A descriptive name for this notification</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.configuration.id_for_label }}" class="form-label">
+                                        <i class="bi bi-gear me-2"></i>Email Configuration
+                                    </label>
+                                    {{ form.configuration }}
+                                    {% if form.configuration.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.configuration.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Select the email configuration to use</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.recipient_email.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person me-2"></i>Recipient Email
+                                    </label>
+                                    {{ form.recipient_email }}
+                                    {% if form.recipient_email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.recipient_email.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Email address to send notifications to</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.subject.id_for_label }}" class="form-label">
+                                        <i class="bi bi-type me-2"></i>Subject
+                                    </label>
+                                    {{ form.subject }}
+                                    {% if form.subject.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.subject.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Subject line for the notification email</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.message.id_for_label }}" class="form-label">
+                                <i class="bi bi-chat-text me-2"></i>Message
+                            </label>
+                            {{ form.message }}
+                            {% if form.message.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.message.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">The message content for the notification</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.notification_type.id_for_label }}" class="form-label">
+                                        <i class="bi bi-bell me-2"></i>Notification Type
+                                    </label>
+                                    {{ form.notification_type }}
+                                    {% if form.notification_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.notification_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Type of notification</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>Priority
+                                    </label>
+                                    {{ form.priority }}
+                                    {% if form.priority.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.priority.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Priority level of the notification</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.scheduled_at.id_for_label }}" class="form-label">
+                                        <i class="bi bi-calendar me-2"></i>Scheduled At
+                                    </label>
+                                    {{ form.scheduled_at }}
+                                    {% if form.scheduled_at.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.scheduled_at.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">When to send this notification (leave empty for immediate)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            <i class="bi bi-check-circle me-2"></i>Active
+                                        </label>
+                                    </div>
+                                    {% if form.is_active.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.is_active.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Enable or disable this notification</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'email_configuration:notifications_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>
+                                {% if notification.id %}
+                                    Update Notification
+                                {% else %}
+                                    Create Notification
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'email_configuration/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to form fields
+    const formFields = document.querySelectorAll('input, select, textarea');
+    formFields.forEach(field => {
+        if (field.type !== 'hidden' && field.type !== 'checkbox') {
+            field.classList.add('form-control');
+        }
+    });
+    
+    // Handle form submission
+    const form = document.getElementById('notificationForm');
+    form.addEventListener('submit', function(e) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+    });
+});
+</script>
+{% endblock %}

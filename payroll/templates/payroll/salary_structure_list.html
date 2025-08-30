@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Salary Structures - Payroll Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/payroll/payroll.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h2><i class="bi bi-cash-stack me-2"></i>Salary Structures</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'payroll:dashboard' %}">Payroll Dashboard</a></li>
+                        <li class="breadcrumb-item active">Salary Structures</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Salary Structures</h5>
+                    <a href="{% url 'payroll:salary_structure_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create Structure
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if salary_structures %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Structure Name</th>
+                                        <th>Basic Salary</th>
+                                        <th>Housing Allowance</th>
+                                        <th>Transport Allowance</th>
+                                        <th>Other Allowances</th>
+                                        <th>Currency</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for structure in salary_structures %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ structure.name }}</strong>
+                                            {% if structure.is_active %}
+                                                <span class="badge bg-success ms-2">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ structure.basic_salary|floatformat:2 }}</td>
+                                        <td>{{ structure.housing_allowance|floatformat:2 }}</td>
+                                        <td>{{ structure.transport_allowance|floatformat:2 }}</td>
+                                        <td>{{ structure.other_allowances|floatformat:2 }}</td>
+                                        <td>{{ structure.currency.code }} ({{ structure.currency.symbol }})</td>
+                                        <td>
+                                            {% if structure.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'payroll:salary_structure_edit' structure.id %}" 
+                                                   class="btn btn-sm btn-outline-primary" 
+                                                   title="Edit Structure">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                        data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#">
+                                                            <i class="bi bi-eye me-2"></i>View Details
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#">
+                                                            <i class="bi bi-people me-2"></i>View Employees
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a class="dropdown-item text-danger" href="#">
+                                                            <i class="bi bi-trash me-2"></i>Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-cash-stack display-1 text-muted"></i>
+                            <h4 class="mt-3">No Salary Structures Found</h4>
+                            <p class="text-muted">Create your first salary structure to get started.</p>
+                            <a href="{% url 'payroll:salary_structure_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Create First Structure
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/payroll/payroll.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize data table
+    initializeDataTable();
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %} 

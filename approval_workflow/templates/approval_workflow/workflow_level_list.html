@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Workflow Levels - {{ workflow_definition.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'approval_workflow/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bx bx-layer"></i> Workflow Levels
+                    <small class="text-muted">- {{ workflow_definition.name }}</small>
+                </h4>
+                <div class="page-title-right">
+                    <a href="{% url 'approval_workflow:workflow_definition_detail' workflow_definition.pk %}" class="btn btn-secondary">
+                        <i class="bx bx-arrow-back"></i> Back to Definition
+                    </a>
+                    <a href="{% url 'approval_workflow:workflow_level_create' %}?workflow_definition={{ workflow_definition.pk }}" class="btn btn-primary">
+                        <i class="bx bx-plus"></i> New Level
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Levels List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Workflow Levels ({{ workflow_levels.count }})</h4>
+                </div>
+                <div class="card-body">
+                    {% if workflow_levels %}
+                        <div class="table-responsive">
+                            <table class="table table-centered table-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Level</th>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Approvers</th>
+                                        <th>Min Approvals</th>
+                                        <th>Deadline (Hours)</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for level in workflow_levels %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary">{{ level.level_number }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ level.name }}</strong>
+                                            {% if level.description %}
+                                                <br><small class="text-muted">{{ level.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                {{ level.get_level_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if level.approvers.all %}
+                                                {% for approver in level.approvers.all %}
+                                                    <span class="badge bg-secondary">{{ approver.get_full_name|default:approver.username }}</span>
+                                                {% endfor %}
+                                            {% elif level.approver_groups.all %}
+                                                {% for group in level.approver_groups.all %}
+                                                    <span class="badge bg-secondary">{{ group.name }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">No approvers assigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning">{{ level.min_approvals_required }}</span>
+                                        </td>
+                                        <td>{{ level.deadline_hours }} hours</td>
+                                        <td>
+                                            {% if level.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Edit">
+                                                    <i class="bx bx-edit"></i>
+                                                </a>
+                                                <a href="#" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="View Details">
+                                                    <i class="bx bx-detail"></i>
+                                                </a>
+                                                <a href="#" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete">
+                                                    <i class="bx bx-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bx bx-layer font-size-48 text-muted"></i>
+                            <h5 class="mt-3">No workflow levels defined</h5>
+                            <p class="text-muted">Add workflow levels to define the approval process for this workflow definition.</p>
+                            <a href="{% url 'approval_workflow:workflow_level_create' %}?workflow_definition={{ workflow_definition.pk }}" class="btn btn-primary">
+                                <i class="bx bx-plus"></i> Add First Level
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Definition Info -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Workflow Definition Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="30%">Name:</th>
+                                    <td>{{ workflow_definition.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Workflow Type:</th>
+                                    <td>{{ workflow_definition.workflow_type.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Approval Type:</th>
+                                    <td>{{ workflow_definition.get_approval_type_display }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="30%">Total Levels:</th>
+                                    <td>{{ workflow_levels.count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        {% if workflow_definition.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Created:</th>
+                                    <td>{{ workflow_definition.created_at|date:"M d, Y" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'approval_workflow/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    initTooltips();
+});
+</script>
+{% endblock %}

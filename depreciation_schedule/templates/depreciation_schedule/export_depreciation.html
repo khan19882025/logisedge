@@ -1,0 +1,201 @@
+{% extends 'depreciation_schedule/base.html' %}
+{% load static %}
+
+{% block title %}Export Depreciation - {{ schedule.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_list' %}">Schedules</a></li>
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}">{{ schedule.name }}</a></li>
+<li class="breadcrumb-item active">Export</li>
+{% endblock %}
+
+{% block depreciation_schedule_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-download me-2"></i>Export Depreciation Data
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info" role="alert">
+                    <h5 class="alert-heading">Export Options</h5>
+                    <p>Export depreciation data for the schedule <strong>"{{ schedule.name }}"</strong> in your preferred format.</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Schedule Details</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Schedule Number:</dt>
+                            <dd class="col-sm-8">{{ schedule.schedule_number }}</dd>
+                            
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">{{ schedule.name }}</dd>
+                            
+                            <dt class="col-sm-4">Start Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.start_date|date:"M d, Y" }}</dd>
+                            
+                            <dt class="col-sm-4">End Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.end_date|date:"M d, Y" }}</dd>
+                            
+                            <dt class="col-sm-4">Total Depreciation:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_depreciation|floatformat:2 }}</dd>
+                            
+                            <dt class="col-sm-4">Total Assets:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_assets }}</dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Export Summary</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Entries
+                                <span class="badge bg-primary rounded-pill">{{ schedule.depreciation_entries.count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Depreciation
+                                <span class="badge bg-success rounded-pill">{{ schedule.total_depreciation|floatformat:2 }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Export Formats
+                                <span class="text-muted">PDF, Excel, CSV</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <hr>
+
+                <form method="post" id="export-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.export_format.id_for_label }}" class="form-label">Export Format</label>
+                                {{ form.export_format }}
+                                {% if form.export_format.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.export_format.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.include_details }}
+                                    <label class="form-check-label" for="{{ form.include_details.id_for_label }}">
+                                        Include Individual Asset Details
+                                    </label>
+                                    {% if form.include_details.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.include_details.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.include_summary }}
+                                    <label class="form-check-label" for="{{ form.include_summary.id_for_label }}">
+                                        Include Summary Totals
+                                    </label>
+                                    {% if form.include_summary.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.include_summary.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.include_charts }}
+                                    <label class="form-check-label" for="{{ form.include_charts.id_for_label }}">
+                                        Include Charts (PDF only)
+                                    </label>
+                                    {% if form.include_charts.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.include_charts.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-download me-2"></i>Export Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">Exporting Data</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <p class="text-center" id="progress-text">Preparing export...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const exportForm = document.getElementById('export-form');
+    const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+    
+    // Show progress modal on form submit
+    exportForm.addEventListener('submit', function() {
+        progressModal.show();
+    });
+    
+    // Update chart option visibility based on format
+    const formatSelect = document.getElementById('{{ form.export_format.id_for_label }}');
+    const chartsCheckbox = document.getElementById('{{ form.include_charts.id_for_label }}');
+    const chartsLabel = chartsCheckbox.nextElementSibling;
+    
+    function updateChartsVisibility() {
+        if (formatSelect.value === 'pdf') {
+            chartsCheckbox.disabled = false;
+            chartsLabel.classList.remove('text-muted');
+        } else {
+            chartsCheckbox.disabled = true;
+            chartsCheckbox.checked = false;
+            chartsLabel.classList.add('text-muted');
+        }
+    }
+    
+    formatSelect.addEventListener('change', updateChartsVisibility);
+    updateChartsVisibility();
+});
+</script>
+{% endblock %}

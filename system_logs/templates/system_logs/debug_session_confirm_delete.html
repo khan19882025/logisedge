@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Debug Session{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-trash"></i> Delete Debug Session
+                </h1>
+                <p class="page-subtitle">Confirm deletion of debug session: {{ object.name }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This action cannot be undone. Deleting this debug session will permanently remove all associated data.
+                    </div>
+
+                    <h6>Session Information:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Name:</th>
+                                    <td><strong>{{ object.name }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Started By:</th>
+                                    <td>{{ object.started_by.username|default:"Unknown" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Started At:</th>
+                                    <td>{{ object.started_at|date:"M d, Y H:i:s"|default:"Unknown" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge badge-{% if object.is_active %}success{% else %}secondary{% endif %}">
+                                            {% if object.is_active %}Active{% else %}Completed{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Priority:</th>
+                                    <td>
+                                        <span class="badge badge-{% if object.priority == 'HIGH' %}danger{% elif object.priority == 'MEDIUM' %}warning{% else %}info{% endif %}">
+                                            {{ object.priority|default:"Not set" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Environment:</th>
+                                    <td>{{ object.environment|default:"Not specified" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Duration:</th>
+                                    <td>
+                                        {% if object.is_active %}
+                                            <span class="text-success">Active</span>
+                                        {% else %}
+                                            {{ object.duration|default:"Not calculated" }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Related Logs:</th>
+                                    <td>
+                                        <span class="badge badge-info">{{ object.related_logs.count|default:0 }}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if object.description %}
+                    <div class="mt-3">
+                        <h6>Description:</h6>
+                        <p class="text-muted">{{ object.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <h6>What will be deleted:</h6>
+                        <ul class="text-muted">
+                            <li>The debug session configuration</li>
+                            <li>Investigation notes and findings</li>
+                            <li>Resolution steps and progress</li>
+                            <li>Session metadata and settings</li>
+                            <li><strong>Note:</strong> Related system logs will NOT be deleted</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>Impact Assessment:</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-search fa-2x text-warning mb-2"></i>
+                                    <h6 class="text-warning">Investigation History</h6>
+                                    <p class="text-muted small">All investigation notes and findings will be lost</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-tools fa-2x text-info mb-2"></i>
+                                    <h6 class="text-info">Resolution Steps</h6>
+                                    <p class="text-muted small">Documented resolution process will be deleted</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-clock fa-2x text-danger mb-2"></i>
+                                    <h6 class="text-danger">Session Timeline</h6>
+                                    <p class="text-muted small">Complete session timeline will be removed</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Form -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirm_deletion" required>
+                            <label class="form-check-label" for="confirm_deletion">
+                                I understand that this action will permanently delete the debug session and cannot be undone
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirm_impact" required>
+                            <label class="form-check-label" for="confirm_impact">
+                                I understand the impact on investigation history, resolution steps, and session timeline
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirm_backup" required>
+                            <label class="form-check-label" for="confirm_backup">
+                                I have backed up any important session data if needed
+                            </label>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-danger" id="delete_btn" disabled>
+                                    <i class="fas fa-trash"></i> Delete Session
+                                </button>
+                                <a href="{% url 'system_logs:debug_session_detail' object.pk %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                            <div>
+                                <a href="{% url 'system_logs:debug_session_update' object.pk %}" class="btn btn-warning">
+                                    <i class="fas fa-edit"></i> Edit Instead
+                                </a>
+                                <a href="{% url 'system_logs:debug_session_list' %}" class="btn btn-info">
+                                    <i class="fas fa-arrow-left"></i> Back to Sessions
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alternative Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb"></i> Alternative Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-edit fa-2x text-warning mb-2"></i>
+                                <h6>Edit Session</h6>
+                                <p class="text-muted small">Modify the session instead of deleting it</p>
+                                <a href="{% url 'system_logs:debug_session_update' object.pk %}" class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-check fa-2x text-success mb-2"></i>
+                                <h6>Complete Session</h6>
+                                <p class="text-muted small">Mark as completed instead of deleting</p>
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="completeSession()">
+                                    <i class="fas fa-check"></i> Complete
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-download fa-2x text-info mb-2"></i>
+                                <h6>Export Data</h6>
+                                <p class="text-muted small">Export session data before deletion</p>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="exportSessionData()">
+                                    <i class="fas fa-download"></i> Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Summary -->
+    {% if object.investigation_notes or object.resolution_steps %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt"></i> Session Content Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if object.investigation_notes %}
+                        <div class="col-md-6">
+                            <h6>Investigation Notes</h6>
+                            <div class="bg-light p-3 rounded">
+                                {{ object.investigation_notes|truncatewords:50|linebreaks }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if object.resolution_steps %}
+                        <div class="col-md-6">
+                            <h6>Resolution Steps</h6>
+                            <div class="bg-light p-3 rounded">
+                                {{ object.resolution_steps|truncatewords:50|linebreaks }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> This is a preview of the content that will be deleted. 
+                            Consider backing up this information if it's important.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Enable/disable delete button based on checkboxes
+function updateDeleteButton() {
+    const confirmDeletion = document.getElementById('confirm_deletion').checked;
+    const confirmImpact = document.getElementById('confirmImpact').checked;
+    const confirmBackup = document.getElementById('confirmBackup').checked;
+    
+    const deleteBtn = document.getElementById('delete_btn');
+    deleteBtn.disabled = !(confirmDeletion && confirmImpact && confirmBackup);
+}
+
+// Add event listeners to checkboxes
+document.getElementById('confirm_deletion').addEventListener('change', updateDeleteButton);
+document.getElementById('confirmImpact').addEventListener('change', updateDeleteButton);
+document.getElementById('confirmBackup').addEventListener('change', updateDeleteButton);
+
+// Complete session function
+function completeSession() {
+    if (confirm('Complete this debug session instead of deleting it?')) {
+        // TODO: Implement AJAX call to complete session
+        alert('Feature not implemented yet');
+    }
+}
+
+// Export session data function
+function exportSessionData() {
+    if (confirm('Export session data before deletion?')) {
+        // TODO: Implement AJAX call to export data
+        alert('Feature not implemented yet');
+    }
+}
+
+// Form submission confirmation
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (!confirm('Are you absolutely sure you want to delete this debug session? This action cannot be undone.')) {
+        e.preventDefault();
+        return;
+    }
+    
+    // Show final warning
+    if (!confirm('Final warning: This will permanently delete the debug session. Are you sure?')) {
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+
+<style>
+.badge {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-info {
+    background-color: #17a2b8;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.card.border-danger {
+    border-width: 2px;
+}
+
+.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-danger:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+</style>
+{% endblock %}

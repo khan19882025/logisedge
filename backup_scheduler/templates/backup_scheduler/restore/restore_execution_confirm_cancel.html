@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cancel Restore Execution{% endblock %}
+
+{% block extra_css %}
+<style>
+    .confirmation-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 2rem auto;
+        max-width: 600px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .warning-icon {
+        font-size: 4rem;
+        color: #ffc107;
+        margin-bottom: 1rem;
+    }
+    
+    .execution-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .info-value {
+        color: #6c757d;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-running { background: #cce5ff; color: #004085; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="confirmation-card">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <div class="warning-icon">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <h2 class="h4 text-warning">Cancel Restore Execution</h2>
+                    <p class="text-muted">
+                        You are about to cancel a restore execution. This action cannot be undone.
+                    </p>
+                </div>
+
+                <!-- Execution Information -->
+                <div class="execution-info">
+                    <h5 class="h6 mb-3">Execution Details</h5>
+                    <div class="info-item">
+                        <span class="info-label">Execution ID:</span>
+                        <span class="info-value">#{{ execution.execution_id|slice:":8" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Request Title:</span>
+                        <span class="info-value">{{ execution.restore_request.title }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Current Status:</span>
+                        <span class="info-value">
+                            <span class="status-badge status-{{ execution.status }}">
+                                {{ execution.get_status_display }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Created:</span>
+                        <span class="info-value">{{ execution.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% if execution.started_at %}
+                    <div class="info-item">
+                        <span class="info-label">Started:</span>
+                        <span class="info-value">{{ execution.started_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-item">
+                        <span class="info-label">Executed By:</span>
+                        <span class="info-value">{{ execution.executed_by.get_full_name|default:execution.executed_by.username }}</span>
+                    </div>
+                </div>
+
+                <!-- Warning Message -->
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Important Considerations
+                    </h6>
+                    <ul class="mb-0">
+                        <li>This will immediately stop the restore process</li>
+                        <li>Any partially restored data may be in an inconsistent state</li>
+                        <li>The execution status will be changed to "Cancelled"</li>
+                        <li>A log entry will be created for audit purposes</li>
+                        <li>The associated restore request status will also be updated</li>
+                    </ul>
+                </div>
+
+                <!-- Confirmation Form -->
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="form-group mb-3">
+                        <label for="cancellation_reason" class="form-label">
+                            <strong>Cancellation Reason (Optional)</strong>
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="cancellation_reason" 
+                            name="cancellation_reason" 
+                            rows="3" 
+                            placeholder="Please provide a reason for cancelling this execution..."
+                        ></textarea>
+                        <div class="form-text">
+                            Providing a reason helps with audit trails and process improvement.
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <a href="{% url 'backup_scheduler:restore_execution_detail' execution.pk %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Go Back
+                        </a>
+                        <button type="submit" class="btn btn-warning btn-lg">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Confirm Cancellation
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Additional Information -->
+                <div class="mt-4 text-center">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        If you need to modify the restore request instead of cancelling, 
+                        <a href="{% url 'backup_scheduler:restore_request_edit' execution.restore_request.pk %}">click here</a>.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add confirmation dialog for form submission
+document.querySelector('form').addEventListener('submit', function(e) {
+    const reason = document.getElementById('cancellation_reason').value.trim();
+    const message = reason 
+        ? `Are you sure you want to cancel this restore execution?\n\nReason: ${reason}\n\nThis action cannot be undone.`
+        : 'Are you sure you want to cancel this restore execution?\n\nThis action cannot be undone.';
+    
+    if (!confirm(message)) {
+        e.preventDefault();
+    }
+});
+
+// Auto-resize textarea
+document.getElementById('cancellation_reason').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+</script>
+{% endblock %}

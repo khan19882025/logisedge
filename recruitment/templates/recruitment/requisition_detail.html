@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ requisition.title }} - Job Requisition Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/recruitment/recruitment.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'recruitment:dashboard' %}">Recruitment</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'recruitment:requisition_list' %}">Job Requisitions</a></li>
+            <li class="breadcrumb-item active">{{ requisition.title }}</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    <i class="fas fa-briefcase text-primary"></i>
+                    {{ requisition.title }}
+                </h2>
+                <p class="text-muted">Job Requisition Details</p>
+            </div>
+            <div class="col-auto">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'recruitment:requisition_update' requisition.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'recruitment:requisition_delete' requisition.id %}" class="btn btn-outline-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                    <a href="{% url 'recruitment:requisition_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Job Title:</strong> {{ requisition.title }}</p>
+                            <p><strong>Department:</strong> {{ requisition.department }}</p>
+                            <p><strong>Location:</strong> {{ requisition.location }}</p>
+                            <p><strong>Employment Type:</strong> {{ requisition.get_position_type_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ requisition.status|yesno:'success,warning' }}">
+                                    {{ requisition.get_status_display }}
+                                </span>
+                            </p>
+                            <p><strong>Priority:</strong> 
+                                <span class="badge bg-{{ requisition.priority|yesno:'danger,warning' }}">
+                                    {{ requisition.get_priority_display }}
+                                </span>
+                            </p>
+                            <p><strong>Number of Positions:</strong> {{ requisition.headcount }}</p>
+                            <p><strong>Experience Required:</strong> {{ requisition.experience_required }} years</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Description -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt text-info"></i>
+                        Job Description
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ requisition.job_description|linebreaks }}</p>
+                </div>
+            </div>
+
+            <!-- Requirements & Skills -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks text-success"></i>
+                        Requirements & Skills
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ requisition.required_skills|linebreaks }}</p>
+                </div>
+            </div>
+
+            <!-- Salary & Benefits -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave text-success"></i>
+                        Salary & Benefits
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Salary Range:</strong> 
+                                {% if requisition.salary_range_min and requisition.salary_range_max %}
+                                    {{ requisition.salary_range_min }} - {{ requisition.salary_range_max }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Education Required:</strong> {{ requisition.education_required }}</p>
+                        </div>
+                    </div>
+                    {% if requisition.benefits %}
+                        <div class="mt-3">
+                            <h6>Benefits & Perks:</h6>
+                            <p>{{ requisition.benefits|linebreaks }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt text-warning"></i>
+                        Timeline
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Target Start Date:</strong> 
+                                {% if requisition.target_start_date %}
+                                    {{ requisition.target_start_date|date:"M d, Y" }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </p>
+                            <p><strong>Closing Date:</strong> 
+                                {% if requisition.closing_date %}
+                                    {{ requisition.closing_date|date:"M d, Y" }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong> {{ requisition.created_at|date:"M d, Y" }}</p>
+                            <p><strong>Last Updated:</strong> {{ requisition.updated_at|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Status & Approval -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check text-info"></i>
+                        Status & Approval
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Status:</strong> 
+                        <span class="badge bg-{{ requisition.status|yesno:'success,warning' }}">
+                            {{ requisition.get_status_display }}
+                        </span>
+                    </p>
+                    <p><strong>Requester:</strong> {{ requisition.requested_by.get_full_name|default:requisition.requested_by.username }}</p>
+                    
+                    {% if requisition.approved_by_hr %}
+                        <p><strong>HR Approved By:</strong> {{ requisition.approved_by_hr.get_full_name }}</p>
+                        <p><strong>HR Approval Date:</strong> {{ requisition.hr_approval_date|date:"M d, Y" }}</p>
+                    {% endif %}
+                    
+                    {% if requisition.approved_by_director %}
+                        <p><strong>Director Approved By:</strong> {{ requisition.approved_by_director.get_full_name }}</p>
+                        <p><strong>Director Approval Date:</strong> {{ requisition.director_approval_date|date:"M d, Y" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle text-secondary"></i>
+                        Additional Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if requisition.internal_notes %}
+                        <div class="mb-3">
+                            <h6>Internal Notes:</h6>
+                            <p class="text-muted">{{ requisition.internal_notes|linebreaks }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if requisition.external_notes %}
+                        <div class="mb-3">
+                            <h6>External Notes:</h6>
+                            <p class="text-muted">{{ requisition.external_notes|linebreaks }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt text-warning"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'recruitment:posting_create' %}?requisition={{ requisition.id }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Job Posting
+                        </a>
+                        <a href="{% url 'recruitment:application_create' %}?requisition={{ requisition.id }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-plus"></i> Add Application
+                        </a>
+                        {% if requisition.status == 'draft' %}
+                            <form method="post" action="{% url 'recruitment:requisition_approve' requisition.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="hr_approve">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-check"></i> Approve (HR)
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Data -->
+    {% if job_postings or applications %}
+        <div class="row mt-4">
+            <!-- Job Postings -->
+            {% if job_postings %}
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-bullhorn text-info"></i>
+                                Job Postings ({{ job_postings.count }})
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% for posting in job_postings %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <h6 class="mb-0">{{ posting.title }}</h6>
+                                        <small class="text-muted">{{ posting.source }}</small>
+                                    </div>
+                                    <span class="badge bg-{{ posting.status|yesno:'success,warning' }}">
+                                        {{ posting.get_status_display }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Applications -->
+            {% if applications %}
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users text-success"></i>
+                                Applications ({{ applications.count }})
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% for application in applications %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <h6 class="mb-0">{{ application.candidate.get_full_name }}</h6>
+                                        <small class="text-muted">{{ application.applied_date|date:"M d, Y" }}</small>
+                                    </div>
+                                    <span class="badge bg-{{ application.status|yesno:'success,warning' }}">
+                                        {{ application.get_status_display }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

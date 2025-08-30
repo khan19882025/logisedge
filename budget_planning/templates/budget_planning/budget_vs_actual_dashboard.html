@@ -1,0 +1,430 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Budget vs Actual Comparison - Budget Planning{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+<style>
+    .budget-vs-actual-card {
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .budget-vs-actual-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+    }
+    
+    .variance-positive {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .variance-negative {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .variance-neutral {
+        color: #6c757d;
+        font-weight: bold;
+    }
+    
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+    }
+    
+    .summary-stat {
+        text-align: center;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .summary-stat .number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .summary-stat .label {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+    
+    .variance-indicator {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .variance-indicator.positive {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .variance-indicator.negative {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .variance-indicator.neutral {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .alert-card {
+        border-left: 4px solid #dc3545;
+        background-color: #f8f9fa;
+    }
+    
+    .alert-card.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .alert-card.info {
+        border-left-color: #17a2b8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line mr-2"></i>Budget vs Actual Comparison
+        </h1>
+        <div>
+            <a href="{% url 'budget_planning:budget_vs_actual_report' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Generate Report
+            </a>
+            <a href="{% url 'budget_planning:budget_variance_alerts' %}" class="btn btn-warning btn-sm ml-2">
+                <i class="fas fa-bell mr-1"></i>Variance Alerts
+            </a>
+            <a href="{% url 'budget_planning:dashboard' %}" class="btn btn-secondary btn-sm ml-2">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="summary-stat">
+                <span class="number">AED {{ total_budget_amount|floatformat:2 }}</span>
+                <span class="label">Total Budget Amount</span>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="summary-stat">
+                <span class="number">AED {{ total_actual_amount|floatformat:2 }}</span>
+                <span class="label">Total Actual Amount</span>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="summary-stat">
+                <span class="number {% if total_variance < 0 %}variance-negative{% else %}variance-positive{% endif %}">
+                    AED {{ total_variance|floatformat:2 }}
+                </span>
+                <span class="label">Total Variance</span>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="summary-stat">
+                <span class="number {% if variance_percentage < 0 %}variance-negative{% else %}variance-positive{% endif %}">
+                    {{ variance_percentage|floatformat:1 }}%
+                </span>
+                <span class="label">Variance Percentage</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <!-- Budget vs Actual Chart -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar mr-2"></i>Budget vs Actual Overview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="budgetVsActualChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variance Distribution -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie mr-2"></i>Variance Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="varianceDistributionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost Center Variances -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-table mr-2"></i>Top Cost Center Variances
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Cost Center</th>
+                                    <th>Department</th>
+                                    <th>Budget Amount</th>
+                                    <th>Actual Amount</th>
+                                    <th>Variance</th>
+                                    <th>Variance %</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cost_center in cost_center_variances %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ cost_center.code }}</strong><br>
+                                        <small class="text-muted">{{ cost_center.name }}</small>
+                                    </td>
+                                    <td>{{ cost_center.department.name }}</td>
+                                    <td>AED {{ cost_center.total_budget_amount|floatformat:2 }}</td>
+                                    <td>AED {{ cost_center.total_actual_amount|floatformat:2 }}</td>
+                                    <td class="{% if cost_center.variance < 0 %}variance-negative{% else %}variance-positive{% endif %}">
+                                        AED {{ cost_center.variance|floatformat:2 }}
+                                    </td>
+                                    <td>
+                                        <span class="variance-indicator {% if cost_center.variance_percentage < 0 %}negative{% elif cost_center.variance_percentage > 0 %}positive{% else %}neutral{% endif %}">
+                                            {{ cost_center.variance_percentage|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if cost_center.variance < 0 %}
+                                            <span class="badge badge-danger">Over Budget</span>
+                                        {% elif cost_center.variance > 0 %}
+                                            <span class="badge badge-success">Under Budget</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">On Target</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        <i class="fas fa-info-circle mr-2"></i>No cost center variances found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports and Alerts -->
+    <div class="row">
+        <!-- Recent Reports -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-alt mr-2"></i>Recent Reports
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                        <div class="list-group list-group-flush">
+                            {% for report in recent_reports %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ report.report_name }}</h6>
+                                    <small class="text-muted">
+                                        {{ report.report_type|title }} - {{ report.generated_at|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                                <a href="{% url 'budget_planning:budget_vs_actual_report_detail' pk=report.pk %}" class="btn btn-sm btn-outline-primary">
+                                    View
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">
+                            <i class="fas fa-info-circle mr-2"></i>No recent reports found
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Alerts -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bell mr-2"></i>Active Variance Alerts
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if active_alerts %}
+                        <div class="list-group list-group-flush">
+                            {% for alert in active_alerts %}
+                            <div class="list-group-item alert-card {% if alert.severity == 'critical' %}border-danger{% elif alert.severity == 'high' %}border-warning{% else %}border-info{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ alert.alert_name }}</h6>
+                                        <small class="text-muted">
+                                            {{ alert.alert_type|title }} - {{ alert.severity|title }}
+                                        </small>
+                                    </div>
+                                    <span class="badge badge-{% if alert.severity == 'critical' %}danger{% elif alert.severity == 'high' %}warning{% else %}info{% endif %}">
+                                        {{ alert.severity|title }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">
+                            <i class="fas fa-info-circle mr-2"></i>No active alerts found
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize charts
+    initializeCharts();
+});
+
+function initializeCharts() {
+    // Budget vs Actual Chart
+    const budgetVsActualCtx = document.getElementById('budgetVsActualChart').getContext('2d');
+    new Chart(budgetVsActualCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Budget', 'Actual'],
+            datasets: [{
+                label: 'Amount (AED)',
+                data: [{{ total_budget_amount }}, {{ total_actual_amount }}],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 99, 132, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'AED ' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // Variance Distribution Chart
+    const varianceDistributionCtx = document.getElementById('varianceDistributionChart').getContext('2d');
+    
+    // Calculate variance distribution data
+    let underBudget = 0;
+    let overBudget = 0;
+    let onTarget = 0;
+    
+    {% for cost_center in cost_center_variances %}
+        {% if cost_center.variance < 0 %}
+            overBudget++;
+        {% elif cost_center.variance > 0 %}
+            underBudget++;
+        {% else %}
+            onTarget++;
+        {% endif %}
+    {% endfor %}
+    
+    new Chart(varianceDistributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Under Budget', 'Over Budget', 'On Target'],
+            datasets: [{
+                data: [{{ underBudget }}, {{ overBudget }}, {{ onTarget }}],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(220, 53, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(220, 53, 69, 1)',
+                    'rgba(255, 193, 7, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Auto-refresh data every 5 minutes
+setInterval(function() {
+    // This would refresh the dashboard data
+    // location.reload();
+}, 300000);
+</script>
+{% endblock %}

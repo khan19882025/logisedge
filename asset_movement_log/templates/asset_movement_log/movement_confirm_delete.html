@@ -1,0 +1,122 @@
+{% extends 'asset_movement_log/base.html' %}
+{% load static %}
+
+{% block title %}Delete Movement - {{ movement.asset.asset_code }}{% endblock %}
+
+{% block asset_movement_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Confirm Deletion
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Warning!
+                    </h6>
+                    <p class="mb-0">
+                        You are about to delete the movement record for <strong>{{ movement.asset.asset_code }} - {{ movement.asset.asset_name }}</strong>. 
+                        This action cannot be undone.
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Movement Details:</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <th width="40%">Movement ID:</th>
+                                <td>{{ movement.movement_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Asset:</th>
+                                <td>{{ movement.asset.asset_code }} - {{ movement.asset.asset_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Type:</th>
+                                <td>{{ movement.get_movement_type_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date:</th>
+                                <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Location Information:</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <th width="40%">From:</th>
+                                <td>
+                                    {% if movement.from_location %}
+                                        {{ movement.from_location.name }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>To:</th>
+                                <td>
+                                    {% if movement.to_location %}
+                                        {{ movement.to_location.name }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Moved By:</th>
+                                <td>{{ movement.moved_by.get_full_name|default:movement.moved_by.username }}</td>
+                            </tr>
+                            <tr>
+                                <th>Status:</th>
+                                <td>
+                                    {% if movement.is_completed %}
+                                        <span class="badge badge-success">Completed</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                {% if movement.reason_description or movement.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {% if movement.reason_description %}
+                        <h6>Reason Description:</h6>
+                        <p class="text-muted">{{ movement.reason_description }}</p>
+                        {% endif %}
+                        
+                        {% if movement.notes %}
+                        <h6>Notes:</h6>
+                        <p class="text-muted">{{ movement.notes }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'asset_movement_log:movement_detail' movement.movement_id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Movement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

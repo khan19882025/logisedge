@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'lgp/css/lgp.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-box-seam text-primary me-2"></i>
+                        {{ title }}
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'lgp:lgp_list' %}">LGP Management</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'lgp:lgp_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to List
+                    </a>
+                </div>
+            </div>
+
+            <form method="post" id="lgp-form" action="{% url 'lgp:lgp_create' %}">
+                {% csrf_token %}
+                
+                <!-- Django Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <h6>Form Errors:</h6>
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-warning">
+                        <h6>Field Errors:</h6>
+                        <ul class="mb-0">
+                        {% for field, errors in form.errors.items %}
+                            <li><strong>{{ field }}:</strong> {{ errors|join:", " }}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <!-- Validation Errors Container -->
+                <div id="validation-errors"></div>
+                
+                <!-- Main LGP Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            LGP Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Top Left Fields -->
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Basic Information</h6>
+                                
+                                <div class="row mb-3">
+                                    <label for="{{ form.customer.id_for_label }}" class="col-sm-4 col-form-label">Customer Name *</label>
+                                    <div class="col-sm-8">
+                                        {{ form.customer }}
+                                        {% if form.customer.errors %}
+                                            <div class="text-danger small">{{ form.customer.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <label for="{{ form.dpw_ref_no.id_for_label }}" class="col-sm-4 col-form-label">DPW Ref No *</label>
+                                    <div class="col-sm-8">
+                                        {{ form.dpw_ref_no }}
+                                        {% if form.dpw_ref_no.errors %}
+                                            <div class="text-danger small">{{ form.dpw_ref_no.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="row mb-3">
+                                            <label for="{{ form.document_date.id_for_label }}" class="col-sm-5 col-form-label">Document Date *</label>
+                                            <div class="col-sm-7">
+                                                {{ form.document_date }}
+                                                {% if form.document_date.errors %}
+                                                    <div class="text-danger small">{{ form.document_date.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="row mb-3">
+                                            <label for="{{ form.document_validity_date.id_for_label }}" class="col-sm-5 col-form-label">Document Validity Date *</label>
+                                            <div class="col-sm-7">
+                                                {{ form.document_validity_date }}
+                                                {% if form.document_validity_date.errors %}
+                                                    <div class="text-danger small">{{ form.document_validity_date.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <label for="{{ form.warehouse.id_for_label }}" class="col-sm-4 col-form-label">Warehouse Name *</label>
+                                    <div class="col-sm-8">
+                                        {{ form.warehouse }}
+                                        {% if form.warehouse.errors %}
+                                            <div class="text-danger small">{{ form.warehouse.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Top Right Fields -->
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-3">Company & Origin Information</h6>
+                                
+                                <div class="row mb-3">
+                                    <label for="{{ form.free_zone_company_name.id_for_label }}" class="col-sm-4 col-form-label">Free Zone Company Name *</label>
+                                    <div class="col-sm-8">
+                                        {{ form.free_zone_company_name }}
+                                        {% if form.free_zone_company_name.errors %}
+                                            <div class="text-danger small">{{ form.free_zone_company_name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <label for="{{ form.local_company_name.id_for_label }}" class="col-sm-4 col-form-label">Local Company Name *</label>
+                                    <div class="col-sm-8">
+                                        {{ form.local_company_name }}
+                                        {% if form.local_company_name.errors %}
+                                            <div class="text-danger small">{{ form.local_company_name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <label for="{{ form.goods_coming_from.id_for_label }}" class="col-sm-4 col-form-label">Goods Coming From *</label>
+                                    <div class="col-sm-8">
+                                        {{ form.goods_coming_from }}
+                                        {% if form.goods_coming_from.errors %}
+                                            <div class="text-danger small">{{ form.goods_coming_from.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <label for="{{ form.purpose_of_entry.id_for_label }}" class="col-sm-4 col-form-label">Purpose of Entry *</label>
+                                    <div class="col-sm-8">
+                                        {{ form.purpose_of_entry }}
+                                        {% if form.purpose_of_entry.errors %}
+                                            <div class="text-danger small">{{ form.purpose_of_entry.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="row mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="col-sm-2 col-form-label">Additional Notes</label>
+                                    <div class="col-sm-10">
+                                        {{ form.notes }}
+                                        {% if form.notes.errors %}
+                                            <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- LGP Items -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-ul me-2"></i>
+                            LGP Items
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="add-item-btn">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Add Item
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        {{ formset.management_form }}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0" id="itemsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;">Line</th>
+                                        <th style="width: 100px;">HS Code</th>
+                                        <th style="width: 200px;">Good Description</th>
+                                        <th style="width: 120px;">Marks & Nos</th>
+                                        <th style="width: 120px;">Package Type</th>
+                                        <th style="width: 80px;">Quantity</th>
+                                        <th style="width: 80px;">Weight (KG)</th>
+                                        <th style="width: 80px;">Volume (CBM)</th>
+                                        <th style="width: 100px;">Value ($)</th>
+                                        <th style="width: 150px;">Customs Declaration</th>
+                                        <th style="width: 150px;">Remarks</th>
+                                        <th style="width: 50px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    {% for form in formset %}
+                                        <tr class="item-row" data-form-index="{{ forloop.counter0 }}">
+                                            {% for hidden in form.hidden_fields %}
+                                                {{ hidden }}
+                                            {% endfor %}
+                                            
+                                            <td>{{ form.line_number }}</td>
+                                            <td>{{ form.hs_code }}</td>
+                                            <td>{{ form.good_description }}</td>
+                                            <td>{{ form.marks_and_nos }}</td>
+                                            <td>{{ form.package_type_new }}</td>
+                                            <td>{{ form.quantity }}</td>
+                                            <td>{{ form.weight }}</td>
+                                            <td>{{ form.volume }}</td>
+                                            <td>{{ form.value }}</td>
+                                            <td>{{ form.customs_declaration }}</td>
+                                            <td>{{ form.remarks }}</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-item-btn" title="Delete Item">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                {% if form.DELETE %}
+                                                    {{ form.DELETE }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% if form.non_field_errors %}
+                                            <tr>
+                                                <td colspan="12" class="text-danger small">{{ form.non_field_errors }}</td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="5" class="text-end">Totals:</th>
+                                        <th id="totalQuantity">0</th>
+                                        <th id="totalWeight">0.000</th>
+                                        <th id="totalVolume">0.000</th>
+                                        <th id="totalValue">0.00</th>
+                                        <th colspan="3"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        
+                        {% if formset.non_form_errors %}
+                            <div class="alert alert-danger mt-3 mx-3">
+                                {{ formset.non_form_errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'lgp:lgp_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="save-lgp-btn">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Save LGP
+                            </button>
+                        </div>
+                        
+
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Empty Item Row Template -->
+<template id="emptyItemRowTemplate">
+    <tr class="item-row" data-form-index="__prefix__">
+        <td><input type="number" name="items-__prefix__-line_number" class="form-control form-control-sm" min="1"></td>
+        <td><input type="text" name="items-__prefix__-hs_code" class="form-control form-control-sm" placeholder="HS Code"></td>
+        <td><textarea name="items-__prefix__-good_description" class="form-control form-control-sm" rows="2" placeholder="Good Description"></textarea></td>
+        <td><input type="text" name="items-__prefix__-marks_and_nos" class="form-control form-control-sm" placeholder="Marks & Nos"></td>
+        <td>
+            <select name="items-__prefix__-package_type_new" class="form-select form-select-sm">
+                <option value="">Select Package Type</option>
+                {% for package_type in package_types %}
+                    <option value="{{ package_type.id }}">{{ package_type.name }}</option>
+                {% endfor %}
+            </select>
+            <!-- Legacy field for backward compatibility -->
+            <input type="hidden" name="items-__prefix__-package_type" value="">
+        </td>
+        <td><input type="number" name="items-__prefix__-quantity" class="form-control form-control-sm" step="0.01" min="0"></td>
+        <td><input type="number" name="items-__prefix__-weight" class="form-control form-control-sm" step="0.001" min="0" placeholder="KG"></td>
+        <td><input type="number" name="items-__prefix__-volume" class="form-control form-control-sm" step="0.001" min="0" placeholder="CBM"></td>
+        <td><input type="number" name="items-__prefix__-value" class="form-control form-control-sm" step="0.01" min="0"></td>
+        <td><textarea name="items-__prefix__-customs_declaration" class="form-control form-control-sm" rows="2" placeholder="Customs Declaration"></textarea></td>
+        <td><textarea name="items-__prefix__-remarks" class="form-control form-control-sm" rows="2" placeholder="Remarks"></textarea></td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger delete-item-btn" title="Delete Item">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'lgp/js/lgp.js' %}"></script>
+<script>
+    // Initialize LGP form functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeLGPForm();
+    });
+</script>
+{% endblock %}

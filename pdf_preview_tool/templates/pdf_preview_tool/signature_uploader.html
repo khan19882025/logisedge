@@ -1,0 +1,537 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Signature & Stamp Management - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/signature_uploader.css' %}">
+<style>
+    .signature-dashboard {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        color: #718096;
+        font-weight: 400;
+    }
+    
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .card-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    
+    .card-icon svg {
+        width: 24px;
+        height: 24px;
+        color: white;
+    }
+    
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1a202c;
+        margin: 0;
+    }
+    
+    .current-signature-section {
+        grid-column: 1 / -1;
+        background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+        border: 2px dashed #cbd5e0;
+    }
+    
+    .signature-preview {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .signature-preview-image {
+        max-width: 300px;
+        max-height: 150px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .no-signature {
+        color: #718096;
+        font-style: italic;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .upload-section {
+        background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    }
+    
+    .file-input-container {
+        border: 2px dashed #48bb78;
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: rgba(72, 187, 120, 0.05);
+    }
+    
+    .file-input-container:hover {
+        border-color: #38a169;
+        background: rgba(72, 187, 120, 0.1);
+    }
+    
+    .file-input-container.drag-over {
+        border-color: #38a169;
+        background: rgba(72, 187, 120, 0.15);
+        transform: scale(1.02);
+    }
+    
+    .file-input-placeholder {
+        font-size: 1.1rem;
+        color: #2f855a;
+        margin-bottom: 1rem;
+    }
+    
+    .file-input-hint {
+        font-size: 0.9rem;
+        color: #68d391;
+        margin-bottom: 1.5rem;
+    }
+    
+    .file-input {
+        display: none;
+    }
+    
+    .preview-container {
+        margin-top: 2rem;
+        text-align: center;
+    }
+    
+    .preview-image {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .preview-info {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f7fafc;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #4a5568;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+    
+    .btn-secondary:hover {
+        background: #cbd5e0;
+        transform: translateY(-2px);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
+    }
+    
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .info-section {
+        grid-column: 1 / -1;
+        background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
+        border: 1px solid #f6ad55;
+    }
+    
+    .info-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        background: #f6ad55;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .info-icon svg {
+        width: 20px;
+        height: 20px;
+        color: white;
+    }
+    
+    .info-text {
+        color: #744210;
+        line-height: 1.6;
+    }
+    
+    .info-text h4 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .info-text p {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #1a202c;
+    }
+    
+    .modal-message {
+        margin-bottom: 2rem;
+        color: #4a5568;
+        line-height: 1.6;
+    }
+    
+    .modal-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .signature-dashboard {
+            padding: 1rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .btn {
+            width: 100%;
+            max-width: 300px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="signature-dashboard">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Signature & Stamp Management</h1>
+        <p class="page-subtitle">Upload and manage your digital signatures for PDF documents</p>
+    </div>
+
+    <!-- Current Signature Section -->
+    <div class="card current-signature-section">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h2 class="card-title">Current Signature</h2>
+        </div>
+        
+        <div id="current-signature" class="signature-preview">
+            <div class="no-signature">
+                <p>No signature uploaded yet</p>
+                <p>Upload your signature to get started</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Upload Section -->
+        <div class="card upload-section">
+            <div class="card-header">
+                <div class="card-icon">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <h2 class="card-title">Upload New Signature</h2>
+            </div>
+            
+            <div class="file-input-container" id="file-input-container">
+                <div class="file-input-placeholder">
+                    <svg width="48" height="48" fill="currentColor" viewBox="0 0 20 20" style="margin-bottom: 1rem;">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                    </svg>
+                    <p>Click to select or drag & drop your signature</p>
+                </div>
+                <div class="file-input-hint">
+                    Supported formats: PNG, JPG, JPEG (Max size: 2MB)
+                </div>
+                <input type="file" id="file-input" class="file-input" accept="image/*">
+            </div>
+            
+            <div id="preview-container" class="preview-container" style="display: none;">
+                <img id="preview-image" class="preview-image" alt="Signature Preview">
+                <div id="preview-info" class="preview-info"></div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="upload-btn" class="btn btn-primary" style="display: none;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    Upload Signature
+                </button>
+                <button id="reset-btn" class="btn btn-secondary" style="display: none;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                    </svg>
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Management Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <h2 class="card-title">Signature Management</h2>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="delete-btn" class="btn btn-danger" style="display: none;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Delete Signature
+                </button>
+                <button id="download-btn" class="btn btn-secondary" style="display: none;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                    Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information Section -->
+    <div class="card info-section">
+        <div class="info-content">
+            <div class="info-icon">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="info-text">
+                <h4>How it works</h4>
+                <p>Upload your signature or company stamp image. It will be automatically embedded in all PDF documents you generate through the system. The signature will appear at the bottom-right of documents under "Authorized Signatory" and will be scaled to fit a 150x60 pixel area while maintaining proportions.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal" id="success-modal">
+    <div class="modal-content">
+        <h3 class="modal-title">Success!</h3>
+        <p class="modal-message" id="success-message">Your signature has been uploaded successfully.</p>
+        <div class="modal-buttons">
+            <button class="btn btn-primary" onclick="closeModal('success-modal')">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="error-modal">
+    <div class="modal-content">
+        <h3 class="modal-title">Error</h3>
+        <p class="modal-message" id="error-message">An error occurred while processing your request.</p>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeModal('error-modal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="delete-modal">
+    <div class="modal-content">
+        <h3 class="modal-title">Confirm Deletion</h3>
+        <p class="modal-message">Are you sure you want to delete your signature? This action cannot be undone.</p>
+        <div class="modal-buttons">
+            <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            <button class="btn btn-secondary" onclick="closeModal('delete-modal')">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/signature_uploader.js' %}"></script>
+{% endblock %}

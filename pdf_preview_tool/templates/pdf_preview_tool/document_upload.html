@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload Document - PDF Preview Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-upload text-primary"></i>
+                    Upload Document
+                </h1>
+                <p class="page-subtitle">Upload a new document to the PDF Preview Tool</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-upload"></i> Document Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    <strong>Document Title *</strong>
+                                </label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.title.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.document_type.id_for_label }}" class="form-label">
+                                    <strong>Document Type *</strong>
+                                </label>
+                                {{ form.document_type }}
+                                {% if form.document_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.document_type.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <strong>Description</strong>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.erp_reference.id_for_label }}" class="form-label">
+                                    <strong>ERP Reference</strong>
+                                </label>
+                                {{ form.erp_reference }}
+                                {% if form.erp_reference.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.erp_reference.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.erp_module.id_for_label }}" class="form-label">
+                                    <strong>ERP Module</strong>
+                                </label>
+                                {{ form.erp_module }}
+                                {% if form.erp_module.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.erp_module.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.tags.id_for_label }}" class="form-label">
+                                <strong>Tags</strong>
+                            </label>
+                            {{ form.tags }}
+                            <div class="form-text">Enter tags separated by commas (e.g., invoice, customer, 2024)</div>
+                            {% if form.tags.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.tags.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.file.id_for_label }}" class="form-label">
+                                <strong>Document File *</strong>
+                            </label>
+                            {{ form.file }}
+                            <div class="form-text">
+                                Supported formats: PDF, HTML, HTM (Max size: 50MB)
+                            </div>
+                            {% if form.file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.file.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.is_public }}
+                                <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                                    <strong>Make this document publicly accessible</strong>
+                                </label>
+                                <div class="form-text">
+                                    Public documents can be viewed by all users. Private documents require explicit permission.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Preview -->
+                        <div id="filePreview" class="mb-4" style="display: none;">
+                            <h6><i class="fas fa-eye"></i> File Preview</h6>
+                            <div class="border rounded p-3 bg-light">
+                                <div id="previewContent"></div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'pdf_preview_tool:document_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Documents
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Upload Document
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Guidelines -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Upload Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-check-circle text-success"></i> What's Supported</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-file-pdf text-danger"></i> PDF documents (recommended)</li>
+                                <li><i class="fas fa-file-code text-info"></i> HTML files</li>
+                                <li><i class="fas fa-file-code text-info"></i> HTM files</li>
+                                <li><i class="fas fa-weight text-warning"></i> Maximum file size: 50MB</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-exclamation-triangle text-warning"></i> Best Practices</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-tag text-primary"></i> Use descriptive titles and tags</li>
+                                <li><i class="fas fa-folder text-info"></i> Choose appropriate document type</li>
+                                <li><i class="fas fa-lock text-warning"></i> Set proper access permissions</li>
+                                <li><i class="fas fa-search text-success"></i> Add ERP references for easy tracking</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('{{ form.file.id_for_label }}');
+    const filePreview = document.getElementById('filePreview');
+    const previewContent = document.getElementById('previewContent');
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            showFilePreview(file);
+        } else {
+            hideFilePreview();
+        }
+    });
+    
+    function showFilePreview(file) {
+        const fileType = file.type;
+        const fileName = file.name;
+        const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+        
+        let previewHTML = `
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-file-pdf fa-2x text-danger me-3"></i>
+                <div>
+                    <strong>${fileName}</strong><br>
+                    <small class="text-muted">${fileSize} MB</small>
+                </div>
+            </div>
+        `;
+        
+        if (fileType === 'application/pdf') {
+            previewHTML += `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> PDF files will be rendered with full preview capabilities including zoom, search, and navigation.
+                </div>
+            `;
+        } else if (fileType.includes('html')) {
+            previewHTML += `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> HTML files will be displayed as web pages. Some advanced features may be limited.
+                </div>
+            `;
+        }
+        
+        previewContent.innerHTML = previewHTML;
+        filePreview.style.display = 'block';
+    }
+    
+    function hideFilePreview() {
+        filePreview.style.display = 'none';
+        previewContent.innerHTML = '';
+    }
+    
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+    
+    // Auto-resize textarea
+    const descriptionTextarea = document.getElementById('{{ form.description.id_for_label }}');
+    if (descriptionTextarea) {
+        descriptionTextarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    }
+});
+</script>
+{% endblock %}

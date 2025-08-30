@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Error Pattern{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-trash"></i> Delete Error Pattern
+                </h1>
+                <p class="page-subtitle">Confirm deletion of error pattern: {{ object.name }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This action cannot be undone. Deleting this error pattern will permanently remove all associated data.
+                    </div>
+
+                    <h6>Pattern Information:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Name:</th>
+                                    <td><strong>{{ object.name }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Error Type:</th>
+                                    <td>
+                                        <span class="badge badge-{% if object.error_type == 'ERROR' %}danger{% elif object.error_type == 'WARNING' %}warning{% elif object.error_type == 'INFO' %}info{% else %}secondary{% endif %}">
+                                            {{ object.error_type }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Severity:</th>
+                                    <td>
+                                        <span class="badge badge-{% if object.severity == 'CRITICAL' or object.severity == 'FATAL' %}danger{% elif object.severity == 'HIGH' %}warning{% elif object.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                                            {{ object.severity }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge badge-{% if object.status == 'ACTIVE' %}danger{% elif object.status == 'INVESTIGATING' %}warning{% elif object.status == 'RESOLVED' %}success{% else %}secondary{% endif %}">
+                                            {{ object.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Occurrences:</th>
+                                    <td>
+                                        <span class="badge badge-info">{{ object.occurrence_count|default:0 }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>First Seen:</th>
+                                    <td>{{ object.first_occurrence|date:"M d, Y"|default:"Never" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Seen:</th>
+                                    <td>{{ object.last_occurrence|date:"M d, Y"|default:"Never" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created:</th>
+                                    <td>{{ object.created_at|date:"M d, Y H:i"|default:"Unknown" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if object.description %}
+                    <div class="mt-3">
+                        <h6>Description:</h6>
+                        <p class="text-muted">{{ object.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <h6>What will be deleted:</h6>
+                        <ul class="text-muted">
+                            <li>The error pattern configuration</li>
+                            <li>Pattern analysis data</li>
+                            <li>Associated metadata and settings</li>
+                            <li><strong>Note:</strong> Related system logs will NOT be deleted</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>Impact Assessment:</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                                    <h6 class="text-warning">Pattern Recognition</h6>
+                                    <p class="text-muted small">Future similar errors may not be automatically categorized</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                                    <h6 class="text-info">Analytics</h6>
+                                    <p class="text-muted small">Historical pattern analysis data will be lost</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <i class="fas fa-bell fa-2x text-danger mb-2"></i>
+                                    <h6 class="text-danger">Notifications</h6>
+                                    <p class="text-muted small">Automated alerts for this pattern will stop</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Form -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirm_deletion" required>
+                            <label class="form-check-label" for="confirm_deletion">
+                                I understand that this action will permanently delete the error pattern and cannot be undone
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirm_impact" required>
+                            <label class="form-check-label" for="confirm_impact">
+                                I understand the impact on pattern recognition, analytics, and notifications
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirm_backup" required>
+                            <label class="form-check-label" for="confirm_backup">
+                                I have backed up any important pattern data if needed
+                            </label>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-danger" id="delete_btn" disabled>
+                                    <i class="fas fa-trash"></i> Delete Pattern
+                                </button>
+                                <a href="{% url 'system_logs:error_pattern_detail' object.pk %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                            <div>
+                                <a href="{% url 'system_logs:error_pattern_update' object.pk %}" class="btn btn-warning">
+                                    <i class="fas fa-edit"></i> Edit Instead
+                                </a>
+                                <a href="{% url 'system_logs:error_pattern_list' %}" class="btn btn-info">
+                                    <i class="fas fa-arrow-left"></i> Back to Patterns
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alternative Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb"></i> Alternative Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-edit fa-2x text-warning mb-2"></i>
+                                <h6>Edit Pattern</h6>
+                                <p class="text-muted small">Modify the pattern instead of deleting it</p>
+                                <a href="{% url 'system_logs:error_pattern_update' object.pk %}" class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-archive fa-2x text-info mb-2"></i>
+                                <h6>Archive Pattern</h6>
+                                <p class="text-muted small">Mark as inactive instead of deleting</p>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="archivePattern()">
+                                    <i class="fas fa-archive"></i> Archive
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-download fa-2x text-success mb-2"></i>
+                                <h6>Export Data</h6>
+                                <p class="text-muted small">Export pattern data before deletion</p>
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="exportPatternData()">
+                                    <i class="fas fa-download"></i> Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enable/disable delete button based on checkboxes
+function updateDeleteButton() {
+    const confirmDeletion = document.getElementById('confirm_deletion').checked;
+    const confirmImpact = document.getElementById('confirm_impact').checked;
+    const confirmBackup = document.getElementById('confirm_backup').checked;
+    
+    const deleteBtn = document.getElementById('delete_btn');
+    deleteBtn.disabled = !(confirmDeletion && confirmImpact && confirmBackup);
+}
+
+// Add event listeners to checkboxes
+document.getElementById('confirm_deletion').addEventListener('change', updateDeleteButton);
+document.getElementById('confirmImpact').addEventListener('change', updateDeleteButton);
+document.getElementById('confirmBackup').addEventListener('change', updateDeleteButton);
+
+// Archive pattern function
+function archivePattern() {
+    if (confirm('Archive this error pattern instead of deleting it?')) {
+        // TODO: Implement AJAX call to archive pattern
+        alert('Feature not implemented yet');
+    }
+}
+
+// Export pattern data function
+function exportPatternData() {
+    if (confirm('Export pattern data before deletion?')) {
+        // TODO: Implement AJAX call to export data
+        alert('Feature not implemented yet');
+    }
+}
+
+// Form submission confirmation
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (!confirm('Are you absolutely sure you want to delete this error pattern? This action cannot be undone.')) {
+        e.preventDefault();
+        return;
+    }
+    
+    // Show final warning
+    if (!confirm('Final warning: This will permanently delete the error pattern. Are you sure?')) {
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+
+<style>
+.badge {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-info {
+    background-color: #17a2b8;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.card.border-danger {
+    border-width: 2px;
+}
+
+.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-danger:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+</style>
+{% endblock %}

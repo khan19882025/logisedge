@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load hr_letters_filters %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Letter Template{% else %}Create Letter Template{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'hr_letters_documents/css/dashboard.css' %}">
+<style>
+    .template-form {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .language-tabs {
+        margin-bottom: 1.5rem;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+        background: none;
+    }
+    
+    .tab-content {
+        padding: 1rem 0;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 0.75rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+    }
+    
+    .btn-secondary {
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+    }
+    
+    .placeholder-info {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .placeholder-info h6 {
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .placeholder-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .placeholder-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        color: #495057;
+    }
+    
+    .preview-section {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .preview-content {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        min-height: 200px;
+        white-space: pre-wrap;
+        font-family: 'Times New Roman', serif;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-file-alt me-2"></i>
+                {% if form.instance.pk %}Edit Letter Template{% else %}Create Letter Template{% endif %}
+            </h1>
+            <p class="text-muted">{% if form.instance.pk %}Update existing letter template{% else %}Create a new letter template with placeholders{% endif %}</p>
+        </div>
+        <div>
+                               <a href="{% url 'hr_letters_documents:letter_template_list' %}" class="btn btn-secondary">
+                       <i class="fas fa-arrow-left me-2"></i>Back to Templates
+                   </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Template Form -->
+            <div class="template-form">
+                <form method="post" id="templateForm">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.letter_type.id_for_label }}" class="form-label">
+                                        Letter Type <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.letter_type }}
+                                    {% if form.letter_type.errors %}
+                                        <div class="text-danger small">{{ form.letter_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        Template Title <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-edit me-2"></i>Template Content</h5>
+                        
+                        <!-- Placeholder Information -->
+                        <div class="placeholder-info">
+                            <h6><i class="fas fa-lightbulb me-2"></i>Available Placeholders</h6>
+                            <p class="text-muted mb-2">Use these placeholders in your template content. They will be automatically replaced with actual employee data when generating letters.</p>
+                            <div class="placeholder-list">
+                                <span class="placeholder-item">{{employee_name}}</span>
+                                <span class="placeholder-item">{{designation}}</span>
+                                <span class="placeholder-item">{{department}}</span>
+                                <span class="placeholder-item">{{employee_id}}</span>
+                                <span class="placeholder-item">{{date_of_joining}}</span>
+                                <span class="placeholder-item">{{salary}}</span>
+                                <span class="placeholder-item">{{issue_date}}</span>
+                                <span class="placeholder-item">{{company_name}}</span>
+                            </div>
+                        </div>
+
+                        <!-- Language Tabs -->
+                        <ul class="nav nav-tabs language-tabs" id="languageTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="english-tab" data-bs-toggle="tab" data-bs-target="#english" type="button" role="tab">
+                                    <i class="fas fa-language me-2"></i>English
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="arabic-tab" data-bs-toggle="tab" data-bs-target="#arabic" type="button" role="tab">
+                                    <i class="fas fa-language me-2"></i>Arabic
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="languageTabContent">
+                            <!-- English Content -->
+                            <div class="tab-pane fade show active" id="english" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="{{ form.subject.id_for_label }}" class="form-label">
+                                        Subject <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.subject }}
+                                    {% if form.subject.errors %}
+                                        <div class="text-danger small">{{ form.subject.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="{{ form.content.id_for_label }}" class="form-label">
+                                        Content <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.content }}
+                                    {% if form.content.errors %}
+                                        <div class="text-danger small">{{ form.content.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Use placeholders like {{employee_name}}, {{designation}}, etc.</div>
+                                </div>
+                            </div>
+
+                            <!-- Arabic Content -->
+                            <div class="tab-pane fade" id="arabic" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="{{ form.arabic_content.id_for_label }}" class="form-label">Arabic Content</label>
+                                    {{ form.arabic_content }}
+                                    {% if form.arabic_content.errors %}
+                                        <div class="text-danger small">{{ form.arabic_content.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Arabic version of the letter content. Use the same placeholders.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="form-section">
+                        <h5><i class="fas fa-cog me-2"></i>Settings</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Active Template
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Only active templates can be used for letter generation</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.requires_approval.id_for_label }}" class="form-label">Approval Required</label>
+                                    {{ form.requires_approval }}
+                                    {% if form.requires_approval.errors %}
+                                        <div class="text-danger small">{{ form.requires_approval.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if form.instance.pk %}Update Template{% else %}Create Template{% endif %}
+                            </button>
+                                                               <a href="{% url 'hr_letters_documents:letter_template_list' %}" class="btn btn-outline-secondary ms-2">
+                                       Cancel
+                                   </a>
+                        </div>
+                        {% if form.instance.pk %}
+                        <div>
+                            <button type="button" class="btn btn-outline-info" id="previewBtn">
+                                <i class="fas fa-eye me-2"></i>Preview
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Preview Panel -->
+            <div class="template-form">
+                <h5><i class="fas fa-eye me-2"></i>Template Preview</h5>
+                <div class="preview-section">
+                    <div class="mb-3">
+                        <label class="form-label">Sample Employee Data</label>
+                        <div class="small text-muted">
+                            <div><strong>Name:</strong> John Doe</div>
+                            <div><strong>Designation:</strong> Software Engineer</div>
+                            <div><strong>Department:</strong> IT</div>
+                            <div><strong>Employee ID:</strong> EMP001</div>
+                            <div><strong>Date of Joining:</strong> January 15, 2023</div>
+                            <div><strong>Salary:</strong> AED 8,000</div>
+                        </div>
+                    </div>
+                    <div class="preview-content" id="previewContent">
+                        Select a template type and enter content to see a preview here...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'hr_letters_documents/js/letter_template_form.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Department - {{ department.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-trash text-danger"></i>
+                Delete Department
+            </h1>
+            <p class="text-muted">Confirm department deletion</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'roles_permissions:department_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Departments
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle"></i> Warning!
+                        </h5>
+                        <p class="mb-0">
+                            You are about to delete the department <strong>"{{ department.name }}"</strong>. 
+                            This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Department Information:</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Name:</td>
+                                    <td>{{ department.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Code:</td>
+                                    <td><code>{{ department.code }}</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Status:</td>
+                                    <td>
+                                        {% if department.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Related Data:</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Child Departments:</td>
+                                    <td>{{ department.child_departments.count }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Cost Centers:</td>
+                                    <td>{{ department.cost_centers.count }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Manager:</td>
+                                    <td>
+                                        {% if department.manager %}
+                                        {{ department.manager.get_full_name|default:department.manager.username }}
+                                        {% else %}
+                                        <span class="text-muted">No manager</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if department.child_departments.exists or department.cost_centers.exists %}
+                    <div class="alert alert-warning mt-3">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-info-circle"></i> Important Notice
+                        </h6>
+                        <p class="mb-0">
+                            This department has related data that may be affected:
+                        </p>
+                        <ul class="mb-0 mt-2">
+                            {% if department.child_departments.exists %}
+                            <li><strong>{{ department.child_departments.count }} child department(s)</strong> - These will become orphaned</li>
+                            {% endif %}
+                            {% if department.cost_centers.exists %}
+                            <li><strong>{{ department.cost_centers.count }} cost center(s)</strong> - These will become orphaned</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'roles_permissions:department_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Delete Department
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

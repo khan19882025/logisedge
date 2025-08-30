@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventory Record {{ inventory.container.container_number }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-building me-2"></i>Inventory Record {{ inventory.container.container_number }}
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:inventory_update' inventory.pk %}" class="btn btn-warning btn-sm me-2">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <a href="{% url 'container_management:inventory_list' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Inventory Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Inventory Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Container:</strong></td>
+                                    <td>
+                                        <a href="{% url 'container_management:container_detail' inventory.container.pk %}">
+                                            {{ inventory.container.container_number }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ inventory.container.get_container_type_display }} - {{ inventory.container.size }}</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Port:</strong></td>
+                                    <td>{{ inventory.port }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Terminal:</strong></td>
+                                    <td>{{ inventory.terminal|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Yard Location:</strong></td>
+                                    <td>{{ inventory.yard_location }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Stack Position:</strong></td>
+                                    <td>{{ inventory.stack_position|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ inventory.get_status_display_class }}">
+                                            {{ inventory.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Arrival Date:</strong></td>
+                                    <td>{{ inventory.arrival_date|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Days in Port:</strong></td>
+                                    <td>
+                                        <strong>{{ inventory.get_days_in_port }}</strong> days
+                                        {% if inventory.is_overstayed %}
+                                            <br>
+                                            <small class="text-danger">+{{ inventory.get_overstay_days }} days overstayed</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vessel Name:</strong></td>
+                                    <td>{{ inventory.vessel_name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Voyage Number:</strong></td>
+                                    <td>{{ inventory.voyage_number|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Next Action:</strong></td>
+                                    <td>{{ inventory.next_action|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Next Action Date:</strong></td>
+                                    <td>{{ inventory.next_action_date|date:"M d, Y"|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demurrage Information -->
+            {% if inventory.demurrage_start_date or inventory.demurrage_rate %}
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-currency-dollar me-2"></i>Demurrage Information
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Demurrage Start Date:</strong></td>
+                                        <td>{{ inventory.demurrage_start_date|date:"M d, Y"|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Demurrage Rate:</strong></td>
+                                        <td>
+                                            {% if inventory.demurrage_rate %}
+                                                AED {{ inventory.demurrage_rate|floatformat:2 }} per day
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                {% if inventory.demurrage_start_date and inventory.demurrage_rate %}
+                                    <div class="alert alert-info">
+                                        <strong>Demurrage Calculation:</strong><br>
+                                        {% if inventory.get_demurrage_days > 0 %}
+                                            <strong>{{ inventory.get_demurrage_days }}</strong> days × 
+                                            <strong>AED {{ inventory.demurrage_rate|floatformat:2 }}</strong> = 
+                                            <strong>AED {{ inventory.get_demurrage_amount|floatformat:2 }}</strong>
+                                        {% else %}
+                                            No demurrage charges yet
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Movement History -->
+            {% if movements %}
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-arrow-left-right me-2"></i>Movement History
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Movement Type</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Date</th>
+                                        <th>Vessel</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for movement in movements %}
+                                        <tr>
+                                            <td>{{ movement.get_movement_type_display }}</td>
+                                            <td>{{ movement.from_location }}</td>
+                                            <td>{{ movement.to_location }}</td>
+                                            <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                {% if movement.vessel_name %}
+                                                    {{ movement.vessel_name }}
+                                                    {% if movement.voyage_number %}
+                                                        <br>
+                                                        <small class="text-muted">{{ movement.voyage_number }}</small>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Notes -->
+            {% if inventory.notes %}
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-sticky me-2"></i>Notes
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">{{ inventory.notes }}</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Status Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Status Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Current Status:</strong>
+                        <span class="badge bg-{{ inventory.get_status_display_class }} fs-6">
+                            {{ inventory.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Days in Port:</strong>
+                        <div class="h4 text-primary">{{ inventory.get_days_in_port }}</div>
+                        {% if inventory.is_overstayed %}
+                            <small class="text-danger">Overstayed by {{ inventory.get_overstay_days }} days</small>
+                        {% endif %}
+                    </div>
+
+                    {% if inventory.next_action_date %}
+                        <div class="mb-3">
+                            <strong>Next Action Due:</strong>
+                            <div>{{ inventory.next_action_date|date:"M d, Y" }}</div>
+                            {% if inventory.is_next_action_overdue %}
+                                <span class="badge bg-danger">Overdue</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'container_management:inventory_update' inventory.pk %}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Edit Record
+                        </a>
+                        <a href="{% url 'container_management:inventory_delete' inventory.pk %}" 
+                           class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i>Delete Record
+                        </a>
+                        <a href="{% url 'container_management:container_detail' inventory.container.pk %}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-container me-1"></i>View Container
+                        </a>
+                        <a href="{% url 'container_management:movement_create' %}?container={{ inventory.container.pk }}" 
+                           class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-arrow-left-right me-1"></i>Add Movement
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Statistics -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-graph-up me-2"></i>Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-primary">{{ inventory.get_days_in_port }}</div>
+                            <small class="text-muted">Days in Port</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-success">{{ movements.count }}</div>
+                            <small class="text-muted">Movements</small>
+                        </div>
+                        {% if inventory.demurrage_rate %}
+                            <div class="col-6 mb-3">
+                                <div class="h4 text-warning">{{ inventory.get_demurrage_days }}</div>
+                                <small class="text-muted">Demurrage Days</small>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="h4 text-danger">{{ inventory.get_demurrage_amount|floatformat:0 }}</div>
+                                <small class="text-muted">Demurrage (AED)</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+{% endblock %}

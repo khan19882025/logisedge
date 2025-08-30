@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit User Role{% else %}Assign Role to User{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'roles_permissions/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-{% if form.instance.pk %}edit{% else %}user-plus{% endif %}"></i>
+                    {% if form.instance.pk %}Edit User Role{% else %}Assign Role to User{% endif %}
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'roles_permissions:dashboard' %}">Roles & Permissions</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'roles_permissions:user_role_list' %}">User Roles</a></li>
+                        <li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Assign{% endif %}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        {% if form.instance.pk %}
+                            Edit User Role Assignment
+                        {% else %}
+                            Assign Role to User
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <!-- User Selection -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.user.id_for_label }}" class="form-label">
+                                        User <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.user }}
+                                    {% if form.user.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.user.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.user.help_text %}
+                                        <small class="form-text text-muted">{{ form.user.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.role.id_for_label }}" class="form-label">
+                                        Role <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.role }}
+                                    {% if form.role.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.role.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                                                 <!-- Assignment Details -->
+                         <div class="row">
+                             <div class="col-md-6">
+                                 <div class="form-group">
+                                     <div class="form-check">
+                                         {{ form.is_primary }}
+                                         <label class="form-check-label" for="{{ form.is_primary.id_for_label }}">
+                                             Primary Role
+                                         </label>
+                                     </div>
+                                     {% if form.is_primary.errors %}
+                                         <div class="invalid-feedback d-block">
+                                             {% for error in form.is_primary.errors %}
+                                                 {{ error }}
+                                             {% endfor %}
+                                         </div>
+                                     {% endif %}
+                                     <small class="form-text text-muted">
+                                         Primary roles take precedence over secondary roles.
+                                     </small>
+                                 </div>
+                             </div>
+                             <div class="col-md-6">
+                                 <div class="form-group">
+                                     <label for="{{ form.expires_at.id_for_label }}" class="form-label">
+                                         Expires At
+                                     </label>
+                                     {{ form.expires_at }}
+                                     {% if form.expires_at.errors %}
+                                         <div class="invalid-feedback d-block">
+                                             {% for error in form.expires_at.errors %}
+                                                 {{ error }}
+                                             {% endfor %}
+                                         </div>
+                                     {% endif %}
+                                     <small class="form-text text-muted">
+                                         When this role assignment expires (optional).
+                                     </small>
+                                 </div>
+                             </div>
+                         </div>
+
+                         <!-- Status -->
+                         <div class="row">
+                             <div class="col-md-6">
+                                 <div class="form-group">
+                                     <div class="form-check">
+                                         {{ form.is_active }}
+                                         <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                             Active
+                                         </label>
+                                     </div>
+                                     {% if form.is_active.errors %}
+                                         <div class="invalid-feedback d-block">
+                                             {% for error in form.is_active.errors %}
+                                                 {{ error }}
+                                             {% endfor %}
+                                         </div>
+                                     {% endif %}
+                                     <small class="form-text text-muted">
+                                         Inactive role assignments are not enforced.
+                                     </small>
+                                 </div>
+                             </div>
+                         </div>
+
+                        <!-- Notes -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                        Notes
+                                    </label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.notes.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Optional notes about this role assignment.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'roles_permissions:user_role_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Cancel
+                                    </a>
+                                    <div>
+                                        {% if form.instance.pk %}
+                                            <a href="{% url 'roles_permissions:user_role_update' form.instance.pk %}" class="btn btn-info">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </a>
+                                        {% endif %}
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i>
+                                            {% if form.instance.pk %}Update Assignment{% else %}Assign Role{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Information Card (if user is selected) -->
+    {% if form.user.value %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user"></i> User Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Name:</strong> {{ form.user.value.get_full_name|default:form.user.value.username }}</p>
+                            <p><strong>Email:</strong> {{ form.user.value.email }}</p>
+                            <p><strong>Username:</strong> {{ form.user.value.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Current Roles:</strong> 
+                                {% for user_role in form.user.value.user_roles.all %}
+                                    <span class="badge badge-primary">{{ user_role.role.name }}</span>
+                                {% empty %}
+                                    <span class="text-muted">No roles assigned</span>
+                                {% endfor %}
+                            </p>
+                            <p><strong>Status:</strong> 
+                                {% if form.user.value.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Role Information Card (if role is selected) -->
+    {% if form.role.value %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-shield-alt"></i> Role Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Role Name:</strong> {{ form.role.value.name }}</p>
+                            <p><strong>Type:</strong> 
+                                <span class="badge badge-{% if form.role.value.role_type == 'system' %}danger{% elif form.role.value.role_type == 'custom' %}primary{% elif form.role.value.role_type == 'department' %}success{% else %}info{% endif %}">
+                                    {{ form.role.value.get_role_type_display }}
+                                </span>
+                            </p>
+                            <p><strong>Description:</strong> {{ form.role.value.description|default:"No description" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Permissions:</strong> {{ form.role.value.role_permissions.count }} assigned</p>
+                            <p><strong>Users with this role:</strong> {{ form.role.value.user_roles.count }}</p>
+                            <p><strong>Status:</strong> 
+                                {% if form.role.value.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'roles_permissions/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form validation
+    const form = document.querySelector('form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', function(e) {
+        // Clear previous error states
+        form.querySelectorAll('.is-invalid').forEach(field => {
+            field.classList.remove('is-invalid');
+        });
+
+        // Basic validation
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            }
+        });
+
+        // Check for duplicate role assignment
+        const userId = document.getElementById('{{ form.user.id_for_label }}').value;
+        const roleId = document.getElementById('{{ form.role.id_for_label }}').value;
+        
+        if (userId && roleId && !document.querySelector('[name="instance"]').value) {
+            // This is a new assignment, check for duplicates
+            fetch(`/settings/roles-permissions/api/check-duplicate-assignment/?user=${userId}&role=${roleId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        alert('This user already has this role assigned.');
+                        e.preventDefault();
+                        return;
+                    }
+                });
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        } else {
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+        }
+    });
+
+    // Auto-populate assigned_by field
+    const assignedByField = document.getElementById('{{ form.assigned_by.id_for_label }}');
+    if (assignedByField && !assignedByField.value) {
+        // Set to current user (you'll need to pass this from the view)
+        // assignedByField.value = '{{ request.user.id }}';
+    }
+
+    // Set default dates
+    const validFromField = document.getElementById('{{ form.valid_from.id_for_label }}');
+    const validUntilField = document.getElementById('{{ form.valid_until.id_for_label }}');
+    
+    if (validFromField && !validFromField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        validFromField.value = today;
+    }
+
+    // Auto-save draft functionality
+    let autoSaveTimer;
+    const formFields = form.querySelectorAll('input, textarea, select');
+
+    formFields.forEach(field => {
+        field.addEventListener('input', function() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                // Save form data to localStorage
+                const formData = new FormData(form);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+                localStorage.setItem('user_role_form_draft', JSON.stringify(data));
+            }, 2000);
+        });
+    });
+
+    // Load draft on page load
+    const draft = localStorage.getItem('user_role_form_draft');
+    if (draft && !document.querySelector('[name="instance"]').value) { // Only load draft for new forms
+        const data = JSON.parse(draft);
+        Object.keys(data).forEach(key => {
+            const field = form.querySelector(`[name="${key}"]`);
+            if (field) {
+                field.value = data[key];
+            }
+        });
+    }
+
+    // Clear draft when form is successfully submitted
+    form.addEventListener('submit', function() {
+        localStorage.removeItem('user_role_form_draft');
+    });
+});
+</script>
+{% endblock %}

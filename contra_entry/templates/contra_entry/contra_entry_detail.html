@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contra Entry {{ contra_entry.voucher_number }} - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'contra_entry/css/contra_entry.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="contra-entry-header">
+        <h2><i class="fas fa-exchange-alt"></i> Contra Entry: {{ contra_entry.voucher_number }}</h2>
+        <div class="action-buttons">
+            <a href="{% url 'contra_entry:contra_entry_list' %}" class="btn-contra btn-contra-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+            {% if contra_entry.can_edit %}
+            <a href="{% url 'contra_entry:contra_entry_edit' contra_entry.pk %}" class="btn-contra btn-contra-warning">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            {% endif %}
+            {% if contra_entry.can_post %}
+            <button type="button" class="btn-contra btn-contra-success" onclick="ContraEntry.postEntry('{{ contra_entry.pk }}')">
+                <i class="fas fa-check"></i> Post Entry
+            </button>
+            {% endif %}
+            {% if contra_entry.can_cancel %}
+            <button type="button" class="btn-contra btn-contra-danger" onclick="ContraEntry.cancelEntry('{{ contra_entry.pk }}')">
+                <i class="fas fa-ban"></i> Cancel Entry
+            </button>
+            {% endif %}
+            <a href="{% url 'contra_entry:contra_entry_print' contra_entry.pk %}" class="btn-contra btn-contra-secondary" target="_blank">
+                <i class="fas fa-print"></i> Print
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="contra-entry-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Voucher Number:</strong></td>
+                                        <td>{{ contra_entry.voucher_number }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Date:</strong></td>
+                                        <td>{{ contra_entry.date|date:"d/m/Y" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Status:</strong></td>
+                                        <td>
+                                            <span class="status-badge {{ contra_entry.status }}">
+                                                {{ contra_entry.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Reference Number:</strong></td>
+                                        <td>{{ contra_entry.reference_number|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Created By:</strong></td>
+                                        <td>{{ contra_entry.created_by.get_full_name|default:contra_entry.created_by.username }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Created At:</strong></td>
+                                        <td>{{ contra_entry.created_at|date:"d/m/Y H:i" }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <strong>Narration:</strong>
+                                <p class="mt-2">{{ contra_entry.narration|linebreaks }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entry Details -->
+            <div class="contra-entry-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list"></i> Entry Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="entries-table">
+                            <table class="table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Account</th>
+                                        <th>Account Code</th>
+                                        <th>Debit Amount</th>
+                                        <th>Credit Amount</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in entries %}
+                                    <tr class="entry-row {{ entry.entry_type }}">
+                                        <td>{{ entry.account.name }}</td>
+                                        <td>{{ entry.account.account_code }}</td>
+                                        <td class="text-danger fw-bold">
+                                            {% if entry.debit %}AED {{ entry.debit|floatformat:2 }}{% else %}-{% endif %}
+                                        </td>
+                                        <td class="text-success fw-bold">
+                                            {% if entry.credit %}AED {{ entry.credit|floatformat:2 }}{% else %}-{% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if entry.entry_type == 'debit' %}bg-danger{% else %}bg-success{% endif %}">
+                                                {{ entry.entry_type|title }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="2" class="text-end fw-bold">Total:</td>
+                                        <td class="text-danger fw-bold">AED {{ contra_entry.total_debit|floatformat:2 }}</td>
+                                        <td class="text-success fw-bold">AED {{ contra_entry.total_credit|floatformat:2 }}</td>
+                                        <td>
+                                            {% if contra_entry.is_balanced %}
+                                            <span class="badge bg-success">Balanced</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">Not Balanced</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Trail -->
+            {% if audit_trail %}
+            <div class="contra-entry-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Audit Trail</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                        <th>User</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for audit in audit_trail %}
+                                    <tr>
+                                        <td>{{ audit.timestamp|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ audit.get_action_display }}</span>
+                                        </td>
+                                        <td>{{ audit.user.get_full_name|default:audit.user.username }}</td>
+                                        <td>{{ audit.description }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Status Information -->
+            <div class="contra-entry-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Status Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Current Status:</strong>
+                            <div class="mt-2">
+                                <span class="status-badge {{ contra_entry.status }}">
+                                    {{ contra_entry.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        {% if contra_entry.posted_at %}
+                        <div class="mb-3">
+                            <strong>Posted At:</strong>
+                            <div class="mt-1">{{ contra_entry.posted_at|date:"d/m/Y H:i" }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Posted By:</strong>
+                            <div class="mt-1">{{ contra_entry.posted_by.get_full_name|default:contra_entry.posted_by.username }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if contra_entry.updated_at %}
+                        <div class="mb-3">
+                            <strong>Last Updated:</strong>
+                            <div class="mt-1">{{ contra_entry.updated_at|date:"d/m/Y H:i" }}</div>
+                        </div>
+                        {% if contra_entry.updated_by %}
+                        <div class="mb-3">
+                            <strong>Updated By:</strong>
+                            <div class="mt-1">{{ contra_entry.updated_by.get_full_name|default:contra_entry.updated_by.username }}</div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Summary -->
+            <div class="contra-entry-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-calculator"></i> Balance Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="balance-row">
+                            <span>Total Debit:</span>
+                            <span class="text-danger fw-bold">AED {{ contra_entry.total_debit|floatformat:2 }}</span>
+                        </div>
+                        <div class="balance-row">
+                            <span>Total Credit:</span>
+                            <span class="text-success fw-bold">AED {{ contra_entry.total_credit|floatformat:2 }}</span>
+                        </div>
+                        <div class="balance-row">
+                            <span>Difference:</span>
+                            <span class="fw-bold">AED {{ contra_entry.total_debit|add:contra_entry.total_credit|floatformat:2 }}</span>
+                        </div>
+                        <div class="balance-row {% if contra_entry.is_balanced %}balanced{% else %}unbalanced{% endif %}">
+                            <span>Status:</span>
+                            <span>
+                                {% if contra_entry.is_balanced %}
+                                <i class="fas fa-check-circle"></i> Balanced
+                                {% else %}
+                                <i class="fas fa-exclamation-triangle"></i> Not Balanced
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="contra-entry-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            {% if contra_entry.can_edit %}
+                            <a href="{% url 'contra_entry:contra_entry_edit' contra_entry.pk %}" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Edit Entry
+                            </a>
+                            {% endif %}
+                            
+                            {% if contra_entry.can_post %}
+                            <button type="button" class="btn btn-success" onclick="ContraEntry.postEntry('{{ contra_entry.pk }}')">
+                                <i class="fas fa-check"></i> Post Entry
+                            </button>
+                            {% endif %}
+                            
+                            {% if contra_entry.can_cancel %}
+                            <button type="button" class="btn btn-danger" onclick="ContraEntry.cancelEntry('{{ contra_entry.pk }}')">
+                                <i class="fas fa-ban"></i> Cancel Entry
+                            </button>
+                            {% endif %}
+                            
+                            <a href="{% url 'contra_entry:contra_entry_print' contra_entry.pk %}" class="btn btn-secondary" target="_blank">
+                                <i class="fas fa-print"></i> Print Entry
+                            </a>
+                            
+                            <a href="{% url 'contra_entry:contra_entry_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Back to List
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'contra_entry/js/contra_entry.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'recurring_journal_entry/css/recurring_journal_entry.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="recurring-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-sync-alt"></i> {{ title }}</h2>
+                <p class="subtitle">
+                    {% if recurring_entry %}
+                        Editing recurring entry template: {{ recurring_entry.template_name }}
+                    {% else %}
+                        Create a new recurring journal entry template
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'recurring_journal_entry:recurring_entry_list' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="recurring-entry-content">
+        <form method="post" id="recurring-entry-form" class="recurring-entry-form"
+              {% if recurring_entry %}
+              data-existing-entries="[
+                  {% for entry in recurring_entry.lines.all %}
+                      {
+                          'index': {{ forloop.counter0 }},
+                          'accountId': '{{ entry.account.id }}'
+                      }{% if not forloop.last %},{% endif %}
+                  {% endfor %}
+              ]"
+              {% endif %}>
+            {% csrf_token %}
+            
+            <!-- Section 1: Recurring Entry Setup -->
+            <div class="form-section">
+                <h4><i class="fas fa-cog"></i> Recurring Entry Setup</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="{{ form.template_name.id_for_label }}" class="form-label">Template Name *</label>
+                        {{ form.template_name }}
+                        {% if form.template_name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.template_name.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.journal_type.id_for_label }}" class="form-label">Journal Type *</label>
+                        {{ form.journal_type }}
+                        {% if form.journal_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.journal_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date *</label>
+                        {{ form.start_date }}
+                        {% if form.start_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.start_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
+                        {{ form.end_date }}
+                        {% if form.end_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.end_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.frequency.id_for_label }}" class="form-label">Frequency *</label>
+                        {{ form.frequency }}
+                        {% if form.frequency.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.frequency.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.posting_day.id_for_label }}" class="form-label">Posting Day *</label>
+                        {{ form.posting_day }}
+                        {% if form.posting_day.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.posting_day.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.number_of_occurrences.id_for_label }}" class="form-label">Number of Occurrences</label>
+                        {{ form.number_of_occurrences }}
+                        {% if form.number_of_occurrences.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.number_of_occurrences.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.custom_day.id_for_label }}" class="form-label">Custom Day</label>
+                        {{ form.custom_day }}
+                        {% if form.custom_day.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.custom_day.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.currency.id_for_label }}" class="form-label">Currency *</label>
+                        {{ form.currency }}
+                        {% if form.currency.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.currency.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.fiscal_year.id_for_label }}" class="form-label">Fiscal Year *</label>
+                        {{ form.fiscal_year }}
+                        {% if form.fiscal_year.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.fiscal_year.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            {{ form.auto_post }}
+                            <label class="form-check-label" for="{{ form.auto_post.id_for_label }}">
+                                Auto Post Entries
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">Automatically post journal entries when they are due</small>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label for="{{ form.narration.id_for_label }}" class="form-label">Narration / Description *</label>
+                        {{ form.narration }}
+                        {% if form.narration.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.narration.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Journal Line Items -->
+            <div class="form-section">
+                <h4><i class="fas fa-list"></i> Journal Line Items</h4>
+                <p class="text-muted mb-3">
+                    Add at least two entries (one debit, one credit). Total debit must equal total credit.
+                </p>
+                
+                <!-- Balance Summary -->
+                <div class="balance-summary">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="balance-item">
+                                <div class="balance-label">Total Debit</div>
+                                <div class="balance-amount" id="total-debit">0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="balance-item">
+                                <div class="balance-label">Total Credit</div>
+                                <div class="balance-amount" id="total-credit">0.00</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="balance-item">
+                                <div class="balance-label">Balance</div>
+                                <div class="balance-amount" id="balance-difference">Balanced</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Scheduled Dates Preview -->
+                <div class="scheduled-dates-preview">
+                    <h6><i class="fas fa-calendar-alt"></i> Next Scheduled Dates</h6>
+                    <div class="row" id="scheduled-dates">
+                        <div class="col-12">
+                            <p class="text-muted">Complete the form above to see scheduled dates</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Journal Line Items Table -->
+                <div class="journal-line-items-table">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 35%;">Account *</th>
+                                <th style="width: 25%;">Description</th>
+                                <th style="width: 20%;">Debit</th>
+                                <th style="width: 20%;">Credit</th>
+                                <th style="width: 5%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="line-items-rows">
+                            {{ formset.management_form }}
+                            {% for form in formset %}
+                                <tr class="line-item-row">
+                                    <td>
+                                        {{ form.account }}
+                                        {% if form.account.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.account.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ form.description }}
+                                        {% if form.description.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.description.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ form.debit }}
+                                        {% if form.debit.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.debit.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ form.credit }}
+                                        {% if form.credit.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.credit.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="col-actions">
+                                        {% if forloop.counter > 2 %}
+                                            <button type="button" class="btn btn-sm btn-danger remove-line-item-row">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add Row Button -->
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline-primary add-line-item-row">
+                        <i class="fas fa-plus"></i> Add Another Line Item
+                    </button>
+                </div>
+
+                <!-- Formset Errors -->
+                {% if formset.non_form_errors %}
+                    <div class="alert alert-danger mt-3">
+                        <ul class="mb-0">
+                            {% for error in formset.non_form_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-primary" data-original-text="{{ submit_text }}">
+                    <i class="fas fa-save"></i> {{ submit_text }}
+                </button>
+                <a href="{% url 'recurring_journal_entry:recurring_entry_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% if recurring_entry %}
+                    <a href="{% url 'recurring_journal_entry:recurring_entry_detail' recurring_entry.pk %}" class="btn btn-outline-info">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'recurring_journal_entry/js/recurring_journal_entry.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize select2 for existing account fields
+    $('.account-select').select2({
+        placeholder: 'Search for an account...',
+        allowClear: true,
+        ajax: {
+            url: '{% url "recurring_journal_entry:ajax_account_search" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    q: params.term,
+                    page: params.page
+                };
+            },
+            processResults: function(data, params) {
+                params.page = params.page || 1;
+                return {
+                    results: data.results,
+                    pagination: {
+                        more: false
+                    }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 2,
+        templateResult: function(account) {
+            if (account.loading) return account.text;
+            if (!account.id) return account.text;
+            
+            return $(`
+                <div class="account-option">
+                    <strong>${account.account_code}</strong> - ${account.account_name}
+                </div>
+            `);
+        },
+        templateSelection: function(account) {
+            if (!account.id) return account.text;
+            return `${account.account_code} - ${account.account_name}`;
+        }
+    });
+
+    // Set up existing account values for edit mode
+    var existingEntries = $('#recurring-entry-form').data('existing-entries');
+    if (existingEntries) {
+        existingEntries.forEach(function(entry) {
+            $('#id_lines-' + entry.index + '-account').val(entry.accountId).trigger('change');
+        });
+    }
+    
+    // Update scheduled dates when form changes
+    updateScheduledDates();
+    
+    // Bind form change events
+    $('#id_frequency, #id_posting_day, #id_start_date, #id_end_date, #id_number_of_occurrences').on('change', function() {
+        updateScheduledDates();
+    });
+});
+</script>
+{% endblock %} 

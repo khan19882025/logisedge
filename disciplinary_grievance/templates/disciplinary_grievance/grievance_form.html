@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load disciplinary_filters %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Grievance{% else %}New Grievance{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'disciplinary_grievance/css/dashboard.css' %}">
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .file-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        background: #fff;
+        transition: all 0.3s ease;
+    }
+    .file-upload-area:hover {
+        border-color: #007bff;
+        background: #f8f9fa;
+    }
+    .file-upload-area.dragover {
+        border-color: #007bff;
+        background: #e3f2fd;
+    }
+    .attachment-preview {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin: 5px 0;
+    }
+    .attachment-preview .file-info {
+        flex: 1;
+        margin-left: 10px;
+    }
+    .attachment-preview .remove-file {
+        color: #dc3545;
+        cursor: pointer;
+    }
+    .priority-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    .priority-low { background-color: #28a745; }
+    .priority-medium { background-color: #ffc107; }
+    .priority-high { background-color: #fd7e14; }
+    .priority-urgent { background-color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %} me-2"></i>
+                    {% if form.instance.pk %}Edit Grievance{% else %}New Grievance{% endif %}
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'disciplinary_grievance:dashboard' %}">Disciplinary & Grievance</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'disciplinary_grievance:grievance_list' %}">Grievances</a></li>
+                        <li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}New{% endif %}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clipboard me-2"></i>
+                        {% if form.instance.pk %}Edit Grievance Details{% else %}Submit New Grievance{% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="grievanceForm">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form.title.label_tag }}
+                                        {{ form.title }}
+                                        {% if form.title.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.title.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form.category.label_tag }}
+                                        {{ form.category }}
+                                        {% if form.category.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.category.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        {{ form.description.label_tag }}
+                                        {{ form.description }}
+                                        {% if form.description.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.description.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employee Information -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-user me-2"></i>Employee Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form.employee.label_tag }}
+                                        {{ form.employee }}
+                                        {% if form.employee.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.employee.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="form-check">
+                                            {{ form.is_anonymous }}
+                                            <label class="form-check-label" for="{{ form.is_anonymous.id_for_label }}">
+                                                Submit anonymously
+                                            </label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Check this if you want to submit the grievance without revealing your identity.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Incident Details -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-calendar-alt me-2"></i>Incident Details</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form.incident_date.label_tag }}
+                                        {{ form.incident_date }}
+                                        {% if form.incident_date.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.incident_date.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form.priority.label_tag }}
+                                        {{ form.priority }}
+                                        {% if form.priority.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.priority.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assignment -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-user-tie me-2"></i>Assignment</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        {{ form.assigned_to.label_tag }}
+                                        {{ form.assigned_to }}
+                                        {% if form.assigned_to.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.assigned_to.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="form-check">
+                                            {{ form.is_confidential }}
+                                            <label class="form-check-label" for="{{ form.is_confidential.id_for_label }}">
+                                                Mark as confidential
+                                            </label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Confidential cases have restricted access.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attachments -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-paperclip me-2"></i>Attachments</h5>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h6>Drag and drop files here or click to browse</h6>
+                                <p class="text-muted">Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB each)</p>
+                                <input type="file" name="attachments" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
+                                       class="form-control" id="fileInput" style="display: none;">
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Browse Files
+                                </button>
+                            </div>
+                            <div id="filePreview" class="mt-3"></div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'disciplinary_grievance:grievance_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                                    </a>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>
+                                            {% if form.instance.pk %}Update Grievance{% else %}Submit Grievance{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'disciplinary_grievance/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload handling
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const filePreview = document.getElementById('filePreview');
+
+    // Drag and drop functionality
+    fileUploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.add('dragover');
+    });
+
+    fileUploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+    });
+
+    fileUploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        handleFiles(files);
+    });
+
+    fileUploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+                return;
+            }
+
+            const preview = document.createElement('div');
+            preview.className = 'attachment-preview';
+            preview.innerHTML = `
+                <i class="fas fa-file-alt text-primary"></i>
+                <div class="file-info">
+                    <strong>${file.name}</strong><br>
+                    <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                </div>
+                <i class="fas fa-times remove-file" onclick="this.parentElement.remove()"></i>
+            `;
+            filePreview.appendChild(preview);
+        });
+    }
+
+    // Form validation
+    const form = document.getElementById('grievanceForm');
+    form.addEventListener('submit', function(e) {
+        const title = document.getElementById('{{ form.title.id_for_label }}').value.trim();
+        const description = document.getElementById('{{ form.description.id_for_label }}').value.trim();
+        
+        if (!title) {
+            e.preventDefault();
+            alert('Please enter a title for the grievance.');
+            return;
+        }
+        
+        if (!description) {
+            e.preventDefault();
+            alert('Please provide a description of the grievance.');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+        submitBtn.disabled = true;
+    });
+
+    // Priority indicator
+    const prioritySelect = document.getElementById('{{ form.priority.id_for_label }}');
+    if (prioritySelect) {
+        prioritySelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const priorityClass = selectedOption.value;
+            const indicator = document.querySelector('.priority-indicator');
+            if (indicator) {
+                indicator.className = `priority-indicator priority-${priorityClass}`;
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

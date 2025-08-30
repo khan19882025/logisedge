@@ -1,0 +1,743 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Initiate Backup - Manual Backup{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'manual_backup/css/dashboard.css' %}">
+<style>
+    .initiate-backup-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .page-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2.5rem;
+        font-weight: 300;
+    }
+    
+    .page-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .backup-form {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .form-section {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .form-section h3 {
+        color: #495057;
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .form-section h3 i {
+        color: #007bff;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .form-group .help-text {
+        margin-top: 5px;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .form-group .error-message {
+        margin-top: 5px;
+        font-size: 0.9rem;
+        color: #dc3545;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+    }
+    
+    .checkbox-group label {
+        margin: 0;
+        font-weight: normal;
+    }
+    
+    .radio-group {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .radio-option input[type="radio"] {
+        width: auto;
+        margin: 0;
+    }
+    
+    .radio-option label {
+        margin: 0;
+        font-weight: normal;
+    }
+    
+    .advanced-options {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 15px;
+    }
+    
+    .advanced-options h4 {
+        margin: 0 0 15px 0;
+        color: #495057;
+        font-size: 1.1rem;
+    }
+    
+    .form-actions {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .btn {
+        padding: 15px 30px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 10px;
+    }
+    
+    .btn-primary { background: #007bff; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .priority-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .priority-low { background: #28a745; }
+    .priority-normal { background: #007bff; }
+    .priority-high { background: #ffc107; }
+    .priority-critical { background: #dc3545; }
+    
+    .estimated-time {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    .estimated-time h4 {
+        margin: 0 0 10px 0;
+        color: #004085;
+        font-size: 1.1rem;
+    }
+    
+    .estimated-time p {
+        margin: 0;
+        color: #004085;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .validation-summary {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #721c24;
+    }
+    
+    .validation-summary h4 {
+        margin: 0 0 10px 0;
+        font-size: 1.1rem;
+    }
+    
+    .validation-summary ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .validation-summary li {
+        margin-bottom: 5px;
+    }
+    
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="initiate-backup-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-database"></i> Initiate New Backup</h1>
+        <p>Create and configure a new backup session with custom settings and options</p>
+    </div>
+
+    <!-- Validation Summary -->
+    {% if form.errors %}
+    <div class="validation-summary">
+        <h4><i class="fas fa-exclamation-triangle"></i> Please correct the following errors:</h4>
+        <ul>
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Backup Form -->
+    <form method="post" class="backup-form" id="backupForm">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="form-section">
+            <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.name.id_for_label }}">Backup Name *</label>
+                    {{ form.name }}
+                    {% if form.name.help_text %}
+                        <div class="help-text">{{ form.name.help_text }}</div>
+                    {% endif %}
+                    {% if form.name.errors %}
+                        <div class="error-message">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.reason.id_for_label }}">Backup Reason *</label>
+                    {{ form.reason }}
+                    {% if form.reason.help_text %}
+                        <div class="help-text">{{ form.reason.help_text }}</div>
+                    {% endif %}
+                    {% if form.reason.errors %}
+                        <div class="error-message">{{ form.reason.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {% if form.description.help_text %}
+                    <div class="help-text">{{ form.description.help_text }}</div>
+                {% endif %}
+                {% if form.description.errors %}
+                    <div class="error-message">{{ form.description.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.priority.id_for_label }}">Priority *</label>
+                    {{ form.priority }}
+                    {% if form.priority.help_text %}
+                        <div class="help-text">{{ form.priority.help_text }}</div>
+                    {% endif %}
+                    {% if form.priority.errors %}
+                        <div class="error-message">{{ form.priority.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.scheduled_time.id_for_label }}">Scheduled Time</label>
+                    {{ form.scheduled_time }}
+                    {% if form.scheduled_time.help_text %}
+                        <div class="help-text">{{ form.scheduled_time.help_text }}</div>
+                    {% endif %}
+                    {% if form.scheduled_time.errors %}
+                        <div class="error-message">{{ form.scheduled_time.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup Configuration -->
+        <div class="form-section">
+            <h3><i class="fas fa-cogs"></i> Backup Configuration</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.backup_type.id_for_label }}">Backup Type *</label>
+                    {{ form.backup_type }}
+                    {% if form.backup_type.help_text %}
+                        <div class="help-text">{{ form.backup_type.help_text }}</div>
+                    {% endif %}
+                    {% if form.backup_type.errors %}
+                        <div class="error-message">{{ form.backup_type.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.compression_level.id_for_label }}">Compression Level</label>
+                    {{ form.compression_level }}
+                    {% if form.compression_level.help_text %}
+                        <div class="help-text">{{ form.compression_level.help_text }}</div>
+                    {% endif %}
+                    {% if form.compression_level.errors %}
+                        <div class="error-message">{{ form.compression_level.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.encryption_type.id_for_label }}">Encryption Type</label>
+                    {{ form.encryption_type }}
+                    {% if form.encryption_type.help_text %}
+                        <div class="help-text">{{ form.encryption_type.help_text }}</div>
+                    {% endif %}
+                    {% if form.encryption_type.errors %}
+                        <div class="error-message">{{ form.encryption_type.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.retention_days.id_for_label }}">Retention (Days)</label>
+                    {{ form.retention_days }}
+                    {% if form.retention_days.help_text %}
+                        <div class="help-text">{{ form.retention_days.help_text }}</div>
+                    {% endif %}
+                    {% if form.retention_days.errors %}
+                        <div class="error-message">{{ form.retention_days.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="checkbox-group">
+                {{ form.include_media }}
+                <label for="{{ form.include_media.id_for_label }}">Include media files</label>
+            </div>
+            
+            <div class="checkbox-group">
+                {{ form.include_static }}
+                <label for="{{ form.include_static.id_for_label }}">Include static files</label>
+            </div>
+            
+            <div class="checkbox-group">
+                {{ form.verify_backup }}
+                <label for="{{ form.verify_backup.id_for_label }}">Verify backup after completion</label>
+            </div>
+        </div>
+
+        <!-- Advanced Options -->
+        <div class="form-section">
+            <h3><i class="fas fa-sliders-h"></i> Advanced Options</h3>
+            
+            <div class="checkbox-group">
+                {{ form.parallel_processing }}
+                <label for="{{ form.parallel_processing.id_for_label }}">Enable parallel processing</label>
+            </div>
+            
+            <div class="checkbox-group">
+                {{ form.incremental_backup }}
+                <label for="{{ form.incremental_backup.id_for_label }}">Incremental backup (only changed files)</label>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.exclude_patterns.id_for_label }}">Exclude Patterns</label>
+                {{ form.exclude_patterns }}
+                <div class="help-text">Enter file patterns to exclude (one per line, e.g., *.tmp, .git/*)</div>
+                {% if form.exclude_patterns.errors %}
+                    <div class="error-message">{{ form.exclude_patterns.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.custom_commands.id_for_label }}">Custom Pre/Post Commands</label>
+                {{ form.custom_commands }}
+                <div class="help-text">Enter custom commands to run before/after backup (one per line)</div>
+                {% if form.custom_commands.errors %}
+                    <div class="error-message">{{ form.custom_commands.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Storage and Notification -->
+        <div class="form-section">
+            <h3><i class="fas fa-hdd"></i> Storage & Notification</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.storage_location.id_for_label }}">Storage Location</label>
+                    {{ form.storage_location }}
+                    {% if form.storage_location.help_text %}
+                        <div class="help-text">{{ form.storage_location.help_text }}</div>
+                    {% endif %}
+                    {% if form.storage_location.errors %}
+                        <div class="error-message">{{ form.storage_location.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.notification_email.id_for_label }}">Notification Email</label>
+                    {{ form.notification_email }}
+                    {% if form.notification_email.help_text %}
+                        <div class="help-text">{{ form.notification_email.help_text }}</div>
+                    {% endif %}
+                    {% if form.notification_email.errors %}
+                        <div class="error-message">{{ form.notification_email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="checkbox-group">
+                {{ form.notify_on_start }}
+                <label for="{{ form.notify_on_start.id_for_label }}">Notify when backup starts</label>
+            </div>
+            
+            <div class="checkbox-group">
+                {{ form.notify_on_completion }}
+                <label for="{{ form.notify_on_completion.id_for_label }}">Notify when backup completes</label>
+            </div>
+            
+            <div class="checkbox-group">
+                {{ form.notify_on_failure }}
+                <label for="{{ form.notify_on_failure.id_for_label }}">Notify on backup failure</label>
+            </div>
+        </div>
+
+        <!-- Estimated Time -->
+        <div class="estimated-time">
+            <h4><i class="fas fa-clock"></i> Estimated Backup Time</h4>
+            <p id="estimatedTime">Calculating...</p>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success" id="submitBtn">
+                <i class="fas fa-play"></i> Start Backup
+            </button>
+            <a href="{% url 'manual_backup:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+        <p>Initializing backup...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('backupForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading spinner
+        submitBtn.disabled = true;
+        loadingSpinner.style.display = 'block';
+        
+        // Submit form
+        form.submit();
+    });
+    
+    // Real-time validation
+    const requiredFields = form.querySelectorAll('[required]');
+    requiredFields.forEach(field => {
+        field.addEventListener('blur', function() {
+            validateField(this);
+        });
+        
+        field.addEventListener('input', function() {
+            clearFieldError(this);
+        });
+    });
+    
+    // Priority change handler
+    const prioritySelect = document.getElementById('{{ form.priority.id_for_label }}');
+    if (prioritySelect) {
+        prioritySelect.addEventListener('change', function() {
+            updatePriorityIndicator(this.value);
+        });
+    }
+    
+    // Backup type change handler
+    const backupTypeSelect = document.getElementById('{{ form.backup_type.id_for_label }}');
+    if (backupTypeSelect) {
+        backupTypeSelect.addEventListener('change', function() {
+            updateEstimatedTime();
+        });
+    }
+    
+    // Initialize
+    updatePriorityIndicator(prioritySelect ? prioritySelect.value : 'normal');
+    updateEstimatedTime();
+});
+
+function validateField(field) {
+    const errorDiv = field.parentNode.querySelector('.error-message');
+    
+    if (field.hasAttribute('required') && !field.value.trim()) {
+        showFieldError(field, 'This field is required.');
+        return false;
+    }
+    
+    // Email validation
+    if (field.type === 'email' && field.value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(field.value)) {
+            showFieldError(field, 'Please enter a valid email address.');
+            return false;
+        }
+    }
+    
+    // Number validation
+    if (field.type === 'number' && field.value) {
+        if (isNaN(field.value) || field.value < 0) {
+            showFieldError(field, 'Please enter a valid positive number.');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function showFieldError(field, message) {
+    clearFieldError(field);
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    
+    field.parentNode.appendChild(errorDiv);
+    field.style.borderColor = '#dc3545';
+}
+
+function clearFieldError(field) {
+    const errorDiv = field.parentNode.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.remove();
+    }
+    field.style.borderColor = '#e9ecef';
+}
+
+function updatePriorityIndicator(priority) {
+    const priorityLabels = document.querySelectorAll('option');
+    priorityLabels.forEach(option => {
+        if (option.value === priority) {
+            option.innerHTML = `<span class="priority-indicator priority-${priority}"></span>${option.textContent}`;
+        }
+    });
+}
+
+function updateEstimatedTime() {
+    const backupType = document.getElementById('{{ form.backup_type.id_for_label }}')?.value || 'full';
+    const compressionLevel = document.getElementById('{{ form.compression_level.id_for_label }}')?.value || 'medium';
+    const includeMedia = document.getElementById('{{ form.include_media.id_for_label }}')?.checked;
+    const includeStatic = document.getElementById('{{ form.include_static.id_for_label }}')?.checked;
+    
+    let estimatedMinutes = 5; // Base time
+    
+    // Adjust based on backup type
+    if (backupType === 'full') {
+        estimatedMinutes = 15;
+    } else if (backupType === 'incremental') {
+        estimatedMinutes = 8;
+    } else if (backupType === 'differential') {
+        estimatedMinutes = 12;
+    }
+    
+    // Adjust based on compression
+    if (compressionLevel === 'high') {
+        estimatedMinutes += 5;
+    } else if (compressionLevel === 'low') {
+        estimatedMinutes -= 2;
+    }
+    
+    // Adjust based on included content
+    if (includeMedia) estimatedMinutes += 8;
+    if (includeStatic) estimatedMinutes += 3;
+    
+    const estimatedTimeElement = document.getElementById('estimatedTime');
+    if (estimatedTimeElement) {
+        if (estimatedMinutes < 60) {
+            estimatedTimeElement.textContent = `Approximately ${estimatedMinutes} minutes`;
+        } else {
+            const hours = Math.floor(estimatedMinutes / 60);
+            const minutes = estimatedMinutes % 60;
+            estimatedTimeElement.textContent = `Approximately ${hours}h ${minutes}m`;
+        }
+    }
+}
+
+// Auto-save form data to localStorage
+function autoSaveForm() {
+    const formData = new FormData(document.getElementById('backupForm'));
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    
+    localStorage.setItem('backupFormData', JSON.stringify(data));
+}
+
+function loadSavedFormData() {
+    const savedData = localStorage.getItem('backupFormData');
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        
+        for (let key in data) {
+            const field = document.querySelector(`[name="${key}"]`);
+            if (field) {
+                if (field.type === 'checkbox') {
+                    field.checked = data[key] === 'on';
+                } else {
+                    field.value = data[key];
+                }
+            }
+        }
+        
+        // Update UI
+        updatePriorityIndicator(document.getElementById('{{ form.priority.id_for_label }}')?.value || 'normal');
+        updateEstimatedTime();
+    }
+}
+
+// Auto-save every 30 seconds
+setInterval(autoSaveForm, 30000);
+
+// Load saved data on page load
+document.addEventListener('DOMContentLoaded', loadSavedFormData);
+</script>
+{% endblock %}

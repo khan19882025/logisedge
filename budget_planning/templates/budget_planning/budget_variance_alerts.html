@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Budget Variance Alerts - Budget Planning{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+<style>
+    .alert-card {
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .alert-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+    }
+    
+    .severity-low {
+        border-left: 4px solid #28a745;
+    }
+    
+    .severity-medium {
+        border-left: 4px solid #ffc107;
+    }
+    
+    .severity-high {
+        border-left: 4px solid #fd7e14;
+    }
+    
+    .severity-critical {
+        border-left: 4px solid #dc3545;
+    }
+    
+    .alert-type-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .alert-type-variance_threshold {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+    
+    .alert-type-over_budget {
+        background-color: #ffebee;
+        color: #d32f2f;
+    }
+    
+    .alert-type-approaching_limit {
+        background-color: #fff3e0;
+        color: #f57c00;
+    }
+    
+    .alert-type-custom {
+        background-color: #f3e5f5;
+        color: #7b1fa2;
+    }
+    
+    .status-active {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .status-inactive {
+        color: #6c757d;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-bell mr-2"></i>Budget Variance Alerts
+        </h1>
+        <div>
+            <a href="{% url 'budget_planning:budget_variance_alert_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Create Alert
+            </a>
+            <a href="{% url 'budget_planning:budget_vs_actual_dashboard' %}" class="btn btn-secondary btn-sm ml-2">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-search mr-2"></i>Search and Filters
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="search">Search Alerts</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ request.GET.search }}" placeholder="Search by alert name...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="alert_type">Alert Type</label>
+                        <select class="form-control" id="alert_type" name="alert_type">
+                            <option value="">All Types</option>
+                            <option value="variance_threshold" {% if request.GET.alert_type == 'variance_threshold' %}selected{% endif %}>Variance Threshold</option>
+                            <option value="over_budget" {% if request.GET.alert_type == 'over_budget' %}selected{% endif %}>Over Budget</option>
+                            <option value="approaching_limit" {% if request.GET.alert_type == 'approaching_limit' %}selected{% endif %}>Approaching Limit</option>
+                            <option value="custom" {% if request.GET.alert_type == 'custom' %}selected{% endif %}>Custom Alert</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="severity">Severity</label>
+                        <select class="form-control" id="severity" name="severity">
+                            <option value="">All Severities</option>
+                            <option value="low" {% if request.GET.severity == 'low' %}selected{% endif %}>Low</option>
+                            <option value="medium" {% if request.GET.severity == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="high" {% if request.GET.severity == 'high' %}selected{% endif %}>High</option>
+                            <option value="critical" {% if request.GET.severity == 'critical' %}selected{% endif %}>Critical</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="">All Status</option>
+                            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search mr-1"></i>Search
+                            </button>
+                            <a href="{% url 'budget_planning:budget_variance_alerts' %}" class="btn btn-secondary">
+                                <i class="fas fa-times mr-1"></i>Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list mr-2"></i>Variance Alerts ({{ alerts.count }})
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if alerts %}
+                <div class="row">
+                    {% for alert in alerts %}
+                    <div class="col-lg-6 col-xl-4 mb-4">
+                        <div class="card alert-card severity-{{ alert.severity }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">{{ alert.alert_name }}</h5>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{% url 'budget_planning:budget_variance_alert_edit' pk=alert.pk %}">
+                                                <i class="fas fa-edit mr-2"></i>Edit
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="toggleAlertStatus('{{ alert.pk }}')">
+                                                <i class="fas fa-{% if alert.is_active %}pause{% else %}play{% endif %} mr-2"></i>
+                                                {% if alert.is_active %}Deactivate{% else %}Activate{% endif %}
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteAlert('{{ alert.pk }}')">
+                                                <i class="fas fa-trash mr-2"></i>Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <span class="alert-type-badge alert-type-{{ alert.alert_type }}">
+                                        {{ alert.get_alert_type_display }}
+                                    </span>
+                                    <span class="badge badge-{% if alert.severity == 'critical' %}danger{% elif alert.severity == 'high' %}warning{% elif alert.severity == 'medium' %}info{% else %}success{% endif %} ml-2">
+                                        {{ alert.severity|title }}
+                                    </span>
+                                </div>
+                                
+                                <div class="row mb-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">Threshold %</small>
+                                        <div class="font-weight-bold">{{ alert.threshold_percentage }}%</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Threshold Amount</small>
+                                        <div class="font-weight-bold">AED {{ alert.threshold_amount|floatformat:2 }}</div>
+                                    </div>
+                                </div>
+                                
+                                {% if alert.cost_center %}
+                                <div class="mb-2">
+                                    <small class="text-muted">Cost Center</small>
+                                    <div class="font-weight-bold">{{ alert.cost_center.code }} - {{ alert.cost_center.name }}</div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if alert.department %}
+                                <div class="mb-2">
+                                    <small class="text-muted">Department</small>
+                                    <div class="font-weight-bold">{{ alert.department.name }}</div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">Notifications</small>
+                                    <div>
+                                        {% if alert.notify_finance_managers %}
+                                            <span class="badge badge-info mr-1">Finance Managers</span>
+                                        {% endif %}
+                                        {% if alert.notify_department_heads %}
+                                            <span class="badge badge-info mr-1">Department Heads</span>
+                                        {% endif %}
+                                        {% if alert.notify_users.exists %}
+                                            <span class="badge badge-info">Custom Users ({{ alert.notify_users.count }})</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="{% if alert.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                        <i class="fas fa-{% if alert.is_active %}check-circle{% else %}pause-circle{% endif %} mr-1"></i>
+                                        {% if alert.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                    <small class="text-muted">
+                                        Created {{ alert.created_at|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-bell fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No variance alerts found</h5>
+                    <p class="text-muted">Create your first variance alert to start monitoring budget deviations.</p>
+                    <a href="{% url 'budget_planning:budget_variance_alert_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus mr-1"></i>Create First Alert
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Initialize search functionality
+    $('#search').on('keyup', function() {
+        // Add real-time search functionality if needed
+    });
+});
+
+function toggleAlertStatus(alertId) {
+    if (confirm('Are you sure you want to change the status of this alert?')) {
+        // Add AJAX call to toggle alert status
+        $.post(`/accounting/budget-planning/variance-alerts/${alertId}/toggle/`, {
+            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+        })
+        .done(function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating alert status');
+            }
+        })
+        .fail(function() {
+            alert('Error updating alert status');
+        });
+    }
+}
+
+function deleteAlert(alertId) {
+    if (confirm('Are you sure you want to delete this alert? This action cannot be undone.')) {
+        // Add AJAX call to delete alert
+        $.post(`/accounting/budget-planning/variance-alerts/${alertId}/delete/`, {
+            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+        })
+        .done(function(data) {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting alert');
+            }
+        })
+        .fail(function() {
+            alert('Error deleting alert');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,534 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Dispatch Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dispatchnote/dispatchnote.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="dispatch-header" style="background: none; color: black; padding: 10px 0;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0" style="color: black;">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>{{ title }}
+                </h1>
+            </div>
+            <div>
+                <a href="{% url 'dispatchnote:dispatch_list' %}" class="btn btn-light">
+                    <i class="bi bi-arrow-left me-2"></i>Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Dispatch Note Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="dispatchForm" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Two Column Layout -->
+                        <div class="row mb-4">
+                            <!-- Left Column -->
+                            <div class="col-md-6">
+                                {% if dispatch_note and dispatch_note.gdn_number %}
+                                <div class="row mb-2 align-items-center">
+                                    <label for="id_gdn_number" class="col-md-4 col-form-label">GDN No</label>
+                                    <div class="col-md-8">
+                                        <input type="text" class="form-control" id="id_gdn_number" name="gdn_number" value="{{ dispatch_note.gdn_number }}" readonly style="background-color: #f8f9fa;">
+                                        <small class="form-text text-muted">Auto-generated GDN number</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.customer.id_for_label }}" class="col-md-4 col-form-label">Customer Name <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.customer }}
+                                        {% if form.customer.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.delivery_order.id_for_label }}" class="col-md-4 col-form-label">DO <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.delivery_order }}
+                                        {% if form.delivery_order.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.delivery_order.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.job.id_for_label }}" class="col-md-4 col-form-label">Job</label>
+                                    <div class="col-md-8">
+                                        {{ form.job }}
+                                        {% if form.job.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.job.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.deliver_to.id_for_label }}" class="col-md-4 col-form-label">Deliver To <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.deliver_to }}
+                                        {% if form.deliver_to.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.deliver_to.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.deliver_address.id_for_label }}" class="col-md-4 col-form-label">Deliver Address <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.deliver_address }}
+                                        {% if form.deliver_address.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.deliver_address.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.facility.id_for_label }}" class="col-md-4 col-form-label">Facility <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.facility }}
+                                        {% if form.facility.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.facility.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Right Column -->
+                            <div class="col-md-6">
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.dispatch_date.id_for_label }}" class="col-md-4 col-form-label">Date <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.dispatch_date }}
+                                        {% if form.dispatch_date.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.dispatch_date.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.mode.id_for_label }}" class="col-md-4 col-form-label">Mode <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.mode }}
+                                        {% if form.mode.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.mode.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.vehicle_no.id_for_label }}" class="col-md-4 col-form-label">Vehicle No <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.vehicle_no }}
+                                        {% if form.vehicle_no.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.vehicle_no.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.name.id_for_label }}" class="col-md-4 col-form-label">Name <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.name }}
+                                        {% if form.name.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.contact_number.id_for_label }}" class="col-md-4 col-form-label">Contact Number <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.contact_number }}
+                                        {% if form.contact_number.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.contact_number.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.status.id_for_label }}" class="col-md-4 col-form-label">Status <span class="text-danger">*</span></label>
+                                    <div class="col-md-8">
+                                        {{ form.status }}
+                                        {% if form.status.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.status.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row mb-2 align-items-center">
+                                    <label for="{{ form.notes.id_for_label }}" class="col-md-4 col-form-label">Notes</label>
+                                    <div class="col-md-8">
+                                        {{ form.notes }}
+                                        {% if form.notes.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cargo Details Table -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-box me-2"></i>Cargo Details
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>GRN No</th>
+                                                <th>Item Code</th>
+                                                <th>Item</th>
+                                                <th>HS Code</th>
+                                                <th>Unit</th>
+                                                <th>QTY</th>
+                                                <th>COO</th>
+                                                <th>N-weight</th>
+                                                <th>G-weight</th>
+                                                <th>CBM</th>
+                                                <th>P-Date</th>
+                                                <th>E-Date</th>
+                                                <th>Color</th>
+                                                <th>Size</th>
+                                                <th>Barcode</th>
+                                                <th>Rate</th>
+                                                <th>Amount</th>
+                                                <th>ED</th>
+                                                <th>CTNR</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cargoTableBody">
+                                            <!-- Cargo items will be added here dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <button type="button" class="btn btn-primary" id="addCargoRow">
+                                        <i class="bi bi-plus-circle me-2"></i>Add Cargo Item
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{% url 'dispatchnote:dispatch_list' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-2"></i>{{ action }} Dispatch Note
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dispatchnote/dispatchnote.js' %}"></script>
+<script>
+// Cargo table functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dispatch form JavaScript loaded');
+    
+    const addCargoBtn = document.getElementById('addCargoRow');
+    const cargoTableBody = document.getElementById('cargoTableBody');
+    const dispatchForm = document.getElementById('dispatchForm');
+    const facilityField = document.getElementById('id_facility');
+    
+    console.log('Form elements found:', {
+        addCargoBtn: !!addCargoBtn,
+        cargoTableBody: !!cargoTableBody,
+        dispatchForm: !!dispatchForm,
+        facilityField: !!facilityField
+    });
+    
+    // Debug facility field options
+    if (facilityField) {
+        console.log('Facility field found with ID:', facilityField.id);
+        console.log('Available facility options:');
+        for (let i = 0; i < facilityField.options.length; i++) {
+            console.log(`Option ${i}: value="${facilityField.options[i].value}" text="${facilityField.options[i].text}"`);
+        }
+    }
+    
+    if (addCargoBtn && cargoTableBody) {
+        addCargoBtn.addEventListener('click', function() {
+            addCargoRow();
+        });
+    }
+    
+    // Add form submission debugging
+    if (dispatchForm) {
+        dispatchForm.addEventListener('submit', function(e) {
+            console.log('Form submission started');
+            console.log('Form action:', this.action);
+            console.log('Form method:', this.method);
+            
+            // Check if form is valid
+            if (!this.checkValidity()) {
+                console.log('Form validation failed');
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.add('was-validated');
+                return false;
+            }
+            
+            console.log('Form validation passed, submitting...');
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+            }
+            
+            // Allow form to submit
+            return true;
+        });
+    }
+    
+    // Dynamic filtering for delivery orders
+    const customerSelect = document.getElementById('id_customer');
+    const deliveryOrderSelect = document.getElementById('id_delivery_order');
+    
+    if (customerSelect && deliveryOrderSelect) {
+        console.log('Found customer and delivery order selects');
+        
+        customerSelect.addEventListener('change', function() {
+            const customerId = this.value;
+            console.log('Customer changed to:', customerId);
+            
+            if (customerId) {
+                // Fetch delivery orders for the selected customer
+                const url = '/dispatchnote/api/delivery-orders/' + customerId + '/';
+                console.log('Fetching from URL:', url);
+                
+                fetch(url)
+                    .then(function(response) {
+                        console.log('Response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        console.log('Received data:', data);
+                        deliveryOrderSelect.innerHTML = '<option value="">Select Delivery Order</option>';
+                        
+                        if (data.success && data.delivery_orders && data.delivery_orders.length > 0) {
+                            data.delivery_orders.forEach(function(deliveryOrder) {
+                                const option = document.createElement('option');
+                                option.value = deliveryOrder.id;
+                                option.textContent = deliveryOrder.do_number;
+                                deliveryOrderSelect.appendChild(option);
+                            });
+                            console.log('Added', data.delivery_orders.length, 'delivery orders');
+                        } else {
+                            console.log('No delivery orders found for this customer');
+                            deliveryOrderSelect.innerHTML = '<option value="">No delivery orders available for this customer</option>';
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error fetching delivery orders:', error);
+                        deliveryOrderSelect.innerHTML = '<option value="">Error loading delivery orders</option>';
+                    });
+            } else {
+                deliveryOrderSelect.innerHTML = '<option value="">Select Delivery Order</option>';
+            }
+        });
+        
+        // Auto-populate cargo details when delivery order is selected
+        deliveryOrderSelect.addEventListener('change', function() {
+            const deliveryOrderId = this.value;
+            console.log('Delivery order changed to:', deliveryOrderId);
+            
+            if (deliveryOrderId) {
+                // Fetch delivery order details and populate cargo table
+                const url = '/dispatchnote/api/delivery-order/' + deliveryOrderId + '/items/';
+                console.log('Fetching items from URL:', url);
+                
+                fetch(url)
+                    .then(function(response) {
+                        console.log('Response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        console.log('Received items data:', data);
+                        console.log('Items count:', data.items ? data.items.length : 0);
+                        
+                        // Clear existing cargo rows
+                        cargoTableBody.innerHTML = '';
+                        
+                        if (data.success && data.items && data.items.length > 0) {
+                            console.log('Adding items to cargo table...');
+                            // Populate cargo details from delivery order items
+                            data.items.forEach(function(item, index) {
+                                console.log('Adding item:', index, item);
+                                addCargoRowFromDO(item);
+                            });
+                            
+                            // Auto-populate delivery information
+                            if (data.delivery_order) {
+                                console.log('Auto-populating delivery info:', data.delivery_order);
+                                const deliverToField = document.getElementById('id_deliver_to');
+                                const deliverAddressField = document.getElementById('id_deliver_address');
+                                
+                                if (deliverToField && data.delivery_order.delivery_contact) {
+                                    deliverToField.value = data.delivery_order.delivery_contact;
+                                    console.log('Set deliver_to to:', data.delivery_order.delivery_contact);
+                                }
+                                if (deliverAddressField && data.delivery_order.delivery_address) {
+                                    deliverAddressField.value = data.delivery_order.delivery_address;
+                                    console.log('Set deliver_address to:', data.delivery_order.delivery_address);
+                                }
+                                if (facilityField && data.delivery_order.facility) {
+                                    console.log('Attempting to set facility to:', data.delivery_order.facility);
+                                    console.log('Available facility options:');
+                                    const options = facilityField.options;
+                                    for (let i = 0; i < options.length; i++) {
+                                        console.log('Option', i, ':', options[i].value, '=', options[i].text);
+                                        if (options[i].value === data.delivery_order.facility.toString()) {
+                                            facilityField.selectedIndex = i;
+                                            console.log('Facility set successfully to:', options[i].text);
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    console.log('Facility field or data not available:', {
+                                        facilityField: !!facilityField,
+                                        facilityData: data.delivery_order.facility
+                                    });
+                                }
+                            }
+                        } else {
+                            console.log('No items found or API error. Success:', data.success, 'Items:', data.items);
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error fetching delivery order details:', error);
+                    });
+            }
+        });
+    } else {
+        console.log('Customer or delivery order select not found');
+        console.log('customerSelect:', customerSelect);
+        console.log('deliveryOrderSelect:', deliveryOrderSelect);
+    }
+    
+    function addCargoRow() {
+        const row = document.createElement('tr');
+        row.innerHTML = 
+            '<td><input type="text" class="form-control form-control-sm" name="grn_no[]" placeholder="GRN No"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="item_code[]" placeholder="Item Code"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="item_name[]" placeholder="Item"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="hs_code[]" placeholder="HS Code"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="unit[]" placeholder="Unit"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="qty[]" placeholder="QTY" step="0.01"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="coo[]" placeholder="COO"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="n_weight[]" placeholder="N-weight" step="0.01"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="g_weight[]" placeholder="G-weight" step="0.01"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="cbm[]" placeholder="CBM" step="0.01"></td>' +
+            '<td><input type="date" class="form-control form-control-sm" name="p_date[]"></td>' +
+            '<td><input type="date" class="form-control form-control-sm" name="e_date[]"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="color[]" placeholder="Color"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="size[]" placeholder="Size"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="barcode[]" placeholder="Barcode"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="rate[]" placeholder="Rate" step="0.01"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="amount[]" placeholder="Amount" step="0.01" readonly></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="ed[]" placeholder="ED"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="ctnr[]" placeholder="CTNR"></td>' +
+            '<td>' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="removeCargoRow(this)">' +
+                    '<i class="bi bi-trash"></i>' +
+                '</button>' +
+            '</td>';
+        cargoTableBody.appendChild(row);
+        
+        // Add event listeners for calculation
+        const qtyInput = row.querySelector('input[name="qty[]"]');
+        const rateInput = row.querySelector('input[name="rate[]"]');
+        const amountInput = row.querySelector('input[name="amount[]"]');
+        
+        function calculateAmount() {
+            const qty = parseFloat(qtyInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
+            amountInput.value = (qty * rate).toFixed(2);
+        }
+        
+        qtyInput.addEventListener('input', calculateAmount);
+        rateInput.addEventListener('input', calculateAmount);
+    }
+    
+    function addCargoRowFromDO(item) {
+        console.log('addCargoRowFromDO called with item:', item);
+        const row = document.createElement('tr');
+        row.innerHTML = 
+            '<td><input type="text" class="form-control form-control-sm" name="grn_no[]" value="' + (item.grn_no || '') + '" placeholder="GRN No"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="item_code[]" value="' + (item.item_code || '') + '" placeholder="Item Code"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="item_name[]" value="' + (item.item_name || '') + '" placeholder="Item"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="hs_code[]" value="' + (item.hs_code || '') + '" placeholder="HS Code"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="unit[]" value="' + (item.unit || '') + '" placeholder="Unit"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="qty[]" value="' + (item.quantity || '') + '" placeholder="QTY" step="0.01"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="coo[]" value="' + (item.coo || '') + '" placeholder="COO"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="n_weight[]" value="' + (item.n_weight || '') + '" placeholder="N-weight" step="0.01"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="g_weight[]" value="' + (item.g_weight || '') + '" placeholder="G-weight" step="0.01"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="cbm[]" value="' + (item.cbm || '') + '" placeholder="CBM" step="0.01"></td>' +
+            '<td><input type="date" class="form-control form-control-sm" name="p_date[]" value="' + (item.p_date || '') + '"></td>' +
+            '<td><input type="date" class="form-control form-control-sm" name="e_date[]" value="' + (item.e_date || '') + '"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="color[]" value="' + (item.color || '') + '" placeholder="Color"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="size[]" value="' + (item.size || '') + '" placeholder="Size"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="barcode[]" value="' + (item.barcode || '') + '" placeholder="Barcode"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="rate[]" value="' + (item.rate || '') + '" placeholder="Rate" step="0.01"></td>' +
+            '<td><input type="number" class="form-control form-control-sm" name="amount[]" value="' + (item.amount || '') + '" placeholder="Amount" step="0.01" readonly></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="ed[]" value="' + (item.ed || '') + '" placeholder="ED"></td>' +
+            '<td><input type="text" class="form-control form-control-sm" name="ctnr[]" value="' + (item.ctnr || '') + '" placeholder="CTNR"></td>' +
+            '<td>' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="removeCargoRow(this)">' +
+                    '<i class="bi bi-trash"></i>' +
+                '</button>' +
+            '</td>';
+        cargoTableBody.appendChild(row);
+        console.log('Added cargo row to table');
+        
+        // Add event listeners for calculation
+        const qtyInput = row.querySelector('input[name="qty[]"]');
+        const rateInput = row.querySelector('input[name="rate[]"]');
+        const amountInput = row.querySelector('input[name="amount[]"]');
+        
+        function calculateAmount() {
+            const qty = parseFloat(qtyInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
+            amountInput.value = (qty * rate).toFixed(2);
+        }
+        
+        qtyInput.addEventListener('input', calculateAmount);
+        rateInput.addEventListener('input', calculateAmount);
+    }
+    
+    window.removeCargoRow = function(button) {
+        button.closest('tr').remove();
+    };
+});
+</script>
+{% endblock %} 

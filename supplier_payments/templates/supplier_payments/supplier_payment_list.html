@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supplier Payments{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/supplier_payments/supplier_payments.css' %}">
+<style>
+    .payment-table th, .payment-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .amount-cell {
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .search-form {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .status-badge {
+        font-size: 0.9em;
+    }
+    
+    /* Force button visibility */
+    .card-tools .btn {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-money-bill-wave"></i> Supplier Payments
+                    </h3>
+                    <!-- FORCE RELOAD TEST -->
+                    <div class="card-tools">
+                        <!-- DEBUG: Button should be visible - UPDATED -->
+                        <a href="{% url 'supplier_payments:pending_bills_list' %}" 
+                           class="btn btn-warning btn-sm" 
+                           style="margin-right: 8px; display: inline-block !important; background-color: #ffc107 !important; color: #212529 !important; border: 2px solid #ffc107 !important; padding: 6px 12px !important;">
+                            <i class="fas fa-file-invoice"></i> Pending Bills
+                        </a>
+                        <a href="{% url 'supplier_payments:supplier_payment_create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> New Payment
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Search and Filter Form -->
+                    <div class="search-form">
+                        <form method="get" class="form-inline">
+                            <div class="form-group mr-3">
+                                <label for="search" class="sr-only">Search</label>
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       placeholder="Search payments..." value="{{ search_query }}">
+                            </div>
+                            
+                            <div class="form-group mr-3">
+                                <label for="payment_method" class="sr-only">Payment Method</label>
+                                <select class="form-control" id="payment_method" name="payment_method">
+                                    <option value="">All Payment Methods</option>
+                                    {% for value, label in payment_methods %}
+                                        <option value="{{ value }}" {% if payment_method == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group mr-3">
+                                <label for="date_from" class="sr-only">Date From</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" 
+                                       placeholder="Date From" value="{{ date_from }}">
+                            </div>
+                            
+                            <div class="form-group mr-3">
+                                <label for="date_to" class="sr-only">Date To</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" 
+                                       placeholder="Date To" value="{{ date_to }}">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-secondary mr-2">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            
+                            <a href="{% url 'supplier_payments:supplier_payment_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </form>
+                    </div>
+                    
+                    <!-- Payments Table -->
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-striped payment-table">
+                                <thead>
+                                    <tr>
+                                        <th>Payment ID</th>
+                                        <th>Supplier/Vendor</th>
+                                        <th>Invoice No.</th>
+                                        <th>Payment Date</th>
+                                        <th>Amount</th>
+                                        <th>Payment Method</th>
+                                        <th>Reference</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'supplier_payments:supplier_payment_detail' payment.pk %}" class="text-primary font-weight-bold">
+                                                {{ payment.payment_id }}
+                                            </a>
+                                        </td>
+                                        <td>{{ payment.supplier.customer_name }}</td>
+                                        <td>
+                                            {% if payment.payment_invoices.exists %}
+                                                {% for payment_invoice in payment.payment_invoices.all %}
+                                                    <span class="badge badge-primary mr-1 mb-1">
+                                                        {{ payment_invoice.invoice.invoice_number }}
+                                                    </span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                        <td class="amount-cell">${{ payment.amount|floatformat:2 }}</td>
+                                        <td>
+                                            <span class="badge badge-info status-badge">
+                                                {{ payment.get_payment_method_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ payment.reference_number|default:"-" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'supplier_payments:supplier_payment_detail' payment.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'supplier_payments:supplier_payment_update' payment.pk %}" 
+                                                   class="btn btn-sm btn-outline-warning" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'supplier_payments:supplier_payment_print' payment.pk %}" 
+                                                   class="btn btn-sm btn-outline-info" title="Print" target="_blank">
+                                                    <i class="fas fa-print"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                            <nav aria-label="Payments pagination">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if payment_method %}payment_method={{ payment_method }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                                <i class="fas fa-chevron-left"></i> Previous
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if payment_method %}payment_method={{ payment_method }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if payment_method %}payment_method={{ payment_method }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                                Next <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                        
+                        <!-- Results Info -->
+                        <div class="text-center text-muted mt-3">
+                            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} payment{{ page_obj.paginator.count|pluralize }}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle"></i> 
+                            {% if search_query or payment_method or date_from or date_to %}
+                                No payments found matching your search criteria.
+                            {% else %}
+                                No supplier payments found. <a href="{% url 'supplier_payments:supplier_payment_create' %}" class="alert-link">Create the first payment</a>.
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form when date fields change
+    $('#date_from, #date_to, #payment_method').change(function() {
+        $(this).closest('form').submit();
+    });
+    
+    // Clear search when clicking clear button
+    $('.btn-outline-secondary').click(function(e) {
+        e.preventDefault();
+        window.location.href = '{% url "supplier_payments:supplier_payment_list" %}';
+    });
+});
+</script>
+{% endblock %}

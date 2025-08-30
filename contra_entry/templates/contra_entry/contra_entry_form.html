@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'contra_entry/css/contra_entry.css' %}">
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="contra-entry-header">
+        <h2><i class="fas fa-exchange-alt"></i> {{ title }}</h2>
+        <a href="{% url 'contra_entry:contra_entry_list' %}" class="btn-contra btn-contra-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <!-- Form -->
+    <div class="contra-entry-form">
+        <form method="post" class="contra-entry-form">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="{{ form.date.id_for_label }}">Date *</label>
+                        {{ form.date }}
+                        {% if form.date.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.date.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <label for="{{ form.reference_number.id_for_label }}">Reference Number</label>
+                        {{ form.reference_number }}
+                        {% if form.reference_number.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.reference_number.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label for="{{ form.narration.id_for_label }}">Narration *</label>
+                        {{ form.narration }}
+                        {% if form.narration.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.narration.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entry Details -->
+            <div class="form-section">
+                <h4><i class="fas fa-list"></i> Entry Details</h4>
+                <p class="text-muted">Add at least two entries - one debit and one credit. Total debit must equal total credit.</p>
+                
+                <div class="entries-table">
+                    <table class="table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Account *</th>
+                                <th>Debit Amount</th>
+                                <th>Credit Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{ formset.management_form }}
+                            {% for form in formset %}
+                            <tr class="entry-row {% if form.instance.pk %}existing{% endif %}">
+                                <td>
+                                    {{ form.id }}
+                                    {{ form.account }}
+                                    {% if form.account.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.account.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="amount-input debit">
+                                        {{ form.debit }}
+                                        {% if form.debit.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.debit.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="amount-input credit">
+                                        {{ form.credit }}
+                                        {% if form.credit.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.credit.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if formset.can_delete %}
+                                    <div class="form-check">
+                                        {{ form.DELETE }}
+                                        <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">
+                                            Delete
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline-primary add-entry-row">
+                        <i class="fas fa-plus"></i> Add Entry Row
+                    </button>
+                </div>
+            </div>
+
+            <!-- Balance Summary -->
+            <div class="balance-summary">
+                <h5><i class="fas fa-calculator"></i> Balance Summary</h5>
+                <div class="balance-row">
+                    <span>Total Debit:</span>
+                    <span class="total-debit">0.00</span>
+                </div>
+                <div class="balance-row">
+                    <span>Total Credit:</span>
+                    <span class="total-credit">0.00</span>
+                </div>
+                <div class="balance-row">
+                    <span>Difference:</span>
+                    <span class="difference">0.00</span>
+                </div>
+                <div class="balance-row balance-status">
+                    <span>Status:</span>
+                    <span class="balance-status">Not Balanced</span>
+                </div>
+            </div>
+
+            <!-- Form Errors -->
+            {% if formset.non_form_errors %}
+            <div class="alert alert-danger">
+                <h6>Please correct the following errors:</h6>
+                <ul>
+                    {% for error in formset.non_form_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button type="submit" class="btn-contra btn-contra-primary">
+                    <i class="fas fa-save"></i> {{ submit_text }}
+                </button>
+                <a href="{% url 'contra_entry:contra_entry_list' %}" class="btn-contra btn-contra-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% if contra_entry %}
+                <a href="{% url 'contra_entry:contra_entry_detail' contra_entry.pk %}" class="btn-contra btn-contra-secondary">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="{% static 'contra_entry/js/contra_entry.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize formset management
+        if (typeof django !== 'undefined' && django.jQuery) {
+            django.jQuery(document).on('formset:added', function(event, $row, formsetName) {
+                if (formsetName === 'entries') {
+                    initRow($row);
+                }
+            });
+        }
+        
+        // Update formset prefix for new rows
+        let formsetPrefix = '{{ formset.prefix }}';
+        let totalForms = parseInt($('#id_' + formsetPrefix + '-TOTAL_FORMS').val());
+        
+        $('.add-entry-row').on('click', function() {
+            let newRow = $('.entry-row:first').clone(true);
+            let newIndex = totalForms;
+            
+            // Update form field names
+            newRow.find('input, select').each(function() {
+                let name = $(this).attr('name');
+                if (name) {
+                    name = name.replace(/entries-\d+/, 'entries-' + newIndex);
+                    $(this).attr('name', name);
+                }
+                
+                let id = $(this).attr('id');
+                if (id) {
+                    id = id.replace(/entries-\d+/, 'entries-' + newIndex);
+                    $(this).attr('id', id);
+                }
+                
+                // Clear values
+                $(this).val('');
+            });
+            
+            // Remove any existing error messages
+            newRow.find('.invalid-feedback').remove();
+            newRow.find('.is-invalid').removeClass('is-invalid');
+            
+            // Add to table
+            $('.entries-table tbody').append(newRow);
+            
+            // Initialize the new row
+            initRow(newRow);
+            
+            // Update total forms count
+            totalForms++;
+            $('#id_' + formsetPrefix + '-TOTAL_FORMS').val(totalForms);
+            
+            // Update balance summary
+            updateBalanceSummary();
+        });
+    });
+</script>
+{% endblock %} 

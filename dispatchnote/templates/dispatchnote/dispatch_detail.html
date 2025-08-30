@@ -1,0 +1,224 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ dispatch_note.gdn_number }} - Dispatch Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dispatchnote/dispatchnote.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="dispatch-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>{{ dispatch_note.gdn_number }}
+                </h1>
+                <p class="mb-0">{{ dispatch_note.customer.customer_name }} - {{ dispatch_note.dispatch_date|date:"M d, Y" }}</p>
+            </div>
+            <div class="btn-group" role="group">
+                <button class="btn btn-info btn-print-dispatch" data-dispatch-id="{{ dispatch_note.pk }}" title="Print PDF">
+                    <i class="bi bi-printer me-2"></i>Print
+                </button>
+                <button class="btn btn-success btn-email-dispatch" data-dispatch-id="{{ dispatch_note.pk }}" title="Email">
+                    <i class="bi bi-envelope me-2"></i>Email
+                </button>
+                <a href="{% url 'dispatchnote:dispatch_update' dispatch_note.pk %}" class="btn btn-warning">
+                    <i class="bi bi-pencil me-2"></i>Edit
+                </a>
+                <a href="{% url 'dispatchnote:dispatch_delete' dispatch_note.pk %}" class="btn btn-danger">
+                    <i class="bi bi-trash me-2"></i>Delete
+                </a>
+                <a href="{% url 'dispatchnote:dispatch_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <span class="badge {% if dispatch_note.status == 'draft' %}bg-secondary{% elif dispatch_note.status == 'ready' %}bg-warning{% elif dispatch_note.status == 'dispatched' %}bg-info{% elif dispatch_note.status == 'delivered' %}bg-success{% else %}bg-danger{% endif %} fs-6">
+                {{ dispatch_note.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Dispatch Note Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-info-circle me-2"></i>Dispatch Note Details
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">GDN Number:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.gdn_number }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Customer:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.customer.customer_name }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Dispatch Date:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.dispatch_date|date:"M d, Y" }}</p>
+                    </div>
+                    {% if dispatch_note.delivery_order %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Delivery Order:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.delivery_order.do_number }}</p>
+                    </div>
+                    {% endif %}
+                    {% if dispatch_note.job %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Job:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.job.job_code }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Deliver To:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.deliver_to|default:"-" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Deliver Address:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.deliver_address|default:"-" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Facility:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.facility|default:"-" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mode:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.mode|default:"-" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Vehicle No:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.vehicle_no|default:"-" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Driver Name:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.name|default:"-" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Contact Number:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.contact_number|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% if dispatch_note.notes %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes:</label>
+                        <p class="form-control-plaintext">{{ dispatch_note.notes }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cargo Details Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-box me-2"></i>Cargo Details
+            </h5>
+            <a href="{% url 'dispatchnote:dispatch_item_add' dispatch_note.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Add Item
+            </a>
+        </div>
+        <div class="card-body">
+            {% if dispatch_note.dispatch_items.all %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>GRN No</th>
+                            <th>Item Code</th>
+                            <th>Item</th>
+                            <th>HS Code</th>
+                            <th>Unit</th>
+                            <th>QTY</th>
+                            <th>COO</th>
+                            <th>N-weight</th>
+                            <th>G-weight</th>
+                            <th>CBM</th>
+                            <th>P-Date</th>
+                            <th>E-Date</th>
+                            <th>Color</th>
+                            <th>Size</th>
+                            <th>Barcode</th>
+                            <th>ED</th>
+                            <th>CTNR</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in dispatch_note.dispatch_items.all %}
+                        <tr>
+                            <td>{{ item.grn_no|default:"-" }}</td>
+                            <td>{{ item.item_code|default:"-" }}</td>
+                            <td>{{ item.item_name|default:"-" }}</td>
+                            <td>{{ item.hs_code|default:"-" }}</td>
+                            <td>{{ item.unit|default:"-" }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.coo|default:"-" }}</td>
+                            <td>{{ item.n_weight|default:"-" }}</td>
+                            <td>{{ item.g_weight|default:"-" }}</td>
+                            <td>{{ item.cbm|default:"-" }}</td>
+                            <td>{{ item.p_date|date:"M d, Y"|default:"-" }}</td>
+                            <td>{{ item.e_date|date:"M d, Y"|default:"-" }}</td>
+                            <td>{{ item.color|default:"-" }}</td>
+                            <td>{{ item.size|default:"-" }}</td>
+                            <td>{{ item.barcode|default:"-" }}</td>
+                            <td>{{ item.ed|default:"-" }}</td>
+                            <td>{{ item.ctnr|default:"-" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'dispatchnote:dispatch_item_update' dispatch_note.pk item.pk %}" class="btn btn-outline-warning" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'dispatchnote:dispatch_item_delete' dispatch_note.pk item.pk %}" class="btn btn-outline-danger delete-item-btn" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-box display-4 text-muted mb-3"></i>
+                <h5 class="text-muted">No cargo items added yet</h5>
+                <p class="text-muted">Add cargo items to this dispatch note to get started.</p>
+                <a href="{% url 'dispatchnote:dispatch_item_add' dispatch_note.pk %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add First Item
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dispatchnote/dispatchnote.js' %}"></script>
+<script>
+var data = {
+    name: "{{ dispatch_note.name }}",
+    age: 25,
+    city: "Dubai"
+};
+</script>
+{% endblock %} 

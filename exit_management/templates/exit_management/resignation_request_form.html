@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} Resignation Request{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'exit_management/css/dashboard.css' %}">
+<style>
+    .form-section {
+        background: #f8f9fc;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e3e6f0;
+    }
+    
+    .form-section h5 {
+        color: #4e73df;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #e74a3b;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #858796;
+        margin-top: 0.25rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #5a5c69;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    
+    .btn-group {
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt me-2"></i>
+            {% if form.instance.pk %}Edit{% else %}New{% endif %} Resignation Request
+        </h1>
+        <div>
+            <a href="{% url 'exit_management:resignation_request_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+            <a href="{% url 'exit_management:dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                {% if form.instance.pk %}Edit{% else %}Create{% endif %} Resignation Request
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="resignation-form">
+                {% csrf_token %}
+                
+                <!-- Employee Information Section -->
+                <div class="form-section">
+                    <h5><i class="fas fa-user me-2"></i>Employee Information</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.employee.id_for_label }}" class="form-label required-field">
+                                    Employee
+                                </label>
+                                {{ form.employee }}
+                                {% if form.employee.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.employee.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Select the employee submitting the resignation</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.exit_type.id_for_label }}" class="form-label required-field">
+                                    Exit Type
+                                </label>
+                                {{ form.exit_type }}
+                                {% if form.exit_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.exit_type.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Select the type of exit</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resignation Details Section -->
+                <div class="form-section">
+                    <h5><i class="fas fa-calendar-alt me-2"></i>Resignation Details</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.resignation_date.id_for_label }}" class="form-label required-field">
+                                    Resignation Date
+                                </label>
+                                {{ form.resignation_date }}
+                                {% if form.resignation_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.resignation_date.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Date when the resignation was submitted</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.last_working_day.id_for_label }}" class="form-label required-field">
+                                    Last Working Day
+                                </label>
+                                {{ form.last_working_day }}
+                                {% if form.last_working_day.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.last_working_day.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Employee's last day at work</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.reason.id_for_label }}" class="form-label required-field">
+                                    Reason for Resignation
+                                </label>
+                                {{ form.reason }}
+                                {% if form.reason.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.reason.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Provide a detailed explanation for the resignation</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notice Period Section -->
+                <div class="form-section">
+                    <h5><i class="fas fa-clock me-2"></i>Notice Period</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.notice_period_days.id_for_label }}" class="form-label required-field">
+                                    Notice Period (Days)
+                                </label>
+                                {{ form.notice_period_days }}
+                                {% if form.notice_period_days.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.notice_period_days.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Required notice period in days</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.notice_period_served.id_for_label }}" class="form-label">
+                                    Notice Period Served
+                                </label>
+                                {{ form.notice_period_served }}
+                                {% if form.notice_period_served.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.notice_period_served.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Actual notice period served in days</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Remaining Notice Period</label>
+                                <input type="text" class="form-control" id="remaining-notice" readonly>
+                                <div class="help-text">Automatically calculated</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manager Assignment Section -->
+                <div class="form-section">
+                    <h5><i class="fas fa-user-tie me-2"></i>Manager Assignment</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.manager.id_for_label }}" class="form-label">
+                                    Manager
+                                </label>
+                                {{ form.manager }}
+                                {% if form.manager.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.manager.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Manager who will review the resignation</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.hr_manager.id_for_label }}" class="form-label">
+                                    HR Manager
+                                </label>
+                                {{ form.hr_manager }}
+                                {% if form.hr_manager.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.hr_manager.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">HR manager for final approval</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information Section -->
+                <div class="form-section">
+                    <h5><i class="fas fa-info-circle me-2"></i>Additional Information</h5>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.additional_comments.id_for_label }}" class="form-label">
+                                    Additional Notes
+                                </label>
+                                {{ form.additional_comments }}
+                                {% if form.additional_comments.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.additional_comments.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Optional additional information</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.resignation_letter.id_for_label }}" class="form-label">
+                                    Resignation Letter
+                                </label>
+                                {{ form.resignation_letter }}
+                                {% if form.resignation_letter.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.resignation_letter.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="help-text">Upload resignation letter (optional)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'exit_management:resignation_request_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        {% if form.instance.pk %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Resignation
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Resignation
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'exit_management/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate remaining notice period
+    function calculateRemainingNotice() {
+        const required = parseInt(document.getElementById('{{ form.notice_period_days.id_for_label }}').value) || 0;
+        const served = parseInt(document.getElementById('{{ form.notice_period_served.id_for_label }}').value) || 0;
+        const remaining = Math.max(0, required - served);
+        
+        const remainingField = document.getElementById('remaining-notice');
+        remainingField.value = remaining + ' days';
+        
+        if (remaining > 0) {
+            remainingField.classList.add('text-warning');
+            remainingField.classList.remove('text-success');
+        } else {
+            remainingField.classList.add('text-success');
+            remainingField.classList.remove('text-warning');
+        }
+    }
+    
+    // Auto-calculate when values change
+    document.getElementById('{{ form.notice_period_days.id_for_label }}').addEventListener('input', calculateRemainingNotice);
+    document.getElementById('{{ form.notice_period_served.id_for_label }}').addEventListener('input', calculateRemainingNotice);
+    
+    // Initial calculation
+    calculateRemainingNotice();
+    
+    // Auto-fill manager based on employee selection
+    document.getElementById('{{ form.employee.id_for_label }}').addEventListener('change', function() {
+        const employeeId = this.value;
+        if (employeeId) {
+            // You can add AJAX call here to fetch employee's manager
+            // For now, we'll just enable the manager field
+            document.getElementById('{{ form.manager.id_for_label }}').disabled = false;
+        }
+    });
+    
+    // Form validation
+    document.getElementById('resignation-form').addEventListener('submit', function(e) {
+        const resignationDate = document.getElementById('{{ form.resignation_date.id_for_label }}').value;
+        const lastWorkingDay = document.getElementById('{{ form.last_working_day.id_for_label }}').value;
+        
+        if (resignationDate && lastWorkingDay) {
+            if (new Date(resignationDate) > new Date(lastWorkingDay)) {
+                e.preventDefault();
+                alert('Last working day cannot be before resignation date.');
+                return false;
+            }
+        }
+        
+        if (new Date(resignationDate) < new Date().toISOString().split('T')[0]) {
+            e.preventDefault();
+            alert('Resignation date cannot be in the past.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Tracking Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line fa-fw"></i> Email Tracking Dashboard
+        </h1>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Opens
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_opens }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-eye fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Clicks
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_clicks }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-mouse-pointer fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total Bounces
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_bounces }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Unsubscribes
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_unsubscribes }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-times fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Events -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Tracking Events</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_events %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Recipient</th>
+                                        <th>Campaign</th>
+                                        <th>Event</th>
+                                        <th>Time</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in recent_events %}
+                                    <tr>
+                                        <td>{{ event.recipient.email }}</td>
+                                        <td>{{ event.recipient.campaign.name }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ event.tracking_type }}">
+                                                {{ event.get_tracking_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ event.timestamp|timesince }} ago</td>
+                                        <td>
+                                            {% if event.tracking_type == 'click' and event.clicked_url %}
+                                                {{ event.clicked_url }}
+                                            {% elif event.tracking_type == 'bounce' and event.bounce_reason %}
+                                                {{ event.bounce_reason }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-activity fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No tracking events found</h6>
+                            <p class="text-muted">Tracking events will appear here once campaigns start sending.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Campaign Performance -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaign Performance</h6>
+                </div>
+                <div class="card-body">
+                    {% if campaign_performance %}
+                        {% for campaign in campaign_performance %}
+                        <div class="mb-3">
+                            <h6 class="mb-1">{{ campaign.name }}</h6>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <small class="text-muted">Opens</small><br>
+                                    <strong>{{ campaign.open_count|default:0 }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Clicks</small><br>
+                                    <strong>{{ campaign.click_count|default:0 }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% if not forloop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No campaign performance data available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

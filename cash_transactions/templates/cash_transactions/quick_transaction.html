@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quick Cash Transaction - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cash_transactions/css/cash_transactions.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cash-transaction-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-lightning text-primary"></i>
+                            Quick Cash Transaction
+                        </h2>
+                        <p class="text-muted mb-0">Fast entry for simple cash transactions</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'cash_transactions:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> View All
+                        </a>
+                        <a href="{% url 'cash_transactions:create' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle"></i> Full Entry
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="cash-transaction-card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-lightning me-2"></i>Quick Transaction Entry</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="quickTransactionForm" class="cash-transaction-form">
+                            {% csrf_token %}
+                            
+                            <!-- Basic Information -->
+                            <div class="form-section">
+                                <h6><i class="bi bi-info-circle"></i>Basic Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.transaction_type.id_for_label }}" class="form-label">
+                                                <i class="bi bi-arrow-left-right"></i> Transaction Type *
+                                            </label>
+                                            {{ form.transaction_type }}
+                                            {% if form.transaction_type.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.transaction_type.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                                <i class="bi bi-tags"></i> Category *
+                                            </label>
+                                            {{ form.category }}
+                                            {% if form.category.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account and Amount -->
+                            <div class="form-section">
+                                <h6><i class="bi bi-bank"></i>Account & Amount</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.account.id_for_label }}" class="form-label">
+                                                <i class="bi bi-wallet2"></i> Account *
+                                            </label>
+                                            {{ form.account }}
+                                            {% if form.account.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.account.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                                <i class="bi bi-cash"></i> Amount *
+                                            </label>
+                                            <div class="amount-field">
+                                                {{ form.amount }}
+                                            </div>
+                                            {% if form.amount.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Information -->
+                            <div class="form-section">
+                                <h6><i class="bi bi-file-text"></i>Optional Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.location.id_for_label }}" class="form-label">
+                                                <i class="bi bi-geo-alt"></i> Location
+                                            </label>
+                                            {{ form.location }}
+                                            {% if form.location.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.location.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.narration.id_for_label }}" class="form-label">
+                                                <i class="bi bi-chat-text"></i> Description
+                                            </label>
+                                            {{ form.narration }}
+                                            {% if form.narration.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.narration.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transaction Summary -->
+                            <div class="transaction-summary">
+                                <h6><i class="bi bi-clipboard-data"></i>Transaction Summary</h6>
+                                <div class="summary-item">
+                                    <span>Type:</span>
+                                    <span id="summaryType" class="fw-bold">Cash Out</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span>Amount:</span>
+                                    <span id="summaryAmount" class="fw-bold text-danger">AED 0.00</span>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="action-buttons">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <button type="button" class="btn btn-secondary" onclick="resetQuickForm()">
+                                            <i class="bi bi-arrow-clockwise"></i> Reset
+                                        </button>
+                                        <a href="{% url 'cash_transactions:list' %}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-check-circle"></i> Save Transaction
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cash_transactions/js/cash_transactions.js' %}"></script>
+<script>
+// Quick form specific functions
+$(document).ready(function() {
+    // Initialize quick form
+    initializeQuickForm();
+    
+    // Update summary on amount change
+    $('#id_amount').on('input', function() {
+        updateQuickSummary();
+    });
+    
+    // Update summary on type change
+    $('#id_transaction_type').on('change', function() {
+        updateQuickSummary();
+    });
+});
+
+function initializeQuickForm() {
+    // Set default transaction type if not set
+    if (!$('#id_transaction_type').val()) {
+        $('#id_transaction_type').val('cash_out').trigger('change');
+    }
+    
+    // Update summary
+    updateQuickSummary();
+    
+    // Add animation
+    $('.cash-transaction-card').addClass('fade-in');
+}
+
+function updateQuickSummary() {
+    const transactionType = $('#id_transaction_type').val();
+    const amount = parseFloat($('#id_amount').val()) || 0;
+    
+    $('#summaryType').text(transactionType === 'cash_in' ? 'Cash In' : 'Cash Out');
+    $('#summaryAmount').text(formatCurrency(amount));
+    
+    // Update color based on type
+    if (transactionType === 'cash_in') {
+        $('#summaryAmount').removeClass('text-danger').addClass('text-success');
+    } else {
+        $('#summaryAmount').removeClass('text-success').addClass('text-danger');
+    }
+}
+
+function resetQuickForm() {
+    if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+        document.getElementById('quickTransactionForm').reset();
+        updateQuickSummary();
+    }
+}
+
+// Form validation
+$('#quickTransactionForm').on('submit', function(e) {
+    const amount = parseFloat($('#id_amount').val()) || 0;
+    const account = $('#id_account').val();
+    const transactionType = $('#id_transaction_type').val();
+    const category = $('#id_category').val();
+    
+    let isValid = true;
+    
+    // Clear previous errors
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+    
+    // Validate amount
+    if (amount <= 0) {
+        $('#id_amount').addClass('is-invalid');
+        $('#id_amount').after('<div class="invalid-feedback">Amount must be greater than zero.</div>');
+        isValid = false;
+    }
+    
+    // Validate account
+    if (!account) {
+        $('#id_account').addClass('is-invalid');
+        $('#id_account').after('<div class="invalid-feedback">Account is required.</div>');
+        isValid = false;
+    }
+    
+    // Validate transaction type
+    if (!transactionType) {
+        $('#id_transaction_type').addClass('is-invalid');
+        $('#id_transaction_type').after('<div class="invalid-feedback">Transaction type is required.</div>');
+        isValid = false;
+    }
+    
+    // Validate category
+    if (!category) {
+        $('#id_category').addClass('is-invalid');
+        $('#id_category').after('<div class="invalid-feedback">Category is required.</div>');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %} 

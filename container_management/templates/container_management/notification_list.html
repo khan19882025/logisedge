@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Container Notifications{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-bell me-2"></i>Container Notifications
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:send_notification' %}" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-plus me-1"></i>Send Notification
+            </a>
+            <a href="{% url 'container_management:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-graph-up me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-list me-2"></i>Notifications ({{ page_obj.paginator.count }})
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Priority</th>
+                                <th>Title</th>
+                                <th>Recipient</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for notification in page_obj %}
+                                <tr {% if not notification.is_read %}class="table-warning"{% endif %}>
+                                    <td>
+                                        <span class="badge bg-{{ notification.get_notification_type_display_class }}">
+                                            {{ notification.get_notification_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ notification.get_priority_display_class }}">
+                                            {{ notification.get_priority_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ notification.title }}</strong>
+                                            {% if not notification.is_read %}
+                                                <span class="badge bg-danger ms-2">New</span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ notification.message|truncatechars:100 }}</small>
+                                    </td>
+                                    <td>
+                                        {% if notification.recipient_name %}
+                                            <div>
+                                                <strong>{{ notification.recipient_name }}</strong>
+                                                {% if notification.recipient_email %}
+                                                    <br>
+                                                    <small class="text-muted">{{ notification.recipient_email }}</small>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if notification.is_sent %}
+                                            <span class="badge bg-success">Sent</span>
+                                            {% if notification.sent_at %}
+                                                <br>
+                                                <small class="text-muted">{{ notification.sent_at|date:"M d, Y H:i" }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ notification.created_at|date:"M d, Y" }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ notification.created_at|date:"H:i" }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'container_management:notification_detail' notification.pk %}" 
+                                               class="btn btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if notification.container %}
+                                                <a href="{% url 'container_management:container_detail' notification.container.pk %}" 
+                                                   class="btn btn-outline-info" title="View Container">
+                                                    <i class="bi bi-container"></i>
+                                                </a>
+                                            {% endif %}
+                                            {% if notification.container_booking %}
+                                                <a href="{% url 'container_management:booking_detail' notification.container_booking.pk %}" 
+                                                   class="btn btn-outline-success" title="View Booking">
+                                                    <i class="bi bi-calendar-check"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Notification pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-bell fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No notifications found</h5>
+                    <p class="text-muted">You don't have any notifications yet.</p>
+                    <a href="{% url 'container_management:send_notification' %}" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Send First Notification
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+    <script>
+        // Initialize form enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Highlight unread notifications
+            const unreadRows = document.querySelectorAll('tr.table-warning');
+            unreadRows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#fff3cd';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                });
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,261 @@
+{% load invoice_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice - {{ invoice.invoice_number }}</title>
+    <style>
+        @page { size: A4; margin: 1cm; }
+        body { margin: 0; padding: 0; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-height: 4cm;
+            min-height: 4cm;
+            height: 4cm;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0 10px 0 0;
+            overflow: hidden;
+        }
+        .company-block {
+            text-align: left;
+            max-width: 60%;
+            font-size: 11px;
+        }
+        .company-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1.1;
+        }
+        .company-details {
+            font-size: 10px;
+            color: #666;
+            word-break: break-word;
+        }
+        .invoice-block {
+            text-align: right;
+            max-width: 40%;
+            font-size: 11px;
+            margin-top: 0;
+        }
+        .invoice-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+            line-height: 1.1;
+        }
+        .invoice-meta {
+            font-size: 11px;
+            margin: 0;
+            padding: 0;
+        }
+        .invoice-meta div {
+            margin-bottom: 2px;
+        }
+        .header-separator {
+            border-bottom: 2px solid #333;
+            margin: 0 0 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <table width="100%" style="margin-bottom: 15px;">
+      <tr valign="top">
+        <td width="60%">
+          {% if company %}
+              <div style="font-size:20px; font-weight:bold; margin-bottom:5px;">{{ company.name }}</div>
+              <div style="font-size:10px; color:#666; word-break:break-word;">
+                  {{ company.address|linebreaksbr }}<br>
+                  {% if company.phone %}Tel: {{ company.phone }}{% endif %}{% if company.phone and company.email %} | {% endif %}{% if company.email %}Email: {{ company.email }}{% endif %}
+                  {% if company.website %}<br>Web: {{ company.website }}{% endif %}
+                  {% if company.tax_number or company.registration_number %}<br>{% endif %}
+                  {% if company.tax_number %}Tax: {{ company.tax_number }}{% endif %}{% if company.tax_number and company.registration_number %} | {% endif %}{% if company.registration_number %}Reg: {{ company.registration_number }}{% endif %}
+              </div>
+          {% endif %}
+        </td>
+        <td width="40%" align="right" style="vertical-align:top;">
+          <div style="font-size:24px; font-weight:bold; color:#2c3e50; margin:0; letter-spacing:2px;">INVOICE</div>
+          <div style="font-size:11px; margin:0; padding:0;">
+              <div style="margin-bottom:2px;"><b>Invoice No:</b> {{ invoice.invoice_number }}</div>
+              <div style="margin-bottom:2px;"><b>Date:</b> {{ invoice.invoice_date|date:"M d, Y" }}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <hr style="border: 1px solid #333; margin: 10px 0 10px 0;">
+    <table width="100%" style="margin-bottom: 20px;">
+      <tr valign="top">
+        <!-- Left Column -->
+        <td width="50%" style="font-size:11px; vertical-align:top;">
+          <div><b>Customer Name:</b> {{ invoice.customer.customer_name }}</div>
+          <div><b>Shipper:</b> {{ invoice.shipper|default:"-" }}</div>
+          <div><b>Consignee:</b> {{ invoice.consignee|default:"-" }}</div>
+          <div><b>Origin:</b> {{ invoice.origin|default:"-" }}</div>
+          <div><b>Destination:</b> {{ invoice.destination|default:"-" }}</div>
+        </td>
+        <!-- Right Column -->
+        <td width="50%" style="font-size:11px; vertical-align:top;">
+          <div><b>BL:</b> {{ invoice.bl_number|default:"-" }}</div>
+          <div><b>ED:</b> {{ invoice.ed_number|default:"-" }}</div>
+          <div><b>CNTR:</b> {{ invoice.container_number|default:"-" }}</div>
+          <div><b>Total Qty:</b> {{ invoice.total_qty|default:"0" }}</div>
+          <div><b>Remark:</b> {{ invoice.notes|default:"-" }}</div>
+        </td>
+      </tr>
+    </table>
+    
+    <!-- Job Details Section -->
+    {% if invoice.jobs.all %}
+    <div style="margin-bottom: 15px; font-size: 11px;">
+        <div style="font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 3px;">
+            <i class="bi bi-briefcase"></i> Associated Jobs: 
+            {% for job in invoice.jobs.all %}
+                <span style="display: inline-block; margin-left: 10px; padding: 3px 8px; background: #17a2b8; color: white; border-radius: 3px; font-size: 10px; font-weight: normal;">
+                    {{ job.job_code }}
+                </span>
+            {% endfor %}
+        </div>
+        {% for job in invoice.jobs.all %}
+        {% if job.cargo_items.all %}
+        <div style="margin-bottom: 8px; padding: 8px; background: #e8f4fd; border-left: 3px solid #17a2b8; border-radius: 3px;">
+            <div style="font-weight: bold; color: #17a2b8;">Cargo Items: 
+                {% for cargo in job.cargo_items.all %}
+                    <span style="display: inline-block; margin-left: 5px; padding: 2px 6px; background: #fff; border: 1px solid #ddd; border-radius: 3px; font-weight: normal; color: #333;">
+                        {% if cargo.item and cargo.item.item_name %}
+                            {{ cargo.item.item_name }}
+                        {% elif cargo.item_code %}
+                            {{ cargo.item_code }}
+                        {% else %}
+                            Unknown Item
+                        {% endif %}
+                        {% if cargo.quantity %}
+                            ({{ cargo.quantity }})
+                        {% endif %}
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Invoice Items Table -->
+    <table width="100%" border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; font-size:11px; margin-bottom: 20px;">
+        <thead style="background:#f0f0f0;">
+            <tr>
+                <th>Sr No</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+                <th>VAT</th>
+                <th>T-Amount</th>
+                <th>Remark</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.invoice_items %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.description|service_name_only }}</td>
+                <td>{{ item.sale_qty|default:"0" }}</td>
+                <td>{{ item.sale_rate|default:"0.00" }}</td>
+                <td>{{ item.sale_amount|default:"0.00" }}</td>
+                <td>{{ item.sale_vat|default:"0.00" }}</td>
+                <td>{{ item.sale_total|default:"0.00" }}</td>
+                <td>{{ item.remark|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" align="center">No invoice items found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Totals Section -->
+    <div style="margin-bottom: 20px;">
+        <table width="100%" style="font-size: 11px;">
+            <tr>
+                <td width="70%"></td>
+                <td width="30%" style="text-align: right;">
+                    <table width="100%" style="border: 1px solid #333; border-collapse: collapse;">
+                        <tr style="background: #f0f0f0;">
+                            <td style="padding: 8px; border: 1px solid #333; font-weight: bold;">Total Amount:</td>
+                            <td style="padding: 8px; border: 1px solid #333; text-align: right; font-weight: bold;">
+                                AED {{ invoice.total_amount|default:"0.00" }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- Total in Words -->
+        <div style="margin-top: 15px; font-size: 11px; border: 1px solid #333; padding: 10px; background: #f9f9f9;">
+            <strong>Total Amount in Words:</strong> 
+            <span style="font-style: italic; color: #2c3e50;">
+                AED {{ invoice.total_amount|number_to_words }} Only
+            </span>
+        </div>
+    </div>
+    
+    <!-- Bank Details Section -->
+    {% if company.has_bank_details %}
+    <div style="margin-bottom: 20px; font-size: 11px;">
+        <div style="font-weight: bold; margin-bottom: 8px; color: #2c3e50;">
+            Bank Details for Payment
+        </div>
+        <div style="font-size: 10px; color: #333; line-height: 1.4;">
+            {% if company.bank_name %}
+            <div style="margin-bottom: 3px;"><strong>Bank:</strong> {{ company.bank_name }}</div>
+            {% endif %}
+            {% if company.bank_account_number %}
+            <div style="margin-bottom: 3px;"><strong>Account Number:</strong> {{ company.bank_account_number }}</div>
+            {% endif %}
+            {% if company.bank_iban %}
+            <div style="margin-bottom: 3px;"><strong>IBAN:</strong> {{ company.bank_iban }}</div>
+            {% endif %}
+            {% if company.bank_swift_code %}
+            <div style="margin-bottom: 3px;"><strong>SWIFT/BIC:</strong> {{ company.bank_swift_code }}</div>
+            {% endif %}
+            {% if company.bank_branch %}
+            <div style="margin-bottom: 3px;"><strong>Branch:</strong> {{ company.bank_branch }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Footer Section -->
+    <div style="margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 10px;">
+            <!-- Left side - Prepared by -->
+            <div style="text-align: left;">
+                <div style="margin-bottom: 20px;">
+                    <strong>Prepared by:</strong><br>
+                    <span style="margin-top: 15px; display: inline-block;">_________________</span><br>
+                    <small style="color: #666;">(Authorized Signature)</small>
+                </div>
+            </div>
+            
+            <!-- Right side - Company stamp area -->
+            <div style="text-align: right;">
+                <div style="margin-bottom: 20px;">
+                    <span style="margin-top: 15px; display: inline-block;">_________________</span><br>
+                    <small style="color: #666;">(Company Stamp)</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Computer Generated Note -->
+        <div style="text-align: center; margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 3px; font-size: 9px; color: #666;">
+            <strong>This is a computer generated invoice, does not require signature and stamp</strong>
+        </div>
+    </div>
+</body>
+</html> 

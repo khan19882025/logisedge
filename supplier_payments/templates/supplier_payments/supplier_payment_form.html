@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/supplier_payments/supplier_payments.css' %}">
+<style>
+    .invoice-selection {
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        background-color: #f9f9f9;
+    }
+    
+    .invoice-table {
+        margin-top: 15px;
+    }
+    
+    .invoice-table th, .invoice-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .amount-input {
+        width: 120px;
+    }
+    
+    .total-amount {
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #28a745;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'supplier_payments:supplier_payment_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                
+                <form method="post" id="payment-form">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.supplier.id_for_label }}">{{ form.supplier.label }}</label>
+                                    {{ form.supplier }}
+                                    {% if form.supplier.errors %}
+                                        <div class="text-danger">{{ form.supplier.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.payment_date.id_for_label }}">{{ form.payment_date.label }}</label>
+                                    {{ form.payment_date }}
+                                    {% if form.payment_date.errors %}
+                                        <div class="text-danger">{{ form.payment_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
+                                    {{ form.amount }}
+                                    {% if form.amount.errors %}
+                                        <div class="text-danger">{{ form.amount.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.payment_method.id_for_label }}">{{ form.payment_method.label }}</label>
+                                    {{ form.payment_method }}
+                                    {% if form.payment_method.errors %}
+                                        <div class="text-danger">{{ form.payment_method.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.ledger_account.id_for_label }}">Ledger Account *</label>
+                                    <small class="form-text text-muted mb-2">Select the appropriate ledger account based on your payment method</small>
+                                    {{ form.ledger_account }}
+                                    {% if form.ledger_account.errors %}
+                                        <div class="text-danger">{{ form.ledger_account.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.reference_number.id_for_label }}">{{ form.reference_number.label }}</label>
+                                    {{ form.reference_number }}
+                                    {% if form.reference_number.errors %}
+                                        <div class="text-danger">{{ form.reference_number.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="text-danger">{{ form.notes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Invoice and Bill Selection Section -->
+        <div class="invoice-selection" id="invoice-selection" style="display: none;">
+            <h5><i class="fas fa-file-invoice"></i> Select Invoices and Bills to Pay</h5>
+            <p class="text-muted">Choose which invoices and supplier bills this payment should be applied to:</p>
+            
+            <div id="invoice-loading" class="loading" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Loading items...
+            </div>
+            
+            <!-- Invoices Section -->
+            <div id="invoices-section" style="display: none;">
+                <h6><i class="fas fa-file-invoice"></i> Invoices</h6>
+                <div id="invoice-list">
+                    <!-- Invoices will be loaded here via AJAX -->
+                </div>
+            </div>
+            
+            <!-- Bills Section -->
+            <div id="bills-section" style="display: none;">
+                <h6><i class="fas fa-file-text"></i> Supplier Bills</h6>
+                <div id="bill-list">
+                    <!-- Bills will be loaded here via AJAX -->
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <strong>Total Selected Amount: <span id="total-selected" class="total-amount">$0.00</span></strong>
+            </div>
+        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {{ button_text }}
+                        </button>
+                        <a href="{% url 'supplier_payments:supplier_payment_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Define URLs for JavaScript to use
+    window.supplierPaymentUrls = {
+        getPendingInvoices: '{% url "supplier_payments:get_pending_invoices" 0 %}'.replace('0', ''),
+        filterLedgerAccounts: '{% url "supplier_payments:ajax_filter_ledger_accounts" %}',
+        allLedgerAccounts: '{% url "supplier_payments:ajax_all_ledger_accounts" %}'
+    };
+</script>
+<script src="{% static 'js/supplier_payments/supplier_payments.js' %}"></script>
+{% endblock %}

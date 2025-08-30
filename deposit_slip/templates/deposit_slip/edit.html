@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Deposit Slip - {{ deposit_slip.slip_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'deposit_slip/css/deposit_slip.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-edit text-warning"></i>
+                    Edit Deposit Slip
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'deposit_slip:list' %}">Deposit Slips</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'deposit_slip:detail' deposit_slip.pk %}">{{ deposit_slip.slip_number }}</a></li>
+                        <li class="breadcrumb-item active">Edit</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" id="deposit-slip-form">
+        {% csrf_token %}
+        
+        <!-- Deposit Information Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle"></i>
+                            Deposit Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ deposit_form.deposit_date.id_for_label }}" class="form-label">
+                                        <i class="fas fa-calendar"></i> Deposit Date *
+                                    </label>
+                                    {{ deposit_form.deposit_date }}
+                                    {% if deposit_form.deposit_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ deposit_form.deposit_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ deposit_form.deposit_to.id_for_label }}" class="form-label">
+                                        <i class="fas fa-university"></i> Deposit To *
+                                    </label>
+                                    {{ deposit_form.deposit_to }}
+                                    {% if deposit_form.deposit_to.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ deposit_form.deposit_to.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ deposit_form.reference_number.id_for_label }}" class="form-label">
+                                        <i class="fas fa-hashtag"></i> Reference Number
+                                    </label>
+                                    {{ deposit_form.reference_number }}
+                                    {% if deposit_form.reference_number.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ deposit_form.reference_number.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fas fa-clock"></i> Current Total
+                                    </label>
+                                    <div class="form-control-plaintext text-primary fw-bold">
+                                        {{ deposit_slip.total_amount|floatformat:2 }} AED
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="{{ deposit_form.narration.id_for_label }}" class="form-label">
+                                        <i class="fas fa-sticky-note"></i> Narration / Notes
+                                    </label>
+                                    {{ deposit_form.narration }}
+                                    {% if deposit_form.narration.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ deposit_form.narration.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Receipt Vouchers Selection Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list-check"></i>
+                            Select Receipt Vouchers
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Filters -->
+                        <div class="row mb-3">
+                            <div class="col-md-2">
+                                <label for="{{ voucher_form.date_from.id_for_label }}" class="form-label">From Date</label>
+                                {{ voucher_form.date_from }}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ voucher_form.date_to.id_for_label }}" class="form-label">To Date</label>
+                                {{ voucher_form.date_to }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ voucher_form.payer_name.id_for_label }}" class="form-label">Payer Name</label>
+                                {{ voucher_form.payer_name }}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ voucher_form.receipt_mode.id_for_label }}" class="form-label">Payment Mode</label>
+                                {{ voucher_form.receipt_mode }}
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-primary me-2" id="filter-vouchers">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="clear-filters">
+                                    <i class="fas fa-times"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Receipt Vouchers Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped" id="vouchers-table">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th width="50">
+                                            <input type="checkbox" id="select-all-vouchers" class="form-check-input">
+                                        </th>
+                                        <th>Voucher No</th>
+                                        <th>Customer/Payer</th>
+                                        <th>Payment Mode</th>
+                                        <th>Amount</th>
+                                        <th>Reference</th>
+                                        <th>Received Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for voucher in available_vouchers %}
+                                    <tr class="voucher-row" data-voucher-id="{{ voucher.id }}">
+                                        <td>
+                                            <input type="checkbox" name="selected_vouchers" value="{{ voucher.id }}" 
+                                                   class="form-check-input voucher-checkbox" 
+                                                   data-amount="{{ voucher.amount }}"
+                                                   {% if voucher.id in selected_vouchers %}checked{% endif %}>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-primary">{{ voucher.voucher_number }}</span>
+                                        </td>
+                                        <td>{{ voucher.payer_name }}</td>
+                                        <td>
+                                            <span class="badge {% if voucher.receipt_mode == 'cash' %}bg-success{% elif voucher.receipt_mode == 'cheque' %}bg-warning{% else %}bg-info{% endif %}">
+                                                <i class="fas {% if voucher.receipt_mode == 'cash' %}fa-money-bill{% elif voucher.receipt_mode == 'cheque' %}fa-university{% else %}fa-credit-card{% endif %}"></i>
+                                                {{ voucher.get_receipt_mode_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end fw-bold">{{ voucher.amount|floatformat:2 }} AED</td>
+                                        <td>{{ voucher.reference_number|default:"-" }}</td>
+                                        <td>{{ voucher.voucher_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Received
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                                            <p>No available receipt vouchers found.</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit Summary Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calculator"></i>
+                            Deposit Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="summary-item">
+                                    <label class="form-label">Selected Vouchers</label>
+                                    <div class="form-control-plaintext fw-bold" id="selected-count">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="summary-item">
+                                    <label class="form-label">Cash Amount</label>
+                                    <div class="form-control-plaintext text-success fw-bold" id="cash-amount">0.00 AED</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="summary-item">
+                                    <label class="form-label">Cheque Amount</label>
+                                    <div class="form-control-plaintext text-warning fw-bold" id="cheque-amount">0.00 AED</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="summary-item">
+                                    <label class="form-label">Total Amount</label>
+                                    <div class="form-control-plaintext text-primary fw-bold fs-5" id="total-amount">0.00 AED</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="{% url 'deposit_slip:detail' deposit_slip.pk %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to Details
+                                </a>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" id="save-draft">
+                                    <i class="fas fa-save"></i> Save Draft
+                                </button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-check"></i> Update Deposit Slip
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+<script src="{% static 'deposit_slip/js/deposit_slip.js' %}"></script>
+<script>
+// Initialize summary on page load for edit page
+$(document).ready(function() {
+    updateSummary();
+    updateSelectAllCheckbox();
+});
+</script>
+{% endblock %} 

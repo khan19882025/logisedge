@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Exit Management Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'exit_management/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-sign-out-alt me-2"></i>Exit Management Dashboard
+        </h1>
+        <div>
+            <a href="{% url 'exit_management:resignation_request_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Resignation Request
+            </a>
+            <a href="{% url 'exit_management:exit_reports' %}" class="btn btn-info">
+                <i class="fas fa-chart-bar me-2"></i>Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <!-- Total Resignations -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Resignations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_resignations }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Resignations -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Resignations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_resignations }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Clearances -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Active Clearances
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_clearances }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Gratuity Paid -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Gratuity Paid
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">AED {{ total_gratuity_paid|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Recent Resignations -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Resignation Requests</h6>
+                    <a href="{% url 'exit_management:resignation_request_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_resignations %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Exit Type</th>
+                                        <th>Status</th>
+                                        <th>Resignation Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resignation in recent_resignations %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'exit_management:resignation_request_detail' resignation.pk %}">
+                                                {{ resignation.employee.full_name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ resignation.exit_type.name }}</td>
+                                        <td>
+                                            {% if resignation.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif resignation.status == 'manager_review' %}
+                                                <span class="badge bg-info">Manager Review</span>
+                                            {% elif resignation.status == 'hr_approval' %}
+                                                <span class="badge bg-primary">HR Approval</span>
+                                            {% elif resignation.status == 'approved' %}
+                                                <span class="badge bg-success">Approved</span>
+                                            {% elif resignation.status == 'exit_processing' %}
+                                                <span class="badge bg-secondary">Exit Processing</span>
+                                            {% elif resignation.status == 'completed' %}
+                                                <span class="badge bg-dark">Completed</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ resignation.status|title }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ resignation.resignation_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'exit_management:resignation_request_detail' resignation.pk %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No resignation requests found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Status -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'exit_management:resignation_request_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Resignation
+                        </a>
+                        <a href="{% url 'exit_management:exit_type_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-tags me-2"></i>Manage Exit Types
+                        </a>
+                        <a href="{% url 'exit_management:clearance_department_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-building me-2"></i>Clearance Departments
+                        </a>
+                        <a href="{% url 'exit_management:clearance_item_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list-check me-2"></i>Clearance Items
+                        </a>
+                        <a href="{% url 'exit_management:exit_reports' %}" class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar me-2"></i>Generate Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Overview -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Status Overview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Pending</span>
+                            <span class="badge bg-warning">{{ pending_resignations }}</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 5px;">
+                            <div class="progress-bar bg-warning" style="width: {% widthratio pending_resignations total_resignations 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Approved</span>
+                            <span class="badge bg-success">{{ approved_resignations }}</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 5px;">
+                            <div class="progress-bar bg-success" style="width: {% widthratio approved_resignations total_resignations 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Completed</span>
+                            <span class="badge bg-dark">{{ completed_exits }}</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 5px;">
+                            <div class="progress-bar bg-dark" style="width: {% widthratio completed_exits total_resignations 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <!-- Monthly Attrition Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Monthly Attrition Trend</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="attritionChart" width="100%" height="40"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exit Reasons Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Exit Reasons</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="exitReasonsChart" width="100%" height="40"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'exit_management/js/dashboard.js' %}"></script>
+<script>
+// Monthly Attrition Chart
+const attritionCtx = document.getElementById('attritionChart').getContext('2d');
+const attritionChart = new Chart(attritionCtx, {
+    type: 'line',
+    data: {
+        labels: [
+            {% for item in monthly_attrition %}
+                '{{ item.month|date:"M Y" }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Resignations',
+            data: [
+                {% for item in monthly_attrition %}
+                    {{ item.count }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// Exit Reasons Chart
+const reasonsCtx = document.getElementById('exitReasonsChart').getContext('2d');
+const reasonsChart = new Chart(reasonsCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            {% for item in exit_reasons %}
+                '{{ item.exit_type__name }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for item in exit_reasons %}
+                    {{ item.count }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ recipient_list.name }} - Recipient List{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-users fa-fw"></i> {{ recipient_list.name }}
+        </h1>
+        <a href="{% url 'bulk_email_sender:recipient_list_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left fa-fw"></i> Back to Lists
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">List Details</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">{{ recipient_list.description|default:"No description" }}</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Type:</strong> {{ recipient_list.get_list_type_display }}<br>
+                                <strong>Created:</strong> {{ recipient_list.created_at|date:"M d, Y H:i" }}<br>
+                                <strong>Created by:</strong> {{ recipient_list.created_by.get_full_name|default:recipient_list.created_by.username }}
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Total Recipients:</strong> {{ page_obj.paginator.count }}<br>
+                                <strong>Last Updated:</strong> {{ recipient_list.updated_at|date:"M d, Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recipients Table -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recipients</h6>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>First Name</th>
+                                        <th>Last Name</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for recipient in page_obj %}
+                                    <tr>
+                                        <td>{{ recipient.email }}</td>
+                                        <td>{{ recipient.first_name|default:"-" }}</td>
+                                        <td>{{ recipient.last_name|default:"-" }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ recipient.status }}">
+                                                {{ recipient.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ recipient.created_at|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Recipient pagination" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No recipients in this list</h6>
+                            <p class="text-muted">This list doesn't have any recipients yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

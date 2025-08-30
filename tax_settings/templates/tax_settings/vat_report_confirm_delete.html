@@ -1,0 +1,117 @@
+{% extends 'tax_settings/base.html' %}
+{% load static %}
+
+{% block title %}Delete VAT Report - {{ object.report_name }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'tax_settings:vat_report_list' %}">VAT Reports</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'tax_settings:vat_report_detail' object.pk %}">{{ object.report_name }}</a></li>
+    <li class="breadcrumb-item active">Delete</li>
+{% endblock %}
+
+{% block tax_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-trash text-danger"></i>
+                    Delete VAT Report
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Confirm Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Warning</h6>
+                        <p class="mb-0">You are about to delete the VAT report <strong>"{{ object.report_name }}"</strong>. This action cannot be undone.</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Report Details:</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">Report Name:</dt>
+                                <dd class="col-sm-8">{{ object.report_name }}</dd>
+                                
+                                <dt class="col-sm-4">Period:</dt>
+                                <dd class="col-sm-8">{{ object.get_report_period_display }}</dd>
+                                
+                                <dt class="col-sm-4">Date Range:</dt>
+                                <dd class="col-sm-8">{{ object.start_date|date:"M d, Y" }} - {{ object.end_date|date:"M d, Y" }}</dd>
+                                
+                                <dt class="col-sm-4">Currency:</dt>
+                                <dd class="col-sm-8">{{ object.currency }}</dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    {% if object.is_filed %}
+                                        <span class="badge bg-success">Filed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Draft</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Financial Summary:</h6>
+                            <dl class="row">
+                                <dt class="col-sm-6">Total Sales:</dt>
+                                <dd class="col-sm-6">{{ object.currency }} {{ object.total_sales|floatformat:2 }}</dd>
+                                
+                                <dt class="col-sm-6">Total Purchases:</dt>
+                                <dd class="col-sm-6">{{ object.currency }} {{ object.total_purchases|floatformat:2 }}</dd>
+                                
+                                <dt class="col-sm-6">Sales Tax:</dt>
+                                <dd class="col-sm-6">{{ object.currency }} {{ object.total_sales_tax|floatformat:2 }}</dd>
+                                
+                                <dt class="col-sm-6">Purchase Tax:</dt>
+                                <dd class="col-sm-6">{{ object.currency }} {{ object.total_purchase_tax|floatformat:2 }}</dd>
+                                
+                                <dt class="col-sm-6">Net VAT:</dt>
+                                <dd class="col-sm-6">
+                                    {% if object.net_vat_payable >= 0 %}
+                                        <span class="text-danger">{{ object.currency }} {{ object.net_vat_payable|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="text-success">{{ object.currency }} {{ object.net_vat_payable|floatformat:2 }}</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    {% if object.is_filed %}
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-ban"></i> Cannot Delete Filed Report</h6>
+                            <p class="mb-0">This report has been marked as filed and cannot be deleted. If you need to make changes, please contact your system administrator.</p>
+                        </div>
+                    {% else %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{% url 'tax_settings:vat_report_detail' object.pk %}" class="btn btn-secondary me-md-2">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Delete Report
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

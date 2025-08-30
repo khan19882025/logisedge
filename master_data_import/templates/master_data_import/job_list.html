@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Jobs - Master Data Import{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'master_data_import/css/job_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-list me-2"></i>Import Jobs
+        </h1>
+        <div>
+            <a href="{% url 'master_data_import:upload_file' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>New Import
+            </a>
+            <a href="{% url 'master_data_import:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter me-2"></i>Filters
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label for="{{ filter_form.status.id_for_label }}" class="form-label">Status</label>
+                    {{ filter_form.status }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ filter_form.data_type.id_for_label }}" class="form-label">Data Type</label>
+                    {{ filter_form.data_type }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ filter_form.date_from.id_for_label }}" class="form-label">From Date</label>
+                    {{ filter_form.date_from }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ filter_form.date_to.id_for_label }}" class="form-label">To Date</label>
+                    {{ filter_form.date_to }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ filter_form.search.id_for_label }}" class="form-label">Search</label>
+                    {{ filter_form.search }}
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Import Jobs</h6>
+        </div>
+        <div class="card-body">
+            {% if import_jobs %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Job Name</th>
+                                <th>Template</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Rows</th>
+                                <th>Created By</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in import_jobs %}
+                            <tr data-job-id="{{ job.id }}" data-job-status="{{ job.status }}">
+                                <td>
+                                    <a href="{% url 'master_data_import:job_detail' job.id %}">
+                                        {{ job.job_name }}
+                                    </a>
+                                </td>
+                                <td>{{ job.template.name }}</td>
+                                <td>
+                                    <span class="badge badge-{{ job.status|lower }}">
+                                        {{ job.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="width: 150px; height: 20px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ job.progress_percentage }}%"
+                                             aria-valuenow="{{ job.progress_percentage }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ job.progress_percentage|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>
+                                        <span class="text-success">{{ job.successful_rows }}</span> /
+                                        <span class="text-danger">{{ job.failed_rows }}</span> /
+                                        <span class="text-muted">{{ job.total_rows }}</span>
+                                    </small>
+                                </td>
+                                <td>{{ job.created_by.get_full_name|default:job.created_by.username }}</td>
+                                <td>{{ job.created_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'master_data_import:job_detail' job.id %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if job.status == 'processing' %}
+                                            <a href="{% url 'master_data_import:cancel_job' job.id %}" 
+                                               class="btn btn-sm btn-outline-warning" title="Cancel Job"
+                                               onclick="return confirm('Are you sure you want to cancel this job?')">
+                                                <i class="fas fa-stop"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if job.errors.exists %}
+                                            <a href="{% url 'master_data_import:export_errors' job.id %}" 
+                                               class="btn btn-sm btn-outline-danger" title="Export Errors">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">No import jobs found.</p>
+                    <a href="{% url 'master_data_import:upload_file' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Create Your First Import
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'master_data_import/js/job_list.js' %}"></script>
+{% endblock %}

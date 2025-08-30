@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Task Scheduler Dashboard - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'auto_task_scheduler/css/task_scheduler.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="task-scheduler-container">
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="header-content">
+            <h1 class="main-title">
+                <i class="fas fa-clock"></i>
+                Auto Task Scheduler
+            </h1>
+            <p class="subtitle">Automate your ERP operations with intelligent task scheduling</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openCreateTaskModal()">
+                <i class="fas fa-plus"></i>
+                Create New Task
+            </button>
+            <button class="btn btn-secondary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon total-tasks">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number" id="total-tasks">{{ total_tasks|default:0 }}</h3>
+                <p class="stat-label">Total Tasks</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon active-tasks">
+                <i class="fas fa-play-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number" id="active-tasks">{{ active_tasks|default:0 }}</h3>
+                <p class="stat-label">Active Tasks</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon completed-today">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number" id="completed-today">{{ completed_today|default:0 }}</h3>
+                <p class="stat-label">Completed Today</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon failed-today">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number" id="failed-today">{{ failed_today|default:0 }}</h3>
+                <p class="stat-label">Failed Today</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="main-content-grid">
+        <!-- Left Column -->
+        <div class="left-column">
+            <!-- Upcoming Tasks -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-calendar-alt"></i> Upcoming Tasks</h3>
+                    <a href="{% url 'auto_task_scheduler:task_scheduler_list' %}" class="view-all-link">View All</a>
+                </div>
+                <div class="card-content">
+                    <div id="upcoming-tasks-list">
+                        {% if upcoming_tasks %}
+                            {% for task in upcoming_tasks %}
+                            <div class="task-item">
+                                <div class="task-info">
+                                    <h4 class="task-name">{{ task.name }}</h4>
+                                    <p class="task-schedule">{{ task.get_schedule_display }}</p>
+                                </div>
+                                <div class="task-actions">
+                                    <span class="task-time">{{ task.next_run_at|time:"H:i" }}</span>
+                                    <button class="btn btn-sm btn-primary" onclick="runTaskNow('{{ task.id }}')">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-calendar-times"></i>
+                                <p>No upcoming tasks</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Executions -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-history"></i> Recent Executions</h3>
+                    <a href="#" class="view-all-link">View All</a>
+                </div>
+                <div class="card-content">
+                    <div id="recent-executions-list">
+                        {% if recent_executions %}
+                            {% for execution in recent_executions %}
+                            <div class="execution-item status-{{ execution.status }}">
+                                <div class="execution-info">
+                                    <h4 class="execution-task">{{ execution.task.name }}</h4>
+                                    <p class="execution-time">{{ execution.started_at|timesince }} ago</p>
+                                </div>
+                                <div class="execution-status">
+                                    <span class="status-badge status-{{ execution.status }}">
+                                        {{ execution.get_status_display }}
+                                    </span>
+                                    {% if execution.execution_time %}
+                                    <span class="execution-duration">{{ execution.execution_time|floatformat:2 }}s</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-history"></i>
+                                <p>No recent executions</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            <!-- System Status -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-server"></i> System Status</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="checkSystemStatus()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div id="system-status">
+                        {% if system_status %}
+                            <div class="status-item">
+                                <span class="status-label">Database:</span>
+                                <span class="status-value status-{{ system_status.database }}">
+                                    {{ system_status.database|title }}
+                                </span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Redis:</span>
+                                <span class="status-value status-{{ system_status.redis }}">
+                                    {{ system_status.redis|title }}
+                                </span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Celery:</span>
+                                <span class="status-value status-{{ system_status.celery }}">
+                                    {{ system_status.celery|title }}
+                                </span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Last Check:</span>
+                                <span class="status-value">{{ system_status.last_check|timesince }} ago</span>
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>System status unavailable</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                </div>
+                <div class="card-content">
+                    <div class="quick-actions">
+                        <button class="btn btn-primary btn-block" onclick="openCreateTaskModal()">
+                            <i class="fas fa-plus"></i>
+                            Create Task
+                        </button>
+                        <button class="btn btn-secondary btn-block" onclick="syncSchedules()">
+                            <i class="fas fa-sync"></i>
+                            Sync Schedules
+                        </button>
+                        <button class="btn btn-info btn-block" onclick="viewTaskList()">
+                            <i class="fas fa-list"></i>
+                            View All Tasks
+                        </button>
+                        <button class="btn btn-warning btn-block" onclick="viewSystemLogs()">
+                            <i class="fas fa-file-alt"></i>
+                            System Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-line"></i> Task Performance</h3>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="performanceChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div id="createTaskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus"></i> Create New Scheduled Task</h3>
+            <span class="close" onclick="closeCreateTaskModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="createTaskForm">
+                <div class="form-group">
+                    <label for="taskName">Task Name *</label>
+                    <input type="text" id="taskName" name="name" required placeholder="Enter task name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskDescription">Description</label>
+                    <textarea id="taskDescription" name="description" placeholder="Enter task description"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskType">Task Type *</label>
+                    <select id="taskType" name="task_type" required>
+                        <option value="">Select task type</option>
+                        <option value="backup">Database Backup</option>
+                        <option value="report">Report Generation</option>
+                        <option value="email">Email Notification</option>
+                        <option value="sync">Data Synchronization</option>
+                        <option value="custom">Custom Task</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scheduleType">Schedule Type *</label>
+                    <select id="scheduleType" name="schedule_type" required onchange="toggleScheduleFields()">
+                        <option value="">Select schedule type</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="specific_datetime">Specific Date & Time</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scheduleTime">Time *</label>
+                    <input type="time" id="scheduleTime" name="schedule_time" required>
+                </div>
+                
+                <div id="scheduleConfigFields" style="display: none;">
+                    <!-- Dynamic fields based on schedule type -->
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskParameters">Task Parameters (JSON)</label>
+                    <textarea id="taskParameters" name="task_parameters" placeholder='{"param1": "value1"}'></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeCreateTaskModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="createTask()">Create Task</button>
+        </div>
+    </div>
+</div>
+
+<!-- Task Details Modal -->
+<div id="taskDetailsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-info-circle"></i> Task Details</h3>
+            <span class="close" onclick="closeTaskDetailsModal()">&times;</span>
+        </div>
+        <div class="modal-body" id="taskDetailsContent">
+            <!-- Task details will be loaded here -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeTaskDetailsModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Modal -->
+<div id="logsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-alt"></i> Task Execution Logs</h3>
+            <span class="close" onclick="closeLogsModal()">&times;</span>
+        </div>
+        <div class="modal-body" id="logsContent">
+            <!-- Logs will be loaded here -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeLogsModal()">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'auto_task_scheduler/js/task_scheduler.js' %}"></script>
+<script>
+    // Initialize dashboard when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDashboard();
+        loadTaskStatistics();
+        initializePerformanceChart();
+    });
+</script>
+{% endblock %}

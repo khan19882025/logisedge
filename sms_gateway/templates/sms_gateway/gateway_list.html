@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SMS Gateways{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'sms_gateway/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-server fa-fw"></i> SMS Gateways
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'sms_gateway:gateway_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> New Gateway
+            </a>
+            <a href="{% url 'sms_gateway:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-fw"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <input type="text" class="form-control search-input" placeholder="Search gateways..." value="{{ search_query }}">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-2">
+                        <select class="form-select filter-select" data-filter-type="status">
+                            <option value="">All Status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                            <option value="healthy" {% if status_filter == 'healthy' %}selected{% endif %}>Healthy</option>
+                            <option value="unhealthy" {% if status_filter == 'unhealthy' %}selected{% endif %}>Unhealthy</option>
+                        </select>
+                        <button class="btn btn-outline-primary refresh-data-btn">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gateways List -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">SMS Gateway Configurations</h6>
+        </div>
+        <div class="card-body">
+            {% if gateways %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Sender ID</th>
+                                <th>Last Test</th>
+                                <th>Test Count</th>
+                                <th>Message Count</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for gateway in gateways %}
+                            <tr>
+                                <td>
+                                    <strong>{{ gateway.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ gateway.api_url|truncatechars:30 }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">{{ gateway.get_gateway_type_display }}</span>
+                                </td>
+                                <td>
+                                    {% if gateway.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Inactive</span>
+                                    {% endif %}
+                                    <br>
+                                    {% if gateway.last_test_status == 'success' %}
+                                        <span class="badge badge-success">Healthy</span>
+                                    {% elif gateway.last_test_status == 'failed' %}
+                                        <span class="badge badge-danger">Unhealthy</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ gateway.sender_id }}</td>
+                                <td>
+                                    {% if gateway.last_tested %}
+                                        {{ gateway.last_tested|date:"M d, H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">Never tested</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">{{ gateway.test_count|default:0 }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-secondary">{{ gateway.message_count|default:0 }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group-vertical btn-group-sm" role="group">
+                                        <a href="{% url 'sms_gateway:gateway_detail' pk=gateway.pk %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="{% url 'sms_gateway:gateway_update' pk=gateway.pk %}" class="btn btn-outline-warning btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="{% url 'sms_gateway:gateway_test' pk=gateway.pk %}" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-vial"></i> Test
+                                        </a>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ gateway.pk }}, '{{ gateway.name }}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Gateway pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-server fa-4x text-gray-300 mb-3"></i>
+                    <h4 class="text-gray-500">No SMS Gateways Found</h4>
+                    <p class="text-gray-400">Get started by creating your first SMS gateway configuration.</p>
+                    <a href="{% url 'sms_gateway:gateway_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus fa-fw"></i> Create First Gateway
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the gateway "<span id="gatewayName"></span>"?
+                <br><br>
+                <strong>Warning:</strong> This action cannot be undone and will remove all associated test results and message history.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Delete Gateway</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'sms_gateway/js/dashboard.js' %}"></script>
+<script>
+function confirmDelete(gatewayId, gatewayName) {
+    document.getElementById('gatewayName').textContent = gatewayName;
+    document.getElementById('confirmDeleteBtn').href = `/utilities/sms-gateway/gateways/${gatewayId}/delete/`;
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+// Initialize search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('.search-input');
+    const tableRows = document.querySelectorAll('tbody tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+    
+    // Filter functionality
+    const filterSelect = document.querySelector('.filter-select');
+    filterSelect.addEventListener('change', function() {
+        const filterValue = this.value;
+        const currentUrl = new URL(window.location);
+        
+        if (filterValue) {
+            currentUrl.searchParams.set('status', filterValue);
+        } else {
+            currentUrl.searchParams.delete('status');
+        }
+        
+        window.location.href = currentUrl.toString();
+    });
+});
+</script>
+{% endblock %}

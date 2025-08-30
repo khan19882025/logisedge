@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cog fa-fw"></i> Email Settings
+        </h1>
+        <a href="{% url 'bulk_email_sender:settings_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus fa-fw"></i> New Settings
+        </a>
+    </div>
+
+    {% if settings_list %}
+        <div class="row">
+            {% for settings in settings_list %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">{{ settings.name }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Provider:</strong> {{ settings.get_provider_display }}<br>
+                            <strong>Status:</strong> 
+                            <span class="badge {% if settings.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                                {% if settings.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Daily Limit:</strong> {{ settings.daily_limit|default:"Unlimited" }}<br>
+                            <strong>Hourly Limit:</strong> {{ settings.hourly_limit|default:"Unlimited" }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Created:</strong> {{ settings.created_at|date:"M d, Y" }}<br>
+                            <strong>Created by:</strong> {{ settings.created_by.get_full_name|default:settings.created_by.username }}
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'bulk_email_sender:settings_detail' settings.pk %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye fa-fw"></i> View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-cog fa-5x text-muted mb-4"></i>
+            <h4 class="text-muted">No email settings found</h4>
+            <p class="text-muted mb-4">Configure your email service settings to start sending campaigns.</p>
+            <a href="{% url 'bulk_email_sender:settings_create' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus fa-fw"></i> Create First Settings
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

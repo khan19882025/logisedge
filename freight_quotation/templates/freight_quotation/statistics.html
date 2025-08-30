@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Freight Quotation Statistics{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'freight_quotation/css/quotation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-bar me-2"></i>Freight Quotation Statistics
+        </h1>
+        <div>
+            <a href="{% url 'freight_quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Quotations
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Date From</label>
+                    <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Date To</label>
+                    <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                    <a href="{% url 'freight_quotation:statistics' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Quotations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_quotations }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-invoice-dollar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Value
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">AED {{ total_value|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Average Value
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ average_value|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Acceptance Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% for status in status_counts %}
+                                    {% if status.status == 'accepted' %}
+                                        {% widthratio status.count total_quotations 100 %}%
+                                    {% endif %}
+                                {% empty %}
+                                    0%
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Status Distribution -->
+        <div class="col-xl-6 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    {% if status_counts %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in status_counts %}
+                                    <tr>
+                                        <td>
+                                            {% if status.status == 'draft' %}
+                                                <span class="badge bg-secondary">Draft</span>
+                                            {% elif status.status == 'sent' %}
+                                                <span class="badge bg-info">Sent</span>
+                                            {% elif status.status == 'accepted' %}
+                                                <span class="badge bg-success">Accepted</span>
+                                            {% elif status.status == 'rejected' %}
+                                                <span class="badge bg-danger">Rejected</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Cancelled</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ status.count }}</td>
+                                        <td>{% widthratio status.count total_quotations 100 %}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Transport Mode Distribution -->
+        <div class="col-xl-6 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Transport Mode Distribution</h6>
+                </div>
+                <div class="card-body">
+                    {% if mode_counts %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Mode</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mode in mode_counts %}
+                                    <tr>
+                                        <td>
+                                            {% if mode.mode_of_transport == 'air' %}
+                                                <i class="fas fa-plane me-2"></i>Air
+                                            {% elif mode.mode_of_transport == 'sea' %}
+                                                <i class="fas fa-ship me-2"></i>Sea
+                                            {% else %}
+                                                <i class="fas fa-truck me-2"></i>Road
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ mode.count }}</td>
+                                        <td>{% widthratio mode.count total_quotations 100 %}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Quotations -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Recent Quotations</h6>
+        </div>
+        <div class="card-body">
+            {% if recent_quotations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Quotation Number</th>
+                                <th>Customer</th>
+                                <th>Origin</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for quotation in recent_quotations %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'freight_quotation:quotation_detail' quotation.pk %}">
+                                        {{ quotation.quotation_number }}
+                                    </a>
+                                </td>
+                                <td>{{ quotation.customer.name }}</td>
+                                <td>{{ quotation.origin }}</td>
+                                <td>{{ quotation.destination }}</td>
+                                <td>
+                                    {% if quotation.status == 'draft' %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                    {% elif quotation.status == 'sent' %}
+                                        <span class="badge bg-info">Sent</span>
+                                    {% elif quotation.status == 'accepted' %}
+                                        <span class="badge bg-success">Accepted</span>
+                                    {% elif quotation.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ quotation.currency }} {{ quotation.grand_total }}</td>
+                                <td>{{ quotation.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No recent quotations found</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

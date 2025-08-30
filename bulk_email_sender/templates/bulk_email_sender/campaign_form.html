@@ -1,0 +1,541 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Campaign - Bulk Email Sender{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-envelope fa-fw"></i> {{ action }} Campaign
+        </h1>
+        <a href="{% url 'bulk_email_sender:campaign_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left fa-fw"></i> Back to Campaigns
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaign Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label fw-bold mb-2">Campaign Name *</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.template.id_for_label }}" class="form-label fw-bold mb-2">Email Template *</label>
+                                    {{ form.template }}
+                                    {% if form.template.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.template.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label fw-bold mb-2">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Sender Information -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.sender_name.id_for_label }}" class="form-label fw-bold mb-2">Sender Name</label>
+                                    {{ form.sender_name }}
+                                    {% if form.sender_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.sender_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.sender_email.id_for_label }}" class="form-label fw-bold mb-2">Sender Email</label>
+                                    {{ form.sender_email }}
+                                    {% if form.sender_email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.sender_email.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.reply_to_email.id_for_label }}" class="form-label fw-bold mb-2">Reply To Email</label>
+                                    {{ form.reply_to_email }}
+                                    {% if form.reply_to_email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.reply_to_email.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campaign Settings -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.priority.id_for_label }}" class="form-label fw-bold mb-2">Priority</label>
+                                    {{ form.priority }}
+                                    {% if form.priority.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.priority.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.send_speed.id_for_label }}" class="form-label fw-bold mb-2">Send Speed (emails/min)</label>
+                                    {{ form.send_speed }}
+                                    {% if form.send_speed.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.send_speed.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.batch_size.id_for_label }}" class="form-label fw-bold mb-2">Batch Size</label>
+                                    {{ form.batch_size }}
+                                    {% if form.batch_size.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.batch_size.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scheduling -->
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-bold mb-3">Schedule Type</label>
+                            <div class="schedule-options">
+                                {% for radio in form.schedule_type %}
+                                <div class="form-check mb-2">
+                                    {{ radio }}
+                                    <label class="form-check-label ms-2" for="{{ radio.id_for_label }}">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.schedule_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.schedule_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row schedule-fields" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.scheduled_date.id_for_label }}" class="form-label fw-bold mb-2">Scheduled Date</label>
+                                    {{ form.scheduled_date }}
+                                    {% if form.scheduled_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.scheduled_date.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.scheduled_time.id_for_label }}" class="form-label fw-bold mb-2">Scheduled Time</label>
+                                    {{ form.scheduled_time }}
+                                    {% if form.scheduled_time.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.scheduled_time.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tracking Options -->
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-bold mb-3">Tracking Options</label>
+                            <div class="tracking-options">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check mb-3">
+                                            {{ form.track_opens }}
+                                            <label class="form-check-label ms-2" for="{{ form.track_opens.id_for_label }}">
+                                                Track Opens
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check mb-3">
+                                            {{ form.track_clicks }}
+                                            <label class="form-check-label ms-2" for="{{ form.track_clicks.id_for_label }}">
+                                                Track Clicks
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check mb-3">
+                                            {{ form.track_unsubscribes }}
+                                            <label class="form-check-label ms-2" for="{{ form.track_unsubscribes.id_for_label }}">
+                                                Track Unsubscribes
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unsubscribe Section -->
+                        <div class="unsubscribe-section mb-4">
+                            <h6 class="text-warning mb-3">
+                                <i class="fas fa-shield-alt fa-fw"></i> Compliance & Unsubscribe
+                            </h6>
+                            
+                            <div class="form-group mb-3">
+                                <div class="form-check">
+                                    {{ form.include_unsubscribe_link }}
+                                    <label class="form-check-label ms-2" for="{{ form.include_unsubscribe_link.id_for_label }}">
+                                        Include Unsubscribe Link
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-0 unsubscribe-text-field" style="display: none;">
+                                <label for="{{ form.unsubscribe_text.id_for_label }}" class="form-label fw-bold mb-2">Unsubscribe Text</label>
+                                {{ form.unsubscribe_text }}
+                                {% if form.unsubscribe_text.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.unsubscribe_text.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Additional Fields -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.category.id_for_label }}" class="form-label fw-bold mb-2">Category</label>
+                                    {{ form.category }}
+                                    {% if form.category.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.category.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.tags.id_for_label }}" class="form-label fw-bold mb-2">Tags</label>
+                                    {{ form.tags }}
+                                    <small class="form-text text-muted">Separate tags with commas</small>
+                                    {% if form.tags.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.tags.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recipient List -->
+                        <div class="form-group mb-3">
+                            <label for="{{ form.recipient_list.id_for_label }}" class="form-label fw-bold mb-2">Recipient List</label>
+                            {{ form.recipient_list }}
+                            <small class="form-text text-muted">{{ form.recipient_list.help_text }}</small>
+                            {% if form.recipient_list.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.recipient_list.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Form Errors -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Submit Buttons -->
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save fa-fw"></i> {{ action }} Campaign
+                            </button>
+                            <a href="{% url 'bulk_email_sender:campaign_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times fa-fw"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaign Tips</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="fas fa-lightbulb fa-fw text-warning"></i> Best Practices</h6>
+                        <ul class="small text-muted">
+                            <li>Use a clear, descriptive campaign name</li>
+                            <li>Test your template before sending</li>
+                            <li>Set appropriate send speeds to avoid spam filters</li>
+                            <li>Include unsubscribe links for compliance</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-clock fa-fw text-info"></i> Scheduling</h6>
+                        <ul class="small text-muted">
+                            <li>Schedule during business hours for better engagement</li>
+                            <li>Consider time zones of your recipients</li>
+                            <li>Test with small batches first</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6><i class="fas fa-chart-line fa-fw text-success"></i> Tracking</h6>
+                        <ul class="small text-muted">
+                            <li>Enable tracking to measure campaign performance</li>
+                            <li>Monitor open rates and click-through rates</li>
+                            <li>Use data to improve future campaigns</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-control, .form-select {
+    margin-top: 0.25rem;
+}
+
+/* Enhanced checkbox and radio button styling */
+.form-check {
+    margin-bottom: 1rem;
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+    min-height: 2rem;
+}
+
+.form-check-input {
+    margin-right: 0.75rem;
+    margin-top: 0;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.form-check-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+/* Schedule options specific styling */
+.schedule-options {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.schedule-options .form-check {
+    margin-bottom: 1rem;
+}
+
+.schedule-options .form-check:last-child {
+    margin-bottom: 0;
+}
+
+/* Tracking options specific styling */
+.tracking-options {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.tracking-options .form-check {
+    margin-bottom: 1rem;
+}
+
+.tracking-options .form-check:last-child {
+    margin-bottom: 0;
+}
+
+/* Unsubscribe section styling */
+.unsubscribe-section {
+    background-color: #fff3cd;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #ffeaa7;
+}
+
+.invalid-feedback {
+    margin-top: 0.25rem;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.row {
+    margin-bottom: 1rem;
+}
+
+.btn {
+    margin-right: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .schedule-options,
+    .tracking-options {
+        padding: 1rem;
+    }
+    
+    .form-check {
+        margin-bottom: 0.75rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide schedule fields based on schedule type
+    const scheduleTypeRadios = document.querySelectorAll('input[name="schedule_type"]');
+    const scheduleFields = document.querySelector('.schedule-fields');
+    
+    scheduleTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'schedule_later') {
+                scheduleFields.style.display = 'block';
+            } else {
+                scheduleFields.style.display = 'none';
+            }
+        });
+    });
+
+    // Show/hide unsubscribe text field
+    const unsubscribeCheckbox = document.getElementById('{{ form.include_unsubscribe_link.id_for_label }}');
+    const unsubscribeTextField = document.querySelector('.unsubscribe-text-field');
+    
+    if (unsubscribeCheckbox) {
+        unsubscribeCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                unsubscribeTextField.style.display = 'block';
+            } else {
+                unsubscribeTextField.style.display = 'none';
+            }
+        });
+    }
+
+    // Initialize form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+});
+</script>
+{% endblock %}

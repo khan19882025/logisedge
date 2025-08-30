@@ -1,0 +1,232 @@
+{% extends 'tax_settings/base.html' %}
+{% load static %}
+
+{% block title %}VAT Reports{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">VAT Reports</li>
+{% endblock %}
+
+{% block tax_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-file-invoice-dollar text-primary"></i>
+                    VAT Reports
+                </h1>
+                <div class="page-actions">
+                    <a href="{% url 'tax_settings:generate_vat_report' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Generate New Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ request.GET.search }}" placeholder="Search reports...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="report_period" class="form-label">Period</label>
+                            <select class="form-control" id="report_period" name="report_period">
+                                <option value="">All Periods</option>
+                                <option value="monthly" {% if request.GET.report_period == 'monthly' %}selected{% endif %}>Monthly</option>
+                                <option value="quarterly" {% if request.GET.report_period == 'quarterly' %}selected{% endif %}>Quarterly</option>
+                                <option value="yearly" {% if request.GET.report_period == 'yearly' %}selected{% endif %}>Yearly</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="is_filed" class="form-label">Status</label>
+                            <select class="form-control" id="is_filed" name="is_filed">
+                                <option value="">All Status</option>
+                                <option value="True" {% if request.GET.is_filed == 'True' %}selected{% endif %}>Filed</option>
+                                <option value="False" {% if request.GET.is_filed == 'False' %}selected{% endif %}>Draft</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="currency" class="form-label">Currency</label>
+                            <select class="form-control" id="currency" name="currency">
+                                <option value="">All Currencies</option>
+                                <option value="AED" {% if request.GET.currency == 'AED' %}selected{% endif %}>AED</option>
+                                <option value="USD" {% if request.GET.currency == 'USD' %}selected{% endif %}>USD</option>
+                                <option value="EUR" {% if request.GET.currency == 'EUR' %}selected{% endif %}>EUR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VAT Reports Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i>
+                        VAT Reports ({{ page_obj.paginator.count }} total)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if object_list %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Report Name</th>
+                                        <th>Period</th>
+                                        <th>Date Range</th>
+                                        <th>Currency</th>
+                                        <th>Total Sales</th>
+                                        <th>Total Purchases</th>
+                                        <th>Net VAT</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in object_list %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ report.report_name }}</strong>
+                                            {% if report.description %}
+                                                <br><small class="text-muted">{{ report.description }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ report.get_report_period_display }}</span>
+                                        </td>
+                                        <td>
+                                            {{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ report.currency }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">{{ report.currency }} {{ report.total_sales|floatformat:2 }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-info">{{ report.currency }} {{ report.total_purchases|floatformat:2 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if report.net_vat_payable >= 0 %}
+                                                <span class="text-danger">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</span>
+                                            {% else %}
+                                                <span class="text-success">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if report.is_filed %}
+                                                <span class="badge bg-success">Filed</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Draft</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ report.created_at|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'tax_settings:vat_report_detail' report.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if not report.is_filed %}
+                                                    <a href="{% url 'tax_settings:vat_report_update' report.pk %}" 
+                                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'tax_settings:vat_report_delete' report.pk %}" 
+                                                       class="btn btn-sm btn-outline-danger" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="VAT reports pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_period %}&report_period={{ request.GET.report_period }}{% endif %}{% if request.GET.is_filed %}&is_filed={{ request.GET.is_filed }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_period %}&report_period={{ request.GET.report_period }}{% endif %}{% if request.GET.is_filed %}&is_filed={{ request.GET.is_filed }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_period %}&report_period={{ request.GET.report_period }}{% endif %}{% if request.GET.is_filed %}&is_filed={{ request.GET.is_filed }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_period %}&report_period={{ request.GET.report_period }}{% endif %}{% if request.GET.is_filed %}&is_filed={{ request.GET.is_filed }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_period %}&report_period={{ request.GET.report_period }}{% endif %}{% if request.GET.is_filed %}&is_filed={{ request.GET.is_filed }}{% endif %}{% if request.GET.currency %}&currency={{ request.GET.currency }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No VAT reports found</h5>
+                            <p class="text-muted">Get started by generating your first VAT report.</p>
+                            <a href="{% url 'tax_settings:generate_vat_report' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Generate First Report
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

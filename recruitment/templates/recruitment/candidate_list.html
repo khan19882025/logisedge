@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Candidates{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/recruitment/recruitment.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'recruitment:dashboard' %}">Recruitment</a></li>
+            <li class="breadcrumb-item active">Candidates</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    <i class="fas fa-users text-primary"></i>
+                    Candidates
+                </h2>
+                <p class="text-muted">Manage and track all candidates in the recruitment pipeline</p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'recruitment:candidate_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Candidate
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" id="searchForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ request.GET.search }}" placeholder="Search by name, email, skills...">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Status</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="shortlisted" {% if request.GET.status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+                                <option value="interviewed" {% if request.GET.status == 'interviewed' %}selected{% endif %}>Interviewed</option>
+                                <option value="offered" {% if request.GET.status == 'offered' %}selected{% endif %}>Offered</option>
+                                <option value="hired" {% if request.GET.status == 'hired' %}selected{% endif %}>Hired</option>
+                                <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="withdrawn" {% if request.GET.status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="source" class="form-label">Source</label>
+                            <select class="form-select" id="source" name="source">
+                                <option value="">All Sources</option>
+                                <option value="job_portal" {% if request.GET.source == 'job_portal' %}selected{% endif %}>Job Portal</option>
+                                <option value="referral" {% if request.GET.source == 'referral' %}selected{% endif %}>Referral</option>
+                                <option value="linkedin" {% if request.GET.source == 'linkedin' %}selected{% endif %}>LinkedIn</option>
+                                <option value="walk_in" {% if request.GET.source == 'walk_in' %}selected{% endif %}>Walk-in</option>
+                                <option value="campus" {% if request.GET.source == 'campus' %}selected{% endif %}>Campus</option>
+                                <option value="other" {% if request.GET.source == 'other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="experience" class="form-label">Experience</label>
+                            <select class="form-select" id="experience" name="experience">
+                                <option value="">All Levels</option>
+                                <option value="0-2" {% if request.GET.experience == '0-2' %}selected{% endif %}>0-2 years</option>
+                                <option value="3-5" {% if request.GET.experience == '3-5' %}selected{% endif %}>3-5 years</option>
+                                <option value="6-10" {% if request.GET.experience == '6-10' %}selected{% endif %}>6-10 years</option>
+                                <option value="10+" {% if request.GET.experience == '10+' %}selected{% endif %}>10+ years</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <a href="{% url 'recruitment:candidate_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Candidates Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if candidates %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Candidate</th>
+                            <th>Contact</th>
+                            <th>Current Position</th>
+                            <th>Experience</th>
+                            <th>Status</th>
+                            <th>Source</th>
+                            <th>Applied Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in candidates %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-3">
+                                        <div class="avatar-title bg-light rounded">
+                                            <i class="fas fa-user text-primary"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">
+                                            <a href="{% url 'recruitment:candidate_detail' candidate.id %}" class="text-decoration-none">
+                                                {{ candidate.full_name }}
+                                            </a>
+                                        </h6>
+                                        <small class="text-muted">{{ candidate.current_position|default:"Not specified" }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="text-primary">{{ candidate.email }}</div>
+                                    <small class="text-muted">{{ candidate.phone }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-medium">{{ candidate.current_position|default:"-" }}</div>
+                                    <small class="text-muted">{{ candidate.current_company|default:"-" }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% if candidate.years_of_experience %}
+                                    <span class="badge bg-info">{{ candidate.years_of_experience }} years</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if candidate.status == 'active' %}
+                                    <span class="badge bg-primary">Active</span>
+                                {% elif candidate.status == 'shortlisted' %}
+                                    <span class="badge bg-warning">Shortlisted</span>
+                                {% elif candidate.status == 'interviewed' %}
+                                    <span class="badge bg-info">Interviewed</span>
+                                {% elif candidate.status == 'offered' %}
+                                    <span class="badge bg-success">Offered</span>
+                                {% elif candidate.status == 'hired' %}
+                                    <span class="badge bg-success"><i class="fas fa-check"></i> Hired</span>
+                                {% elif candidate.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% elif candidate.status == 'withdrawn' %}
+                                    <span class="badge bg-secondary">Withdrawn</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if candidate.source == 'job_portal' %}
+                                    <span class="badge bg-primary">Job Portal</span>
+                                {% elif candidate.source == 'referral' %}
+                                    <span class="badge bg-success">Referral</span>
+                                {% elif candidate.source == 'linkedin' %}
+                                    <span class="badge bg-info">LinkedIn</span>
+                                {% elif candidate.source == 'walk_in' %}
+                                    <span class="badge bg-warning">Walk-in</span>
+                                {% elif candidate.source == 'campus' %}
+                                    <span class="badge bg-secondary">Campus</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">Other</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ candidate.created_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'recruitment:candidate_detail' candidate.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'recruitment:candidate_update' candidate.id %}" 
+                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-success" 
+                                            title="Quick Actions" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'recruitment:application_create' %}?candidate={{ candidate.id }}">
+                                                <i class="fas fa-plus me-2"></i>Create Application
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'recruitment:interview_create' %}?candidate={{ candidate.id }}">
+                                                <i class="fas fa-calendar me-2"></i>Schedule Interview
+                                            </a>
+                                        </li>
+                                        {% if candidate.resume %}
+                                        <li>
+                                            <a class="dropdown-item" href="{{ candidate.resume.url }}" target="_blank">
+                                                <i class="fas fa-download me-2"></i>Download Resume
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="{% url 'recruitment:candidate_delete' candidate.id %}"
+                                               onclick="return confirm('Are you sure you want to delete this candidate?')">
+                                                <i class="fas fa-trash me-2"></i>Delete
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.experience %}&experience={{ request.GET.experience }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.experience %}&experience={{ request.GET.experience }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.experience %}&experience={{ request.GET.experience }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.experience %}&experience={{ request.GET.experience }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.source %}&source={{ request.GET.source }}{% endif %}{% if request.GET.experience %}&experience={{ request.GET.experience }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Candidates Found</h5>
+                    <p class="text-muted">Get started by adding your first candidate to the recruitment pipeline</p>
+                    <a href="{% url 'recruitment:candidate_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add First Candidate
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/recruitment/recruitment.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form on filter change
+    const filterSelects = document.querySelectorAll('#status, #source, #experience');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            document.getElementById('searchForm').submit();
+        });
+    });
+
+    // Search with debounce
+    const searchInput = document.getElementById('search');
+    let searchTimer;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+            document.getElementById('searchForm').submit();
+        }, 500);
+    });
+
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %} 

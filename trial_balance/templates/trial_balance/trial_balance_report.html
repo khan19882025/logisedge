@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-6 fw-bold">
+                <i class="bi bi-calculator me-3"></i>
+                Trial Balance Report
+            </h1>
+            <p class="text-muted">Generate and view trial balance reports for any date range</p>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>
+                Report Filters
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="{{ filter_form.from_date.id_for_label }}" class="form-label">From Date</label>
+                    {{ filter_form.from_date }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ filter_form.to_date.id_for_label }}" class="form-label">To Date</label>
+                    {{ filter_form.to_date }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ filter_form.company.id_for_label }}" class="form-label">Company</label>
+                    {{ filter_form.company }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ filter_form.account_type.id_for_label }}" class="form-label">Account Type</label>
+                    {{ filter_form.account_type }}
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        {{ filter_form.include_zero_balances }}
+                        <label class="form-check-label" for="{{ filter_form.include_zero_balances.id_for_label }}">
+                            Include Zero Balances
+                        </label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-2"></i>
+                        Generate Report
+                    </button>
+                    <a href="{% url 'trial_balance:trial_balance_report' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    {% if trial_balance_data %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Debit</h6>
+                    <h4 class="mb-0">{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_debit|floatformat:2 }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Credit</h6>
+                    <h4 class="mb-0">{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_credit|floatformat:2 }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card {% if is_balanced %}bg-info{% else %}bg-warning{% endif %} text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Difference</h6>
+                    <h4 class="mb-0">{{ difference|floatformat:2 }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card {% if is_balanced %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Status</h6>
+                    <h4 class="mb-0">{% if is_balanced %}Balanced{% else %}Unbalanced{% endif %}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-download me-2"></i>
+                Export Options
+            </h5>
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#exportOptions">
+                <i class="bi bi-gear me-1"></i>
+                Configure
+            </button>
+        </div>
+        <div class="collapse" id="exportOptions">
+            <div class="card-body">
+                <form method="post" action="{% url 'trial_balance:export_trial_balance' %}" class="row g-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="from_date" value="{{ from_date }}">
+                    <input type="hidden" name="to_date" value="{{ to_date }}">
+                    <input type="hidden" name="company" value="{{ company_id }}">
+                    <input type="hidden" name="include_zero_balances" value="{{ include_zero_balances }}">
+                    <input type="hidden" name="account_type" value="{{ account_type }}">
+                    
+                    <div class="col-md-3">
+                        <label class="form-label">Export Format</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" value="excel" id="format_excel" checked>
+                            <label class="form-check-label" for="format_excel">
+                                Excel (.xlsx)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" value="pdf" id="format_pdf">
+                            <label class="form-check-label" for="format_pdf">
+                                PDF
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" value="csv" id="format_csv">
+                            <label class="form-check-label" for="format_csv">
+                                CSV
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_headers" value="on" id="include_headers" checked>
+                            <label class="form-check-label" for="include_headers">
+                                Include Headers
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_totals" value="on" id="include_totals" checked>
+                            <label class="form-check-label" for="include_totals">
+                                Include Totals
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_running_balance" value="on" id="include_running_balance" checked>
+                            <label class="form-check-label" for="include_running_balance">
+                                Include Running Balance
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-download me-2"></i>
+                            Export Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trial Balance Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-table me-2"></i>
+                Trial Balance Data
+                {% if trial_balance_data %}
+                <span class="badge bg-secondary ms-2">{{ trial_balance_data|length }} accounts</span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Account Code</th>
+                            <th>Account Name</th>
+                            <th>Account Type</th>
+                            <th class="text-end">Opening Debit</th>
+                            <th class="text-end">Opening Credit</th>
+                            <th class="text-end">Period Debit</th>
+                            <th class="text-end">Period Credit</th>
+                            <th class="text-end">Closing Debit</th>
+                            <th class="text-end">Closing Credit</th>
+                            <th class="text-end">Running Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in trial_balance_data %}
+                        <tr>
+                            <td><strong>{{ entry.account_code }}</strong></td>
+                            <td>{{ entry.account_name }}</td>
+                            <td><span class="badge bg-light text-dark">{{ entry.account_type }}</span></td>
+                            <td class="text-end">{{ entry.opening_debit|floatformat:2 }}</td>
+                            <td class="text-end">{{ entry.opening_credit|floatformat:2 }}</td>
+                            <td class="text-end">{{ entry.period_debit|floatformat:2 }}</td>
+                            <td class="text-end">{{ entry.period_credit|floatformat:2 }}</td>
+                            <td class="text-end">{{ entry.closing_debit|floatformat:2 }}</td>
+                            <td class="text-end">{{ entry.closing_credit|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <span class="badge {% if entry.running_balance > 0 %}bg-primary{% elif entry.running_balance < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ entry.running_balance|floatformat:2 }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-dark">
+                        <tr>
+                            <td colspan="3"><strong>TOTALS</strong></td>
+                            <td class="text-end"><strong>{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_debit|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong>{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_credit|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong>{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_debit|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong>{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_credit|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong>{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_debit|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong>{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_credit|floatformat:2 }}</strong></td>
+                            <td class="text-end">
+                                <strong class="badge {% if difference > 0 %}bg-primary{% elif difference < 0 %}bg-danger{% else %}bg-success{% endif %}">
+                                    {% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ difference|floatformat:2 }}
+                                </strong>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Data Message -->
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h4 class="mt-3">No Trial Balance Data</h4>
+            <p class="text-muted">Set your filters and click "Generate Report" to view trial balance data.</p>
+            <p class="text-muted small">Make sure you have chart of accounts and ledger entries for the selected period.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when filters change
+    const filterInputs = document.querySelectorAll('form[method="get"] input, form[method="get"] select');
+    filterInputs.forEach(input => {
+        if (input.type !== 'submit' && input.type !== 'button') {
+            input.addEventListener('change', function() {
+                this.closest('form').submit();
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

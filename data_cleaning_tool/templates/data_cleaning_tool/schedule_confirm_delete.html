@@ -1,0 +1,138 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Delete Schedule - {{ schedule.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Delete Schedule
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
+                        <h4 class="text-danger">Are you sure?</h4>
+                        <p class="text-muted">
+                            You are about to permanently delete the schedule "<strong>{{ schedule.name }}</strong>".
+                        </p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            This action cannot be undone!
+                        </h6>
+                        <p class="mb-0">
+                            Deleting this schedule will:
+                        </p>
+                        <ul class="mb-0 mt-2">
+                            <li>Remove all scheduled executions</li>
+                            <li>Cancel any pending runs</li>
+                            <li>Delete the schedule configuration permanently</li>
+                        </ul>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Schedule Details
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> {{ schedule.name }}</p>
+                                    <p><strong>Frequency:</strong> {{ schedule.get_frequency_display }}</p>
+                                    <p><strong>Status:</strong> 
+                                        <span class="badge bg-{% if schedule.status == 'active' %}success{% elif schedule.status == 'inactive' %}secondary{% elif schedule.status == 'paused' %}warning{% endif %}">
+                                            {{ schedule.get_status_display }}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Cleaning Type:</strong> {{ schedule.get_cleaning_type_display }}</p>
+                                    <p><strong>Next Run:</strong> 
+                                        {% if schedule.next_run %}
+                                            {{ schedule.next_run|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Not scheduled</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Created:</strong> {{ schedule.created_at|date:"M d, Y" }}</p>
+                                </div>
+                            </div>
+                            {% if schedule.description %}
+                                <p><strong>Description:</strong> {{ schedule.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'data_cleaning_tool:schedule_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Delete Schedule
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Alternative Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-warning">Pause Instead</h6>
+                            <p class="small text-muted">
+                                If you want to temporarily stop this schedule without losing its configuration, consider pausing it instead.
+                            </p>
+                            <a href="{% url 'data_cleaning_tool:schedule_edit' schedule.id %}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-pause me-2"></i>Pause Schedule
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-info">Archive Instead</h6>
+                            <p class="small text-muted">
+                                You could also mark it as inactive to preserve the configuration for future reference.
+                            </p>
+                            <a href="{% url 'data_cleaning_tool:schedule_edit' schedule.id %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-archive me-2"></i>Mark Inactive
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card.border-danger {
+    border-width: 2px;
+}
+
+.alert-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}

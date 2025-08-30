@@ -1,0 +1,437 @@
+            {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Print Queue Management Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-print fa-fw"></i> Print Queue Management
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'print_queue_management:print_job_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> New Print Job
+            </a>
+            <a href="{% url 'print_queue_management:auto_print_rule_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-magic fa-fw"></i> New Auto-Rule
+            </a>
+            <a href="{% url 'print_queue_management:printer_create' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-plus fa-fw"></i> Add Printer
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <!-- Total Printers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Active Printers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_printers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-print fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Templates -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Print Templates
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_templates }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Rules -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Auto-Print Rules
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_rules }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-magic fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Status -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Jobs in Queue
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ queue_stats.queued }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Queue Statistics Chart -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Print Queue Status</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Queue Actions:</div>
+                            <a class="dropdown-item" href="{% url 'print_queue_management:print_job_list' %}">View All Jobs</a>
+                            <a class="dropdown-item" href="{% url 'print_queue_management:print_job_create' %}">Create Job</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{% url 'print_queue_management:import_data' %}">Import Data</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="queueStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Printer Status -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Printer Status</h6>
+                </div>
+                <div class="card-body">
+                    {% for status in printer_status %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="font-weight-bold">{{ status.printer.name }}</span>
+                            <span class="badge badge-{% if status.status == 'idle' %}success{% elif status.status == 'busy' %}warning{% else %}danger{% endif %}">
+                                {{ status.status|title }}
+                            </span>
+                        </div>
+                        <div class="small text-muted">
+                            {{ status.active_jobs }} active jobs
+                            {% if status.printer.location %}
+                            • {{ status.printer.location }}
+                            {% endif %}
+                        </div>
+                        <div class="progress mt-1" style="height: 5px;">
+                            <div class="progress-bar bg-{% if status.status == 'idle' %}success{% elif status.status == 'busy' %}warning{% else %}danger{% endif %}" 
+                                 role="progressbar" 
+                                 data-width-ratio="{% widthratio status.active_jobs status.printer.max_job_size 100 %}"
+                                 style="width: 0%">
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No active printers found.</p>
+                    {% endfor %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'print_queue_management:printer_list' %}" class="btn btn-sm btn-outline-primary">
+                            View All Printers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Quick Actions -->
+    <div class="row">
+        <!-- Recent Print Jobs -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Print Jobs</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_jobs %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Job #</th>
+                                    <th>Template</th>
+                                    <th>Printer</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in recent_jobs %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'print_queue_management:print_job_detail' pk=job.pk %}" class="font-weight-bold">
+                                            {{ job.job_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ job.print_template.name }}</td>
+                                    <td>{{ job.printer.name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if job.status == 'completed' %}success{% elif job.status == 'failed' %}danger{% elif job.status == 'printing' %}info{% elif job.status == 'queued' %}warning{% else %}secondary{% endif %}">
+                                            {{ job.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ job.created_at|date:"M d, H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'print_queue_management:print_job_detail' pk=job.pk %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if job.status == 'queued' or job.status == 'processing' %}
+                                            <form method="post" action="{% url 'print_queue_management:print_job_action' pk=job.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="cancel">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Cancel this print job?')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent print jobs found.</p>
+                    {% endif %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'print_queue_management:print_job_list' %}" class="btn btn-primary">
+                            View All Jobs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'print_queue_management:print_job_create' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-plus fa-fw"></i> Create Print Job</h6>
+                            </div>
+                            <p class="mb-1">Manually create a new print job</p>
+                        </a>
+                        
+                        <a href="{% url 'print_queue_management:auto_print_rule_create' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-magic fa-fw"></i> Create Auto-Rule</h6>
+                            </div>
+                            <p class="mb-1">Set up automatic printing rules</p>
+                        </a>
+                        
+                        <a href="{% url 'print_queue_management:printer_create' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-print fa-fw"></i> Add Printer</h6>
+                            </div>
+                            <p class="mb-1">Configure a new printer</p>
+                        </a>
+                        
+                        <a href="{% url 'print_queue_management:print_template_create' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-file-alt fa-fw"></i> Create Template</h6>
+                            </div>
+                            <p class="mb-1">Design a new print template</p>
+                        </a>
+                        
+                        <a href="{% url 'print_queue_management:import_data' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-download fa-fw"></i> Import Data</h6>
+                            </div>
+                            <p class="mb-1">Import printers, templates, and rules</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                    <div class="timeline">
+                        {% for log in recent_activity %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-{% if log.action == 'created' %}success{% elif log.action == 'completed' %}primary{% elif log.action == 'failed' %}danger{% else %}info{% endif %}"></div>
+                            <div class="timeline-content">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-1">{{ log.action|title }}</h6>
+                                    <small class="text-muted">{{ log.created_at|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1">{{ log.message }}</p>
+                                <small class="text-muted">
+                                    Job: {{ log.print_job.job_number }} • 
+                                    User: {{ log.user.username }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent activity found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 3px #e3e6f0;
+}
+
+.timeline-content {
+    background: #f8f9fc;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 3px solid #4e73df;
+}
+
+.chart-area {
+    position: relative;
+    height: 300px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Queue Status Chart
+    const ctx = document.getElementById('queueStatusChart').getContext('2d');
+    const queueChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Queued', 'Processing', 'Printing', 'Completed', 'Failed'],
+            datasets: [{
+                data: [
+                    {{ queue_stats.queued }},
+                    {{ queue_stats.processing }},
+                    {{ queue_stats.printing }},
+                    {{ queue_stats.completed }},
+                    {{ queue_stats.failed }}
+                ],
+                backgroundColor: [
+                    '#f6c23e',  // Warning (Queued)
+                    '#36b9cc',  // Info (Processing)
+                    '#1cc88a',  // Success (Printing)
+                    '#4e73df',  // Primary (Completed)
+                    '#e74a3b'   // Danger (Failed)
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+
+    // Auto-refresh queue stats every 30 seconds
+    setInterval(function() {
+        fetch('{% url "print_queue_management:queue_stats_api" %}')
+            .then(response => response.json())
+            .then(data => {
+                // Update chart data
+                queueChart.data.datasets[0].data = [
+                    data.queued,
+                    data.processing,
+                    data.printing,
+                    data.completed,
+                    data.failed
+                ];
+                queueChart.update();
+                
+                // Update statistics cards
+                document.querySelector('.border-left-warning .h5').textContent = data.queued;
+            })
+            .catch(error => console.error('Error fetching queue stats:', error));
+    }, 30000);
+});
+</script>
+{% endblock %}

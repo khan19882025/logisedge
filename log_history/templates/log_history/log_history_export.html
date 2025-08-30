@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Log History Export{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'log_history/css/log_history.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-download me-2"></i>Log History Export
+                </h1>
+                <div>
+                    <a href="{% url 'log_history:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <a href="{% url 'log_history:log_history_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>View All Logs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Export Options -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-cog me-2"></i>Export Configuration
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="export-form">
+                                {% csrf_token %}
+                                
+                                <!-- Export Format -->
+                                <div class="form-group">
+                                    <label for="export_format">Export Format</label>
+                                    <select class="form-control" id="export_format" name="export_format" required>
+                                        <option value="">Select Export Format</option>
+                                        {% for value, label in form.export_format.field.choices %}
+                                            <option value="{{ value }}" {% if form.export_format.value == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        Choose the format for your exported data
+                                    </small>
+                                </div>
+
+                                <!-- Date Range -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="date_from">Date From</label>
+                                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                                   value="{{ form.date_from.value|default:'' }}">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="date_to">Date To</label>
+                                            <input type="date" class="form-control" id="date_to" name="date_to" 
+                                                   value="{{ form.date_to.value|default:'' }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Filters -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="action_type">Action Type</label>
+                                            <select class="form-control" id="action_type" name="action_type">
+                                                <option value="">All Actions</option>
+                                                {% for value, label in form.action_type.field.choices %}
+                                                    <option value="{{ value }}" {% if form.action_type.value == value %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="severity">Severity Level</label>
+                                            <select class="form-control" id="severity" name="severity">
+                                                <option value="">All Severities</option>
+                                                {% for value, label in form.severity.field.choices %}
+                                                    <option value="{{ value }}" {% if form.severity.value == value %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="module">Module</label>
+                                            <select class="form-control" id="module" name="module">
+                                                <option value="">All Modules</option>
+                                                {% for value, label in form.module.field.choices %}
+                                                    <option value="{{ value }}" {% if form.module.value == value %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="user">User</label>
+                                            <select class="form-control" id="user" name="user">
+                                                <option value="">All Users</option>
+                                                {% for user in form.user.field.queryset %}
+                                                    <option value="{{ user.id }}" {% if form.user.value == user.id %}selected{% endif %}>
+                                                        {{ user.username }} ({{ user.get_full_name|default:user.email }})
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Advanced Options -->
+                                <div class="form-group">
+                                    <label>Export Options</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include_metadata" name="include_metadata" 
+                                                       {% if form.include_metadata.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="include_metadata">
+                                                    Include Metadata
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include_stack_trace" name="include_stack_trace" 
+                                                       {% if form.include_stack_trace.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="include_stack_trace">
+                                                    Include Stack Trace
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include_performance" name="include_performance" 
+                                                       {% if form.include_performance.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="include_performance">
+                                                    Include Performance Data
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="include_archived" name="include_archived" 
+                                                       {% if form.include_archived.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="include_archived">
+                                                    Include Archived Logs
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Export Button -->
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary btn-lg" id="export-btn">
+                                        <i class="fas fa-download me-2"></i>Export Logs
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="preview-btn">
+                                        <i class="fas fa-eye me-2"></i>Preview Export
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export History -->
+                <div class="col-lg-4">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-history me-2"></i>Recent Exports
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_exports %}
+                                <div class="list-group list-group-flush">
+                                    {% for export in recent_exports %}
+                                    <div class="list-group-item px-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ export.get_export_format_display }}</h6>
+                                                <small class="text-muted">{{ export.created_at|date:"M d, Y H:i" }}</small>
+                                            </div>
+                                            <span class="badge badge-{% if export.status == 'COMPLETED' %}success{% elif export.status == 'PENDING' %}warning{% else %}danger{% endif %}">
+                                                {{ export.status }}
+                                            </span>
+                                        </div>
+                                        {% if export.record_count %}
+                                            <small class="text-muted">{{ export.record_count }} records</small>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{% url 'log_history:log_export_list' %}" class="btn btn-outline-primary btn-sm">
+                                        View All Exports
+                                    </a>
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center py-3">No recent exports</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Export Tips -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                <i class="fas fa-lightbulb me-2"></i>Export Tips
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>CSV:</strong> Best for spreadsheet analysis
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>JSON:</strong> Best for API integration
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>XML:</strong> Best for legacy systems
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>PDF:</strong> Best for reports and printing
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Progress (hidden by default) -->
+            <div class="card shadow mb-4" id="export-progress" style="display: none;">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Export in Progress
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" id="progress-bar">
+                            0%
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">Please wait while your export is being prepared...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'log_history/js/log_history.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const exportForm = document.getElementById('export-form');
+    const exportBtn = document.getElementById('export-btn');
+    const previewBtn = document.getElementById('preview-btn');
+    const exportProgress = document.getElementById('export-progress');
+    const progressBar = document.getElementById('progress-bar');
+
+    // Export form submission
+    exportForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show progress
+        exportProgress.style.display = 'block';
+        exportBtn.disabled = true;
+        previewBtn.disabled = true;
+        
+        // Simulate progress (in real implementation, this would be AJAX)
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+                // Submit the form
+                exportForm.submit();
+            }
+        }, 200);
+    });
+
+    // Preview button
+    previewBtn.addEventListener('click', function() {
+        // TODO: Implement preview functionality
+        alert('Preview functionality will be implemented soon.');
+    });
+});
+</script>
+{% endblock %}

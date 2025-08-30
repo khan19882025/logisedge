@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recurring Journal Entries - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'recurring_journal_entry/css/recurring_journal_entry.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="recurring-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-sync-alt"></i> Recurring Journal Entries</h2>
+                <p class="subtitle">Manage automated periodic journal entries</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'recurring_journal_entry:recurring_entry_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create New Template
+                </a>
+                <a href="{% url 'recurring_journal_entry:dashboard' %}" class="btn btn-outline-info">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-cards mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ total_entries }}</div>
+                        <div class="stat-label">Total Templates</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card active">
+                    <div class="stat-icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ active_entries }}</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card paused">
+                    <div class="stat-icon">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ paused_entries }}</div>
+                        <div class="stat-label">Paused</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card completed">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ completed_entries }}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search }}" placeholder="Search by template name or description">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="">All Status</option>
+                            <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option>
+                            <option value="PAUSED" {% if status_filter == 'PAUSED' %}selected{% endif %}>Paused</option>
+                            <option value="COMPLETED" {% if status_filter == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                            <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="frequency" class="form-label">Frequency</label>
+                        <select class="form-control" id="frequency" name="frequency">
+                            <option value="">All Frequencies</option>
+                            <option value="DAILY" {% if frequency_filter == 'DAILY' %}selected{% endif %}>Daily</option>
+                            <option value="WEEKLY" {% if frequency_filter == 'WEEKLY' %}selected{% endif %}>Weekly</option>
+                            <option value="MONTHLY" {% if frequency_filter == 'MONTHLY' %}selected{% endif %}>Monthly</option>
+                            <option value="QUARTERLY" {% if frequency_filter == 'QUARTERLY' %}selected{% endif %}>Quarterly</option>
+                            <option value="ANNUALLY" {% if frequency_filter == 'ANNUALLY' %}selected{% endif %}>Annually</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Filter
+                            </button>
+                            <a href="{% url 'recurring_journal_entry:recurring_entry_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entries List -->
+    <div class="entries-list">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Template Name</th>
+                            <th>Type</th>
+                            <th>Frequency</th>
+                            <th>Start Date</th>
+                            <th>Status</th>
+                            <th>Total Amount</th>
+                            <th>Auto Post</th>
+                            <th>Next Due</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in page_obj %}
+                            <tr>
+                                <td>
+                                    <div class="entry-name">
+                                        <strong>{{ entry.template_name }}</strong>
+                                        <small class="text-muted d-block">{{ entry.narration|truncatechars:50 }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ entry.get_journal_type_display }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ entry.get_frequency_display }}</span>
+                                </td>
+                                <td>{{ entry.start_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if entry.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif entry.status == 'PAUSED' %}
+                                        <span class="badge bg-warning">Paused</span>
+                                    {% elif entry.status == 'COMPLETED' %}
+                                        <span class="badge bg-primary">Completed</span>
+                                    {% elif entry.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="amount-info">
+                                        <div class="amount">{{ entry.currency.code }} {{ entry.total_debit|floatformat:2 }}</div>
+                                        <small class="text-muted">
+                                            {% if entry.is_balanced %}
+                                                <i class="fas fa-check text-success"></i> Balanced
+                                            {% else %}
+                                                <i class="fas fa-exclamation-triangle text-warning"></i> Unbalanced
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if entry.auto_post %}
+                                        <i class="fas fa-check text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-times text-muted"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.status == 'ACTIVE' %}
+                                        {% with next_date=entry.get_next_posting_date %}
+                                            {% if next_date %}
+                                                <div class="next-due">
+                                                    <div class="date">{{ next_date|date:"M d, Y" }}</div>
+                                                    <small class="text-muted">
+                                                        {% if next_date == today %}
+                                                            <span class="text-danger">Due Today</span>
+                                                        {% elif next_date < today %}
+                                                            <span class="text-warning">Overdue</span>
+                                                        {% else %}
+                                                            <span class="text-info">{{ next_date|timeuntil }}</span>
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">No more dates</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'recurring_journal_entry:recurring_entry_detail' entry.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if entry.status != 'COMPLETED' %}
+                                            <a href="{% url 'recurring_journal_entry:recurring_entry_edit' entry.pk %}" 
+                                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if entry.status == 'ACTIVE' %}
+                                            <a href="{% url 'recurring_journal_entry:generate_entry' entry.pk %}" 
+                                               class="btn btn-sm btn-outline-success" title="Generate Entry">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        {% endif %}
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-info dropdown-toggle" 
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% if entry.status == 'ACTIVE' %}
+                                                    <li>
+                                                        <form method="post" action="{% url 'recurring_journal_entry:recurring_entry_pause' entry.pk %}" 
+                                                              style="display: inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-pause"></i> Pause
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% elif entry.status == 'PAUSED' %}
+                                                    <li>
+                                                        <form method="post" action="{% url 'recurring_journal_entry:recurring_entry_resume' entry.pk %}" 
+                                                              style="display: inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-play"></i> Resume
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% endif %}
+                                                {% if entry.status in 'ACTIVE,PAUSED' %}
+                                                    <li>
+                                                        <form method="post" action="{% url 'recurring_journal_entry:recurring_entry_cancel' entry.pk %}" 
+                                                              style="display: inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item text-danger" 
+                                                                    onclick="return confirm('Are you sure you want to cancel this recurring entry?')">
+                                                                <i class="fas fa-times"></i> Cancel
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% endif %}
+                                                <li>
+                                                    <a href="{% url 'recurring_journal_entry:generated_entries_list' entry.pk %}" class="dropdown-item">
+                                                        <i class="fas fa-history"></i> View History
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if frequency_filter %}&frequency={{ frequency_filter }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if frequency_filter %}&frequency={{ frequency_filter }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if frequency_filter %}&frequency={{ frequency_filter }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if frequency_filter %}&frequency={{ frequency_filter }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if frequency_filter %}&frequency={{ frequency_filter }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-sync-alt fa-3x text-muted mb-3"></i>
+                    <h4>No Recurring Entries Found</h4>
+                    <p class="text-muted">Create your first recurring journal entry template to automate periodic entries.</p>
+                    <a href="{% url 'recurring_journal_entry:recurring_entry_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Template
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

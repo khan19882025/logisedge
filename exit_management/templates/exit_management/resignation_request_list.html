@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load exit_management_tags %}
+
+{% block title %}Resignation Requests{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'exit_management/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt me-2"></i>Resignation Requests
+        </h1>
+        <div>
+            <a href="{% url 'exit_management:resignation_request_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Resignation Request
+            </a>
+            <a href="{% url 'exit_management:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    {{ search_form.search }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.status }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.exit_type }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.date_from }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.date_to }}
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resignation Requests Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Resignation Requests</h6>
+            <div class="text-muted">
+                Total: {{ resignations.paginator.count }} requests
+            </div>
+        </div>
+        <div class="card-body">
+            {% if resignations %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Employee</th>
+                                <th>Exit Type</th>
+                                <th>Status</th>
+                                <th>Resignation Date</th>
+                                <th>Last Working Day</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resignation in resignations %}
+                            <tr>
+                                <td>
+                                    <strong>{{ resignation.reference_number }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ resignation.employee.full_name }}</strong><br>
+                                        <small class="text-muted">{{ resignation.employee.designation|default:"N/A" }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ resignation.exit_type.name }}</td>
+                                <td>
+                                    {{ resignation.status|status_badge }}
+                                </td>
+                                <td>{{ resignation.resignation_date|date:"M d, Y" }}</td>
+                                <td>{{ resignation.last_working_day|date:"M d, Y" }}</td>
+                                <td>
+                                    <small>{{ resignation.submitted_at|date:"M d, Y" }}<br>
+                                    {{ resignation.submitted_at|time:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'exit_management:resignation_request_detail' resignation.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'exit_management:resignation_request_update' resignation.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if resignation.status == 'pending' %}
+                                            <a href="{% url 'exit_management:manager_approval' resignation.pk %}" 
+                                               class="btn btn-sm btn-outline-info" title="Manager Approval">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if resignation.status == 'manager_review' %}
+                                            <a href="{% url 'exit_management:hr_approval' resignation.pk %}" 
+                                               class="btn btn-sm btn-outline-success" title="HR Approval">
+                                                <i class="fas fa-user-check"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if resignation.status == 'approved' and not resignation.clearance_process %}
+                                            <a href="{% url 'exit_management:start_clearance_process' resignation.pk %}" 
+                                               class="btn btn-sm btn-outline-warning" title="Start Clearance">
+                                                <i class="fas fa-clipboard-check"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if resignations.has_other_pages %}
+                <nav aria-label="Resignation requests pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if resignations.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.exit_type %}&exit_type={{ request.GET.exit_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ resignations.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.exit_type %}&exit_type={{ request.GET.exit_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in resignations.paginator.page_range %}
+                            {% if resignations.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > resignations.number|add:'-3' and num < resignations.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.exit_type %}&exit_type={{ request.GET.exit_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if resignations.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ resignations.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.exit_type %}&exit_type={{ request.GET.exit_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ resignations.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.exit_type %}&exit_type={{ request.GET.exit_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-500">No resignation requests found</h5>
+                    <p class="text-gray-400">Start by creating a new resignation request.</p>
+                    <a href="{% url 'exit_management:resignation_request_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create First Request
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'exit_management/js/dashboard.js' %}"></script>
+<script>
+// Auto-submit form on filter change
+document.addEventListener('DOMContentLoaded', function() {
+    const filterSelects = document.querySelectorAll('select[name="status"], select[name="exit_type"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cash Transaction Entry - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cash_transactions/css/cash_transactions.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cash-transaction-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-cash-stack text-primary"></i>
+                            Cash Transaction Entry
+                        </h2>
+                        <p class="text-muted mb-0">Record cash inflows and outflows for internal control</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'cash_transactions:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> View All Transactions
+                        </a>
+                        <a href="{% url 'cash_transactions:quick' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-lightning"></i> Quick Entry
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card stats-cash-in">
+                    <div class="stats-icon">
+                        <i class="bi bi-arrow-down-circle"></i>
+                    </div>
+                    <div class="stats-value" id="totalCashIn">AED 0.00</div>
+                    <div class="stats-label">Total Cash In</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card stats-cash-out">
+                    <div class="stats-icon">
+                        <i class="bi bi-arrow-up-circle"></i>
+                    </div>
+                    <div class="stats-value" id="totalCashOut">AED 0.00</div>
+                    <div class="stats-label">Total Cash Out</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card stats-net">
+                    <div class="stats-icon">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <div class="stats-value" id="netCashFlow">AED 0.00</div>
+                    <div class="stats-label">Net Cash Flow</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-icon" style="background: linear-gradient(135deg, #6c757d, #495057);">
+                        <i class="bi bi-list-ul"></i>
+                    </div>
+                    <div class="stats-value" id="totalTransactions">0</div>
+                    <div class="stats-label">Total Transactions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <div class="row">
+            <div class="col-12">
+                <div class="cash-transaction-card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-plus-circle me-2"></i>New Cash Transaction</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data" id="cashTransactionForm" class="cash-transaction-form">
+                            {% csrf_token %}
+                            
+                            <!-- Transaction Information Section -->
+                            <div class="form-section">
+                                <h6><i class="bi bi-info-circle"></i>Transaction Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.transaction_date.id_for_label }}" class="form-label">
+                                                <i class="bi bi-calendar-event"></i> Transaction Date
+                                            </label>
+                                            {{ form.transaction_date }}
+                                            {% if form.transaction_date.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.transaction_date.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.transaction_type.id_for_label }}" class="form-label">
+                                                <i class="bi bi-arrow-left-right"></i> Transaction Type
+                                            </label>
+                                            {{ form.transaction_type }}
+                                            {% if form.transaction_type.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.transaction_type.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                                <i class="bi bi-tags"></i> Category
+                                            </label>
+                                            {{ form.category }}
+                                            {% if form.category.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.category.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                                <i class="bi bi-currency-exchange"></i> Currency
+                                            </label>
+                                            {{ form.currency }}
+                                            {% if form.currency.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.currency.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account Information Section -->
+                            <div class="form-section">
+                                <h6><i class="bi bi-bank"></i>Account Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6" id="fromAccountGroup">
+                                        <div class="mb-3">
+                                            <label for="{{ form.from_account.id_for_label }}" class="form-label">
+                                                <i class="bi bi-arrow-up-circle"></i> From Account
+                                            </label>
+                                            {{ form.from_account }}
+                                            <div id="fromAccountBalance"></div>
+                                            {% if form.from_account.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.from_account.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" id="toAccountGroup">
+                                        <div class="mb-3">
+                                            <label for="{{ form.to_account.id_for_label }}" class="form-label">
+                                                <i class="bi bi-arrow-down-circle"></i> To Account
+                                            </label>
+                                            {{ form.to_account }}
+                                            <div id="toAccountBalance"></div>
+                                            {% if form.to_account.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.to_account.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Financial Information Section -->
+                            <div class="form-section">
+                                <h6><i class="bi bi-calculator"></i>Financial Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.amount.id_for_label }}" class="form-label amount-label">
+                                                <i class="bi bi-cash"></i> Amount
+                                            </label>
+                                            <div class="amount-field">
+                                                {{ form.amount }}
+                                            </div>
+                                            {% if form.amount.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.location.id_for_label }}" class="form-label">
+                                                <i class="bi bi-geo-alt"></i> Location / Branch
+                                            </label>
+                                            {{ form.location }}
+                                            <div id="cashBalanceInfo"></div>
+                                            {% if form.location.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.location.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Information Section -->
+                            <div class="form-section">
+                                <h6><i class="bi bi-file-text"></i>Additional Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.reference_number.id_for_label }}" class="form-label">
+                                                <i class="bi bi-hash"></i> Reference Number
+                                            </label>
+                                            {{ form.reference_number }}
+                                            {% if form.reference_number.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.reference_number.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.attachment.id_for_label }}" class="form-label">
+                                                <i class="bi bi-paperclip"></i> Attachment
+                                            </label>
+                                            <div class="file-upload-area">
+                                                {{ form.attachment }}
+                                                <div class="mt-2">
+                                                    <i class="bi bi-cloud-upload"></i>
+                                                    <p class="mb-1">Click to upload or drag and drop</p>
+                                                    <small class="text-muted">PDF, JPG, PNG, DOC (Max 5MB)</small>
+                                                </div>
+                                            </div>
+                                            <div id="filePreview"></div>
+                                            {% if form.attachment.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.attachment.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="{{ form.narration.id_for_label }}" class="form-label">
+                                                <i class="bi bi-chat-text"></i> Narration / Purpose
+                                            </label>
+                                            {{ form.narration }}
+                                            {% if form.narration.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.narration.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transaction Summary -->
+                            <div class="transaction-summary">
+                                <h6><i class="bi bi-clipboard-data"></i>Transaction Summary</h6>
+                                <div class="summary-item">
+                                    <span>Transaction Type:</span>
+                                    <span id="summaryType" class="fw-bold">Cash Out</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span>Amount:</span>
+                                    <span id="summaryAmount" class="fw-bold text-danger">AED 0.00</span>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="action-buttons">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                                            <i class="bi bi-arrow-clockwise"></i> Reset Form
+                                        </button>
+                                        <a href="{% url 'cash_transactions:list' %}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-check-circle"></i> Save Transaction
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cash_transactions/js/cash_transactions.js' %}"></script>
+<script>
+// Reset form function
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+        document.getElementById('cashTransactionForm').reset();
+        $('#fromAccountBalance, #toAccountBalance, #cashBalanceInfo, #filePreview').html('');
+        updateFormBasedOnType();
+    }
+}
+</script>
+{% endblock %} 

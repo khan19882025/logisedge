@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ report.report_name }} - Cost Center Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_management/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-bar mr-2"></i>{{ report.report_name }}
+        </h1>
+        <div>
+            <a href="#" class="btn btn-success" onclick="downloadReport('{{ report.pk }}', 'pdf')">
+                <i class="fas fa-file-pdf mr-1"></i>Download PDF
+            </a>
+            <a href="#" class="btn btn-warning" onclick="downloadReport('{{ report.pk }}', 'excel')">
+                <i class="fas fa-file-excel mr-1"></i>Download Excel
+            </a>
+            <a href="{% url 'cost_center_management:cost_center_report_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Information -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <!-- Report Content -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Report Details</h6>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="reportActionsDropdown" data-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="#" onclick="regenerateReport('{{ report.pk }}')">
+                                <i class="fas fa-sync-alt mr-1"></i>Regenerate Report
+                            </a>
+                            <a class="dropdown-item" href="#" onclick="shareReport('{{ report.pk }}')">
+                                <i class="fas fa-share mr-1"></i>Share Report
+                            </a>
+                            <a class="dropdown-item" href="#" onclick="printReport()">
+                                <i class="fas fa-print mr-1"></i>Print Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if report.status == 'completed' %}
+                        {% if report.report_type == 'expense' %}
+                            <!-- Expense Report Content -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Expense Summary</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Cost Center</th>
+                                                    <th>Total Expenses</th>
+                                                    <th>% of Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in report.report_data.expenses %}
+                                                <tr>
+                                                    <td>{{ item.cost_center_name }}</td>
+                                                    <td>${{ item.total_amount|floatformat:2 }}</td>
+                                                    <td>{{ item.percentage|floatformat:1 }}%</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Expense Trends</h5>
+                                    <canvas id="expenseChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        {% elif report.report_type == 'budget_variance' %}
+                            <!-- Budget Variance Report Content -->
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Budget vs Actual Comparison</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Cost Center</th>
+                                                    <th>Budgeted Amount</th>
+                                                    <th>Actual Amount</th>
+                                                    <th>Variance</th>
+                                                    <th>Utilization %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in report.report_data.budget_variance %}
+                                                <tr>
+                                                    <td>{{ item.cost_center_name }}</td>
+                                                    <td>${{ item.budgeted_amount|floatformat:2 }}</td>
+                                                    <td>${{ item.actual_amount|floatformat:2 }}</td>
+                                                    <td class="text-{% if item.variance < 0 %}danger{% else %}success{% endif %}">
+                                                        ${{ item.variance|floatformat:2 }}
+                                                    </td>
+                                                    <td>
+                                                        <div class="progress" style="height: 20px;">
+                                                            <div class="progress-bar {% if item.utilization_percentage > 100 %}bg-danger{% elif item.utilization_percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                                 role="progressbar" 
+                                                                 style="width: {{ item.utilization_percentage|floatformat:0 }}%"
+                                                                 aria-valuenow="{{ item.utilization_percentage|floatformat:0 }}" 
+                                                                 aria-valuemin="0" 
+                                                                 aria-valuemax="100">
+                                                                {{ item.utilization_percentage|floatformat:0 }}%
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% elif report.report_type == 'profit_loss' %}
+                            <!-- Profit & Loss Report Content -->
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Profit & Loss Statement</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Cost Center</th>
+                                                    <th>Revenue</th>
+                                                    <th>Expenses</th>
+                                                    <th>Net Income</th>
+                                                    <th>Margin %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in report.report_data.profit_loss %}
+                                                <tr>
+                                                    <td>{{ item.cost_center_name }}</td>
+                                                    <td class="text-success">${{ item.revenue|floatformat:2 }}</td>
+                                                    <td class="text-danger">${{ item.expenses|floatformat:2 }}</td>
+                                                    <td class="text-{% if item.net_income >= 0 %}success{% else %}danger{% endif %}">
+                                                        ${{ item.net_income|floatformat:2 }}
+                                                    </td>
+                                                    <td class="text-{% if item.margin_percentage >= 0 %}success{% else %}danger{% endif %}">
+                                                        {{ item.margin_percentage|floatformat:1 }}%
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Generic Report Content -->
+                            <div class="alert alert-info">
+                                <h5>Report Data</h5>
+                                <p>This report contains the following data:</p>
+                                <ul>
+                                    <li>Report Type: {{ report.get_report_type_display }}</li>
+                                    <li>Period: {{ report.start_date|date:"M d, Y" }} to {{ report.end_date|date:"M d, Y" }}</li>
+                                    <li>Cost Center: {% if report.cost_center %}{{ report.cost_center.name }}{% else %}All Cost Centers{% endif %}</li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <!-- Report Processing -->
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
+                            <h5>Report is being generated...</h5>
+                            <p class="text-muted">Please wait while we process your report data.</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 75%"></div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Report Information Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Report Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Report Name:</strong></td>
+                                    <td>{{ report.report_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Report Type:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{% if report.report_type == 'expense' %}danger{% elif report.report_type == 'budget_variance' %}warning{% elif report.report_type == 'profit_loss' %}success{% else %}info{% endif %}">
+                                            {{ report.get_report_type_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Cost Center:</strong></td>
+                                    <td>
+                                        {% if report.cost_center %}
+                                        <a href="{% url 'cost_center_management:cost_center_detail' report.cost_center.pk %}">
+                                            {{ report.cost_center.code }} - {{ report.cost_center.name }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">All Cost Centers</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Period:</strong></td>
+                                    <td>
+                                        {% if report.start_date and report.end_date %}
+                                        {{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Generated By:</strong></td>
+                                    <td>{{ report.generated_by.get_full_name|default:report.generated_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Generated Date:</strong></td>
+                                    <td>{{ report.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{% if report.status == 'completed' %}success{% elif report.status == 'processing' %}warning{% else %}secondary{% endif %}">
+                                            {{ report.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'cost_center_management:cost_center_report_create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus mr-1"></i>Generate New Report
+                        </a>
+                        <a href="#" class="btn btn-info btn-sm" onclick="shareReport('{{ report.pk }}')">
+                            <i class="fas fa-share mr-1"></i>Share Report
+                        </a>
+                        <a href="#" class="btn btn-warning btn-sm" onclick="regenerateReport('{{ report.pk }}')">
+                            <i class="fas fa-sync-alt mr-1"></i>Regenerate Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_management/script.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Initialize charts if report data is available
+    {% if report.status == 'completed' and report.report_data %}
+        {% if report.report_type == 'expense' %}
+            // Expense Chart
+            var ctx = document.getElementById('expenseChart').getContext('2d');
+            var expenseChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        {% for item in report.report_data.expenses %}
+                        '{{ item.cost_center_name }}',
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        data: [
+                            {% for item in report.report_data.expenses %}
+                            {{ item.total_amount }},
+                            {% endfor %}
+                        ],
+                        backgroundColor: [
+                            '#e74a3b',
+                            '#f6c23e',
+                            '#1cc88a',
+                            '#36b9cc',
+                            '#6f42c1',
+                            '#fd7e14'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        {% endif %}
+    {% endif %}
+});
+
+// Download report function
+function downloadReport(reportId, format) {
+    // Implementation for downloading reports
+    alert(`${format.toUpperCase()} download functionality will be implemented here for report: ${reportId}`);
+}
+
+// Share report function
+function shareReport(reportId) {
+    // Implementation for sharing reports
+    alert('Share functionality will be implemented here for report: ' + reportId);
+}
+
+// Regenerate report function
+function regenerateReport(reportId) {
+    if (confirm('Are you sure you want to regenerate this report?')) {
+        // Implementation for regenerating reports
+        alert('Report regeneration functionality will be implemented here for report: ' + reportId);
+    }
+}
+
+// Print report function
+function printReport() {
+    window.print();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Ledger Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .report-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .report-period {
+            font-size: 14px;
+            color: #888;
+        }
+        .vendor-section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        .vendor-header {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .vendor-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .vendor-balance {
+            color: #d9534f;
+            font-weight: bold;
+        }
+        .vendor-balance.positive {
+            color: #d9534f;
+        }
+        .vendor-balance.negative {
+            color: #5cb85c;
+        }
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0;
+            font-size: 11px;
+        }
+        .transaction-table th {
+            background-color: #e9e9e9;
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+        .transaction-table td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+        }
+        .transaction-table .text-right {
+            text-align: right;
+        }
+        .transaction-table .text-center {
+            text-align: center;
+        }
+        .debit-amount {
+            color: #d9534f;
+            font-weight: bold;
+        }
+        .credit-amount {
+            color: #5cb85c;
+            font-weight: bold;
+        }
+        .balance-positive {
+            color: #d9534f;
+            font-weight: bold;
+        }
+        .balance-negative {
+            color: #5cb85c;
+            font-weight: bold;
+        }
+        .vendor-total {
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+        .summary-section {
+            margin-top: 30px;
+            border-top: 2px solid #333;
+            padding-top: 15px;
+        }
+        .summary-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .summary-table th,
+        .summary-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .summary-table th {
+            background-color: #e9e9e9;
+            font-weight: bold;
+        }
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+            font-style: italic;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #888;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+            .vendor-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="company-name">LogisEdge</div>
+        <div class="report-title">Vendor Ledger Report</div>
+        <div class="report-period">
+            Period: {{ date_from|date:"d/m/Y" }} to {{ date_to|date:"d/m/Y" }}
+            {% if vendor %}
+                | Vendor: {{ vendor.customer_name }}
+            {% else %}
+                | All Vendors
+            {% endif %}
+            {% if payment_status != 'all' %}
+                | Payment Status: {{ payment_status|title }}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Report Content -->
+    {% if report_data %}
+        {% for vendor_data in report_data %}
+            <div class="vendor-section">
+                <div class="vendor-header">
+                    <div class="vendor-info">
+                        <span>
+                            {{ vendor_data.vendor.customer_name }}
+                            {% if vendor_data.vendor.customer_code %}
+                                ({{ vendor_data.vendor.customer_code }})
+                            {% endif %}
+                        </span>
+                        <span class="vendor-balance {% if vendor_data.balance > 0 %}positive{% else %}negative{% endif %}">
+                            Balance: {{ vendor_data.balance|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+                
+                {% if vendor_data.transactions %}
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th width="12%">Date</th>
+                                <th width="40%">Description</th>
+                                <th width="15%">Reference</th>
+                                <th width="11%" class="text-right">Debit</th>
+                                <th width="11%" class="text-right">Credit</th>
+                                <th width="11%" class="text-right">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in vendor_data.transactions %}
+                                <tr>
+                                    <td>{{ transaction.date|date:"d/m/Y" }}</td>
+                                    <td>{{ transaction.description }}</td>
+                                    <td>{{ transaction.reference }}</td>
+                                    <td class="text-right">
+                                        {% if transaction.debit %}
+                                            <span class="debit-amount">{{ transaction.debit|floatformat:2 }}</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        {% if transaction.credit %}
+                                            <span class="credit-amount">{{ transaction.credit|floatformat:2 }}</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        <span class="{% if transaction.balance > 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                                            {{ transaction.balance|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="vendor-total">
+                                <td colspan="3">Vendor Total:</td>
+                                <td class="text-right debit-amount">{{ vendor_data.total_debit|floatformat:2 }}</td>
+                                <td class="text-right credit-amount">{{ vendor_data.total_credit|floatformat:2 }}</td>
+                                <td class="text-right {% if vendor_data.balance > 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                                    {{ vendor_data.balance|floatformat:2 }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                {% else %}
+                    <div style="padding: 20px; text-align: center; color: #888; font-style: italic;">
+                        No transactions found for this vendor in the selected period.
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <!-- Summary Section -->
+        {% if total_summary %}
+            <div class="summary-section">
+                <div class="summary-title">Report Summary</div>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Total Vendors</th>
+                            <th>Total Debit</th>
+                            <th>Total Credit</th>
+                            <th>Net Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ total_summary.vendor_count }}</td>
+                            <td class="debit-amount">{{ total_summary.total_debit|floatformat:2 }}</td>
+                            <td class="credit-amount">{{ total_summary.total_credit|floatformat:2 }}</td>
+                            <td class="{% if total_summary.net_balance > 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                                {{ total_summary.net_balance|floatformat:2 }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="no-data">
+            <h3>No Data Found</h3>
+            <p>No vendor transactions found for the selected criteria.</p>
+            <p>Please try adjusting your filters and generate the report again.</p>
+        </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        Generated on {{ generated_at|date:"d/m/Y H:i" }} | LogisEdge Vendor Ledger Report
+    </div>
+</body>
+</html>

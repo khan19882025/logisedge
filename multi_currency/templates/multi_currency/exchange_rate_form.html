@@ -1,0 +1,212 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Multi-Currency Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/multi_currency/multi_currency.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-graph-up me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted mb-0">{% if exchange_rate %}Edit exchange rate{% else %}Add a new exchange rate{% endif %}</p>
+        </div>
+        <div>
+            <a href="{% url 'multi_currency:exchange_rate_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Exchange Rates
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-pencil-square me-2"></i>Exchange Rate Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- From Currency -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.from_currency.id_for_label }}" class="form-label">
+                                    {{ form.from_currency.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.from_currency }}
+                                {% if form.from_currency.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.from_currency.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Source currency</div>
+                            </div>
+
+                            <!-- To Currency -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.to_currency.id_for_label }}" class="form-label">
+                                    {{ form.to_currency.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.to_currency }}
+                                {% if form.to_currency.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.to_currency.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Target currency</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Exchange Rate -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.rate.id_for_label }}" class="form-label">
+                                    {{ form.rate.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.rate }}
+                                {% if form.rate.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.rate.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Exchange rate (1 from_currency = rate to_currency)</div>
+                            </div>
+
+                            <!-- Rate Type -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.rate_type.id_for_label }}" class="form-label">
+                                    {{ form.rate_type.label }}
+                                </label>
+                                {{ form.rate_type }}
+                                {% if form.rate_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.rate_type.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">How this rate was obtained</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Effective Date -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.effective_date.id_for_label }}" class="form-label">
+                                    {{ form.effective_date.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.effective_date }}
+                                {% if form.effective_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.effective_date.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Date when this rate becomes effective</div>
+                            </div>
+
+                            <!-- Expiry Date -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.expiry_date.id_for_label }}" class="form-label">
+                                    {{ form.expiry_date.label }}
+                                </label>
+                                {{ form.expiry_date }}
+                                {% if form.expiry_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.expiry_date.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Date when this rate expires (optional)</div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                    {{ form.notes.label }}
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Additional notes about this exchange rate</div>
+                            </div>
+                        </div>
+
+                        <!-- Active Status -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        {{ form.is_active.label }}
+                                    </label>
+                                </div>
+                                {% if form.is_active.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.is_active.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Whether this rate is currently active</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Errors -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'multi_currency:exchange_rate_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>{{ submit_text }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/multi_currency/multi_currency.js' %}"></script>
+{% endblock %} 

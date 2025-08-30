@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load backup_filters %}
+
+{% block title %}Restore Executions{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-filters {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .execution-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        border-left: 4px solid #e9ecef;
+    }
+    
+    .execution-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .execution-card.status-pending { border-left-color: #ffc107; }
+    .execution-card.status-running { border-left-color: #17a2b8; }
+    .execution-card.status-completed { border-left-color: #28a745; }
+    .execution-card.status-failed { border-left-color: #dc3545; }
+    .execution-card.status-cancelled { border-left-color: #6c757d; }
+    .execution-card.status-rolled_back { border-left-color: #fd7e14; }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-running { background: #cce5ff; color: #004085; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-cancelled { background: #e2e3e5; color: #383d41; }
+    .status-rolled_back { background: #fff3cd; color: #856404; }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+    
+    .execution-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 500;
+        color: #212529;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .execution-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .execution-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin: 0;
+    }
+    
+    .execution-meta {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-arrow-clockwise me-2"></i>
+                    Restore Executions
+                </h1>
+                <div>
+                    <a href="{% url 'backup_scheduler:restore_dashboard' %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Dashboard
+                    </a>
+                    <a href="{% url 'backup_scheduler:restore_request_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        New Restore Request
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="search-filters">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="status-filter" class="form-label">Status</label>
+                        <select class="form-select" id="status-filter">
+                            <option value="">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="running">Running</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="rolled_back">Rolled Back</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date-filter" class="form-label">Date Range</label>
+                        <select class="form-select" id="date-filter">
+                            <option value="">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="quarter">This Quarter</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="search-input" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search-input" placeholder="Search by execution ID, request title...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-outline-primary w-100" onclick="applyFilters()">
+                            <i class="bi bi-search me-1"></i>
+                            Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Executions List -->
+            {% if page_obj %}
+                {% for execution in page_obj %}
+                <div class="execution-card status-{{ execution.status }}">
+                    <div class="execution-header">
+                        <div>
+                            <h5 class="execution-title">
+                                Execution #{{ execution.execution_id|slice:":8" }}
+                            </h5>
+                            <small class="text-muted">
+                                Request: {{ execution.restore_request.title }}
+                            </small>
+                        </div>
+                        <div class="execution-meta">
+                            <span class="status-badge status-{{ execution.status }}">
+                                {{ execution.get_status_display }}
+                            </span>
+                            <small class="text-muted">
+                                {{ execution.created_at|date:"M d, Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="execution-info">
+                        <div class="info-item">
+                            <span class="info-label">Executed By</span>
+                            <span class="info-value">{{ execution.executed_by.get_full_name|default:execution.executed_by.username }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Started At</span>
+                            <span class="info-value">
+                                {% if execution.started_at %}
+                                    {{ execution.started_at|date:"M d, Y H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Duration</span>
+                            <span class="info-value">
+                                {% if execution.duration_seconds %}
+                                    {{ execution.duration_seconds|floatformat:0 }}s
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Progress</span>
+                            <span class="info-value">
+                                {% if execution.total_steps > 0 %}
+                                    {{ execution.current_step_number }}/{{ execution.total_steps }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if execution.current_step %}
+                    <div class="mb-3">
+                        <small class="text-muted">Current Step:</small>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {% if execution.total_steps > 0 %}{{ execution.current_step_number|floatformat:0|div:execution.total_steps|mul:100 }}{% else %}0{% endif %}%"></div>
+                        </div>
+                        <small class="text-muted">{{ execution.current_step }}</small>
+                    </div>
+                    {% endif %}
+
+                    {% if execution.restored_records %}
+                    <div class="mb-3">
+                        <small class="text-muted">Records Restored:</small>
+                        <span class="badge bg-success">{{ execution.restored_records }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if execution.data_integrity_score %}
+                    <div class="mb-3">
+                        <small class="text-muted">Data Integrity Score:</small>
+                        <span class="badge bg-info">{{ execution.data_integrity_score }}%</span>
+                    </div>
+                    {% endif %}
+
+                    {% if execution.error_message %}
+                    <div class="alert alert-danger mb-3">
+                        <strong>Error:</strong> {{ execution.error_message }}
+                        {% if execution.error_step %}
+                        <br><small>Failed at step: {{ execution.error_step }}</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="action-buttons">
+                        <a href="{% url 'backup_scheduler:restore_execution_detail' execution.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-eye me-1"></i>
+                            View Details
+                        </a>
+                        
+                        {% if execution.status == 'pending' or execution.status == 'running' %}
+                        <form method="post" action="{% url 'backup_scheduler:restore_execution_cancel' execution.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Are you sure you want to cancel this execution?')">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Cancel
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if execution.status == 'failed' and execution.rollback_executed == False %}
+                        <button class="btn btn-outline-danger btn-sm" onclick="confirmRollback('{{ execution.pk }}')">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>
+                            Rollback
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="pagination-wrapper">
+                    <nav aria-label="Executions pagination">
+                        <ul class="pagination">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    <h4>No Restore Executions Found</h4>
+                    <p class="text-muted">
+                        There are no restore executions to display. 
+                        <br>Create a restore request to get started.
+                    </p>
+                    <a href="{% url 'backup_scheduler:restore_request_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Create Restore Request
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyFilters() {
+    const status = document.getElementById('status-filter').value;
+    const dateRange = document.getElementById('date-filter').value;
+    const search = document.getElementById('search-input').value;
+    
+    let url = new URL(window.location);
+    
+    if (status) url.searchParams.set('status', status);
+    if (dateRange) url.searchParams.set('date', dateRange);
+    if (search) url.searchParams.set('search', search);
+    
+    window.location.href = url.toString();
+}
+
+function confirmRollback(executionId) {
+    if (confirm('Are you sure you want to rollback this failed execution? This action cannot be undone.')) {
+        // Implement rollback functionality
+        console.log('Rollback requested for execution:', executionId);
+    }
+}
+
+// Auto-apply filters on select change
+document.getElementById('status-filter').addEventListener('change', applyFilters);
+document.getElementById('date-filter').addEventListener('change', applyFilters);
+
+// Auto-search on input
+let searchTimeout;
+document.getElementById('search-input').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(applyFilters, 500);
+});
+</script>
+{% endblock %}

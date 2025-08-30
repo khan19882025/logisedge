@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ job.name }} - Cron Job Details - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cron_job_viewer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div>
+                    <nav class="flex" aria-label="Breadcrumb">
+                        <ol class="flex items-center space-x-4">
+                            <li>
+                                <div>
+                                    <a href="{% url 'cron_job_viewer:dashboard' %}" class="text-gray-400 hover:text-gray-500">
+                                        <svg class="flex-shrink-0 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                        </svg>
+                                        <span class="sr-only">Dashboard</span>
+                                    </a>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                    <a href="{% url 'cron_job_viewer:job_list' %}" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">Cron Jobs</a>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                    <span class="ml-4 text-sm font-medium text-gray-500">{{ job.name }}</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+                    <h1 class="mt-2 text-3xl font-bold text-gray-900">{{ job.name }}</h1>
+                    <p class="mt-1 text-sm text-gray-500">{{ job.description|default:"No description provided" }}</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="runJobNow('{{ job.id }}')" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Run Now
+                    </button>
+                    <button onclick="toggleJobStatus('{{ job.id }}', {{ job.is_active|yesno:'false,true' }})" class="{% if job.is_active %}bg-yellow-600 hover:bg-yellow-700{% else %}bg-green-600 hover:bg-green-700{% endif %} inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {% if job.is_active %}
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Deactivate
+                        {% else %}
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Activate
+                        {% endif %}
+                    </button>
+                    <a href="{% url 'cron_job_viewer:job_logs' job.id %}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        View All Logs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Job Information -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Job Details -->
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Job Information</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Task Name</dt>
+                                <dd class="mt-1 text-sm text-gray-900 font-mono">{{ job.task }}</dd>
+                            </div>
+                            
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Schedule</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ job.schedule_display }}</dd>
+                                <dd class="mt-1 text-xs text-gray-500 font-mono">{{ job.schedule }}</dd>
+                            </div>
+                            
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Next Run</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ job.next_run_formatted }}</dd>
+                            </div>
+                            
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Last Run</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ job.last_run_formatted }}</dd>
+                            </div>
+                            
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                <dd class="mt-1">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ job.status_badge_class }}">
+                                        {{ job.get_last_status_display }}
+                                    </span>
+                                </dd>
+                            </div>
+                            
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Active</dt>
+                                <dd class="mt-1">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if job.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {% if job.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </dd>
+                            </div>
+                            
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Owner</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ job.owner.username }}</dd>
+                                <dd class="mt-1 text-xs text-gray-500">{{ job.owner.email }}</dd>
+                            </div>
+                            
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Created</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ job.created_at|date:"M d, Y H:i:s" }}</dd>
+                            </div>
+                        </div>
+                        
+                        {% if job.description %}
+                        <div class="mt-6">
+                            <dt class="text-sm font-medium text-gray-500">Description</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ job.description }}</dd>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Recent Logs -->
+                <div class="bg-white shadow rounded-lg mt-6">
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Execution Logs</h3>
+                            <a href="{% url 'cron_job_viewer:job_logs' job.id %}" class="text-sm text-blue-600 hover:text-blue-500">View all logs →</a>
+                        </div>
+                        
+                        {% if logs %}
+                            <div class="space-y-4">
+                                {% for log in logs %}
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2 mb-2">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ log.status_badge_class }}">
+                                                    {{ log.get_status_display }}
+                                                </span>
+                                                <span class="text-sm text-gray-500">{{ log.duration_formatted }}</span>
+                                                {% if log.worker_name %}
+                                                <span class="text-xs text-gray-400">Worker: {{ log.worker_name }}</span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="text-sm text-gray-900 mb-1">
+                                                <strong>Started:</strong> {{ log.run_started_at|date:"M d, Y H:i:s" }}
+                                            </div>
+                                            
+                                            {% if log.run_ended_at %}
+                                            <div class="text-sm text-gray-900 mb-2">
+                                                <strong>Ended:</strong> {{ log.run_ended_at|date:"M d, Y H:i:s" }}
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if log.output_message %}
+                                            <div class="mt-2">
+                                                <details class="text-sm">
+                                                    <summary class="cursor-pointer text-gray-700 hover:text-gray-900">
+                                                        <strong>Output:</strong> Click to expand
+                                                    </summary>
+                                                    <pre class="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-800 whitespace-pre-wrap">{{ log.output_message }}</pre>
+                                                </details>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-8">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No execution logs</h3>
+                                <p class="mt-1 text-sm text-gray-500">This job hasn't been executed yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Job Status Card -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Job Status</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Current Status</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ job.status_badge_class }}">
+                                    {{ job.get_last_status_display }}
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Active</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if job.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% if job.is_active %}Yes{% else %}No{% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Next Run</span>
+                                <span class="text-sm text-gray-900">{{ job.next_run_at|date:"M d, H:i"|default:"Not scheduled" }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Last Run</span>
+                                <span class="text-sm text-gray-900">{{ job.last_run_at|date:"M d, H:i"|default:"Never" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
+                        
+                        <div class="space-y-3">
+                            <button onclick="runJobNow('{{ job.id }}')" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Run Now
+                            </button>
+                            
+                            <button onclick="toggleJobStatus('{{ job.id }}', {{ job.is_active|yesno:'false,true' }})" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md {% if job.is_active %}text-yellow-700 bg-yellow-100 hover:bg-yellow-200{% else %}text-green-700 bg-green-100 hover:bg-green-200{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                {% if job.is_active %}
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Deactivate
+                                {% else %}
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Activate
+                                {% endif %}
+                            </button>
+                            
+                            <a href="{% url 'cron_job_viewer:job_logs' job.id %}" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                View All Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Job Statistics -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Statistics</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Total Executions</span>
+                                <span class="text-sm font-medium text-gray-900">{{ logs|length }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Successful</span>
+                                <span class="text-sm text-green-600">{{ logs|dictsort:"status"|length }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Failed</span>
+                                <span class="text-sm text-red-600">{{ logs|dictsort:"status"|length }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Created</span>
+                                <span class="text-sm text-gray-900">{{ job.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-500">Last Updated</span>
+                                <span class="text-sm text-gray-900">{{ job.updated_at|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="messageContainer" class="fixed top-4 right-4 z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg border p-4 max-w-sm">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg id="messageIcon" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <p id="messageText" class="text-sm font-medium text-gray-900"></p>
+            </div>
+            <div class="ml-4 flex-shrink-0">
+                <button onclick="hideMessage()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cron_job_viewer.js' %}"></script>
+<script>
+// Job management functions
+function runJobNow(jobId) {
+    if (confirm('Are you sure you want to run this job now?')) {
+        fetch(`/utilities/cron-job-viewer/${jobId}/ajax/run-now/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage(data.error || 'Failed to run job', 'error');
+            }
+        })
+        .catch(error => {
+            showMessage('Error running job: ' + error.message, 'error');
+        });
+    }
+}
+
+function toggleJobStatus(jobId, newStatus) {
+    const action = newStatus ? 'activate' : 'deactivate';
+    if (confirm(`Are you sure you want to ${action} this job?`)) {
+        fetch(`/utilities/cron-job-viewer/${jobId}/ajax/update-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ is_active: newStatus }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showMessage(data.errors || 'Failed to update status', 'error');
+            }
+        })
+        .catch(error => {
+            showMessage('Error updating status: ' + error.message, 'error');
+        });
+    }
+}
+
+// Utility functions
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showMessage(message, type) {
+    const container = document.getElementById('messageContainer');
+    const icon = document.getElementById('messageIcon');
+    const text = document.getElementById('messageText');
+    
+    text.textContent = message;
+    
+    if (type === 'success') {
+        icon.className = 'h-6 w-6 text-green-400';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    } else {
+        icon.className = 'h-6 w-6 text-red-400';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    }
+    
+    container.classList.remove('hidden');
+    setTimeout(() => hideMessage(), 5000);
+}
+
+function hideMessage() {
+    document.getElementById('messageContainer').classList.add('hidden');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit{% else %}Create{% endif %} Storage Location
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        {% if form.instance.pk %}Edit{% else %}Create{% endif %} Storage Location
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="storageLocationForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.name.id_for_label }}">Location Name *</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger">{{ form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.storage_type.id_for_label }}">Storage Type *</label>
+                                    {{ form.storage_type }}
+                                    {% if form.storage_type.errors %}
+                                        <div class="text-danger">{{ form.storage_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.path.id_for_label }}">Storage Path *</label>
+                            {{ form.path }}
+                            {% if form.path.errors %}
+                                <div class="text-danger">{{ form.path.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                For local: /path/to/directory<br>
+                                For network: //server/share<br>
+                                For cloud: bucket-name or container-name
+                            </small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.host.id_for_label }}">Host (Optional)</label>
+                                    {{ form.host }}
+                                    <small class="form-text text-muted">Required for network and cloud storage</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.port.id_for_label }}">Port (Optional)</label>
+                                    {{ form.port }}
+                                    <small class="form-text text-muted">Default ports: FTP(21), SFTP(22), SMB(445)</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.username.id_for_label }}">Username (Optional)</label>
+                                    {{ form.username }}
+                                    <small class="form-text text-muted">Required for authenticated storage</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.credentials_encrypted.id_for_label }}">Credentials Encrypted</label>
+                                    {{ form.credentials_encrypted }}
+                                    <small class="form-text text-muted">Check if credentials are stored encrypted</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.total_capacity_bytes.id_for_label }}">Total Capacity (Bytes)</label>
+                                    {{ form.total_capacity_bytes }}
+                                    <small class="form-text text-muted">Leave empty for auto-detection</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.available_capacity_bytes.id_for_label }}">Available Capacity (Bytes)</label>
+                                    {{ form.available_capacity_bytes }}
+                                    <small class="form-text text-muted">Leave empty for auto-detection</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.description.id_for_label }}">Description</label>
+                            {{ form.description }}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.is_primary }}
+                                    <label class="form-check-label" for="{{ form.is_primary.id_for_label }}">
+                                        Primary Storage Location
+                                    </label>
+                                    <small class="form-text text-muted d-block">First choice for backups</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        Active
+                                    </label>
+                                    <small class="form-text text-muted d-block">Available for backups</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.encryption_required }}
+                                    <label class="form-check-label" for="{{ form.encryption_required.id_for_label }}">
+                                        Encryption Required
+                                    </label>
+                                    <small class="form-text text-muted d-block">Force encryption for this location</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                {% if form.instance.pk %}Update{% else %}Create{% endif %} Storage Location
+                            </button>
+                            <a href="{% url 'manual_backup:storage_locations' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const storageTypeSelect = document.getElementById('id_storage_type');
+        const hostField = document.getElementById('id_host');
+        const portField = document.getElementById('id_port');
+        const usernameField = document.getElementById('id_username');
+        
+        function updateFieldVisibility() {
+            const selectedType = storageTypeSelect.value;
+            
+            if (selectedType === 'local') {
+                hostField.parentElement.style.display = 'none';
+                portField.parentElement.style.display = 'none';
+                usernameField.parentElement.style.display = 'none';
+            } else {
+                hostField.parentElement.style.display = 'block';
+                portField.parentElement.style.display = 'block';
+                usernameField.parentElement.style.display = 'block';
+            }
+        }
+        
+        storageTypeSelect.addEventListener('change', updateFieldVisibility);
+        updateFieldVisibility();
+        
+        // Form validation
+        const form = document.getElementById('storageLocationForm');
+        form.addEventListener('submit', function(e) {
+            const name = document.getElementById('id_name').value.trim();
+            const path = document.getElementById('id_path').value.trim();
+            const storageType = storageTypeSelect.value;
+            
+            if (!name) {
+                e.preventDefault();
+                alert('Please enter a location name.');
+                return;
+            }
+            
+            if (!path) {
+                e.preventDefault();
+                alert('Please enter a storage path.');
+                return;
+            }
+            
+            if (storageType !== 'local' && !document.getElementById('id_host').value.trim()) {
+                e.preventDefault();
+                alert('Host is required for network and cloud storage.');
+                return;
+            }
+        });
+    });
+</script>
+{% endblock %}

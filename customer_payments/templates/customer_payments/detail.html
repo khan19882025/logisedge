@@ -1,0 +1,387 @@
+{% extends 'customer_payments/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Payment Details</h3>
+                    <div>
+                        <a href="{% url 'customer_payments:payment_print' payment.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-printer"></i> Print Receipt
+                        </a>
+                        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#emailModal">
+                            <i class="bi bi-envelope"></i> Email
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Payment Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Payment ID:</strong></td>
+                                    <td>{{ payment.formatted_payment_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer:</strong></td>
+                                    <td>{{ payment.customer.customer_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Date:</strong></td>
+                                    <td>{{ payment.payment_date }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Amount:</strong></td>
+                                    <td><span class="badge bg-success">AED {{ payment.amount }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Method:</strong></td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ payment.get_payment_method_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% if payment.payment_method == 'bank' and payment.bank_account %}
+                                <tr>
+                                    <td><strong>Bank Account:</strong></td>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            {{ payment.bank_account.bank_name }} - {{ payment.bank_account.account_number }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if payment.partial_payment_option %}
+                                <tr>
+                                    <td><strong>Partial Payment:</strong></td>
+                                    <td>
+                                        <span class="badge bg-warning">
+                                            {{ payment.get_partial_payment_option_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Customer Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ payment.customer.customer_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td>{{ payment.customer.email|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Phone:</strong></td>
+                                    <td>{{ payment.customer.phone|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Address:</strong></td>
+                                    <td>{{ payment.customer.billing_address|default:"N/A" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Summary Section -->
+                    {% if payment.payment_invoices.all %}
+                    <div class="mt-4">
+                        <h5>Payment Summary</h5>
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h6 class="text-muted">Original Invoice Amount</h6>
+                                            <span class="badge bg-secondary fs-6">
+                                                AED {{ payment.payment_invoices.first.original_amount|default:payment.payment_invoices.first.invoice.total_sale }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h6 class="text-muted">Amount Received</h6>
+                                            <span class="badge bg-success fs-6">AED {{ payment.amount }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h6 class="text-muted">Trade Discount</h6>
+                                            {% if payment.total_discount > 0 %}
+                                                <span class="badge bg-warning fs-6">AED {{ payment.total_discount }}</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark fs-6">AED 0.00</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h6 class="text-muted">Final Balance</h6>
+                                            {% if payment.total_discount > 0 %}
+                                                <span class="badge bg-success fs-6">AED 0.00</span>
+                                            {% else %}
+                                                <span class="badge bg-info fs-6">AED 0.00</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if payment.total_discount > 0 %}
+                                <div class="mt-3">
+                                    <div class="alert alert-info text-center">
+                                        <i class="bi bi-lightbulb me-2"></i>
+                                        <strong>Note:</strong> The remaining amount of AED {{ payment.total_discount }} has been written off as a trade discount.
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if payment.notes %}
+                    <div class="mt-3">
+                        <h5>Notes</h5>
+                        <div class="alert alert-light">
+                            {{ payment.notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if payment.payment_invoices.all %}
+                    <div class="mt-4">
+                        <h5>Applied to Invoices</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice No</th>
+                                        <th>Date</th>
+                                        <th>Items</th>
+                                        <th>Original Amount</th>
+                                        <th>Amount Received</th>
+                                        <th>Discount</th>
+                                        <th>Remaining Balance</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment_invoice in payment.payment_invoices.all %}
+                                    <tr>
+                                        <td><strong>{{ payment_invoice.invoice.invoice_number }}</strong></td>
+                                        <td>{{ payment_invoice.invoice.invoice_date }}</td>
+                                        <td><small>{{ payment_invoice.invoice.get_item_names_display }}</small></td>
+                                        <td>AED {{ payment_invoice.original_amount|default:payment_invoice.invoice.total_sale }}</td>
+                                        <td><span class="text-success fw-bold">AED {{ payment_invoice.amount_received }}</span></td>
+                                        <td>
+                                            {% if payment_invoice.discount_amount > 0 %}
+                                                <span class="text-danger">AED {{ payment_invoice.discount_amount }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% with remaining=payment_invoice.original_amount|default:payment_invoice.invoice.total_sale|add:"-"|add:payment_invoice.amount_received %}
+                                                {% if remaining > 0 %}
+                                                    <span class="text-warning fw-bold">AED {{ remaining }}</span>
+                                                {% else %}
+                                                    <span class="text-success">AED 0.00</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            {% if payment_invoice.invoice.status == 'paid' %}
+                                                <span class="badge bg-success">Paid</span>
+                                            {% elif payment_invoice.invoice.status == 'partial' %}
+                                                <span class="badge bg-warning">Partial</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ payment_invoice.invoice.status|title }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                                         {% if payment.payment_method == 'cash' %}
+                     <div class="mt-4">
+                         <h5>Cash Payment Ledger Entry</h5>
+                         <div class="alert alert-info">
+                             <i class="bi bi-info-circle me-2"></i>
+                             <strong>Payment Method:</strong> {{ payment.get_payment_method_display }}
+                         </div>
+                         
+                         <div class="card border-success">
+                             <div class="card-header bg-success text-white">
+                                 <h6 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Ledger Posting</h6>
+                             </div>
+                             <div class="card-body">
+                                 <div class="row">
+                                     <div class="col-md-6">
+                                         <strong>Debit Account:</strong><br>
+                                         <span class="badge bg-success">Cash in Hand</span><br>
+                                         <small class="text-muted">Asset Account</small>
+                                     </div>
+                                     <div class="col-md-6">
+                                         <strong>Credit Account:</strong><br>
+                                         <span class="badge bg-info">Accounts Receivable</span><br>
+                                         <small class="text-muted">Asset Account</small>
+                                     </div>
+                                 </div>
+                                 <hr>
+                                 <div class="alert alert-light">
+                                     <small>
+                                         <i class="bi bi-lightbulb me-1"></i>
+                                         <strong>Note:</strong> This cash payment has been automatically posted to the general ledger:
+                                         <br>• <strong>Debit:</strong> Cash in Hand (AED {{ payment.amount }})
+                                         <br>• <strong>Credit:</strong> Accounts Receivable (AED {{ payment.amount }})
+                                     </small>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                     {% endif %}
+                     
+                     {% if payment.partial_payment_option == 'discount' and payment.payment_invoices.all %}
+                     <div class="mt-4">
+                         <h5>Trade Discount Applied</h5>
+                         <div class="alert alert-info">
+                             <i class="bi bi-info-circle me-2"></i>
+                             <strong>Discount Option:</strong> {{ payment.get_partial_payment_option_display }}
+                         </div>
+                         
+                         {% if payment.total_discount > 0 %}
+                         <div class="card border-warning">
+                             <div class="card-header bg-warning text-dark">
+                                 <h6 class="mb-0"><i class="bi bi-percent me-2"></i>Discount Summary</h6>
+                             </div>
+                             <div class="card-body">
+                                 <div class="row">
+                                     <div class="col-md-6">
+                                         <strong>Total Discount Amount:</strong><br>
+                                         <span class="text-danger fw-bold fs-5">AED {{ payment.total_discount }}</span>
+                                     </div>
+                                     <div class="col-md-6">
+                                         <strong>Ledger Account:</strong><br>
+                                         <span class="badge bg-secondary">Trade Discount</span><br>
+                                         <small class="text-muted">Expense Account</small>
+                                     </div>
+                                 </div>
+                                 <hr>
+                                 <div class="alert alert-light">
+                                     <small>
+                                         <i class="bi bi-lightbulb me-1"></i>
+                                         <strong>Note:</strong> This discount amount has been automatically posted to the Trade Discount ledger account 
+                                         as a write-off of the remaining receivable amount.
+                                     </small>
+                                 </div>
+                             </div>
+                         </div>
+                         {% endif %}
+                     </div>
+                     {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'customer_payments:payment_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to List
+                        </a>
+                        <a href="{% url 'customer_payments:payment_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create New Payment
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete payment <strong>{{ payment.formatted_payment_id }}</strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'customer_payments:payment_delete' payment.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Payment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Payment Receipt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'customer_payments:payment_email' payment.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="recipient_email" class="form-label">Recipient Email</label>
+                        <input type="email" class="form-control" id="recipient_email" name="recipient_email" 
+                               value="{{ payment.customer.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="subject" name="subject" 
+                               value="Payment Receipt - {{ payment.formatted_payment_id }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" name="message" rows="4">Dear {{ payment.customer.customer_name }},
+
+Please find attached the payment receipt for payment {{ payment.formatted_payment_id }}.
+
+Thank you for your business.
+
+Best regards,
+{{ company.name|default:"Your Company" }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Email</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/customer_payments/customer_payments.css' %}">
+{% endblock %}
+{% endblock %} 

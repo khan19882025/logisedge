@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if ledger %}Edit Ledger Entry - {{ ledger.ledger_number }}{% else %}New Ledger Entry{% endif %} - {{ company.name }}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ledger/ledger.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-journal-plus text-primary"></i>
+                {% if ledger %}Edit Ledger Entry{% else %}New Ledger Entry{% endif %}
+            </h1>
+            <p class="text-muted">
+                {% if ledger %}
+                    Update ledger entry {{ ledger.ledger_number }}
+                {% else %}
+                    Create a new ledger entry for {{ fiscal_year.name }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'ledger:ledger_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to List
+            </a>
+            {% if ledger %}
+                <a href="{% url 'ledger:ledger_detail' ledger.pk %}" class="btn btn-outline-info">
+                    <i class="bi bi-eye"></i>
+                    View Details
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-pencil-square"></i>
+                {% if ledger %}Edit Entry{% else %}Create Entry{% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-info-circle"></i>
+                            Basic Information
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.entry_date.id_for_label }}" class="form-label">
+                                Entry Date <span class="text-danger">*</span>
+                            </label>
+                            {{ form.entry_date }}
+                            {% if form.entry_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.entry_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.reference.id_for_label }}" class="form-label">
+                                Reference Number
+                            </label>
+                            {{ form.reference }}
+                            {% if form.reference.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.reference.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                Description <span class="text-danger">*</span>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Information -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-bank"></i>
+                            Account Information
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.account.id_for_label }}" class="form-label">
+                                Account <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.account.name }}" id="{{ form.account.id_for_label }}" class="form-select" required>
+                                <option value="">Select an account...</option>
+                                {% for account_type in account_types %}
+                                    <optgroup label="{{ account_type.get_category_display }} - {{ account_type.name }}">
+                                        {% for account in account_type.accounts.all %}
+                                            {% if account.is_active and not account.is_group %}
+                                                <option value="{{ account.id }}" 
+                                                        {% if form.account.value == account.id %}selected{% endif %}
+                                                        data-account-code="{{ account.account_code }}"
+                                                        data-account-nature="{{ account.account_nature }}"
+                                                        data-current-balance="{{ account.current_balance }}">
+                                                    {{ account.account_code }} - {{ account.name }}
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                            {% if form.account.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.account.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="{{ form.entry_type.id_for_label }}" class="form-label">
+                                Entry Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.entry_type }}
+                            {% if form.entry_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.entry_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                Amount <span class="text-muted">(optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">AED</span>
+                                {{ form.amount }}
+                            </div>
+                            {% if form.amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i>
+                                Leave empty if this is a memo entry or adjustment without amount
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-plus-circle"></i>
+                            Additional Information
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.voucher_number.id_for_label }}" class="form-label">
+                                Voucher Number
+                            </label>
+                            {{ form.voucher_number }}
+                            {% if form.voucher_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.voucher_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.cheque_number.id_for_label }}" class="form-label">
+                                Cheque Number
+                            </label>
+                            {{ form.cheque_number }}
+                            {% if form.cheque_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.cheque_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.bank_reference.id_for_label }}" class="form-label">
+                                Bank Reference
+                            </label>
+                            {{ form.bank_reference }}
+                            {% if form.bank_reference.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.bank_reference.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="row">
+                    <div class="col-12">
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% if ledger %}
+                                    <small class="text-muted">
+                                        Last updated: {{ ledger.updated_at|date:"M d, Y H:i" }}
+                                        {% if ledger.updated_by %}
+                                            by {{ ledger.updated_by.get_full_name|default:ledger.updated_by.username }}
+                                        {% endif %}
+                                    </small>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'ledger:ledger_list' %}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i>
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if ledger %}Update Entry{% else %}Create Entry{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Account Information Panel -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Account Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="account-info">
+                        <p class="text-muted">Select an account to view details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-calculator"></i>
+                        Balance Preview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="balance-preview">
+                        <p class="text-muted">Enter amount to see balance preview</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="helpModalLabel">
+                    <i class="bi bi-question-circle"></i>
+                    Ledger Entry Help
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Required Fields</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="text-danger">*</span> Entry Date - Date of the transaction</li>
+                            <li><span class="text-danger">*</span> Description - Detailed description of the transaction</li>
+                            <li><span class="text-danger">*</span> Account - Chart of account to post to</li>
+                            <li><span class="text-danger">*</span> Entry Type - Debit (DR) or Credit (CR)</li>
+                            <li><span class="text-danger">*</span> Amount - Transaction amount</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Optional Fields</h6>
+                        <ul class="list-unstyled">
+                            <li>Reference - Reference number or code</li>
+                            <li>Voucher Number - Voucher reference</li>
+                            <li>Cheque Number - Cheque reference</li>
+                            <li>Bank Reference - Bank transaction reference</li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-info">
+                    <h6>Tips:</h6>
+                    <ul class="mb-0">
+                        <li>Use clear, descriptive descriptions for better record keeping</li>
+                        <li>Reference numbers help with reconciliation</li>
+                        <li>All entries are automatically numbered</li>
+                        <li>Running balances are calculated automatically</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ledger/ledger.js' %}"></script>
+<script>
+// Form-specific JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Account selection change handler
+    const accountSelect = document.getElementById('{{ form.account.id_for_label }}');
+    if (accountSelect) {
+        accountSelect.addEventListener('change', function() {
+            updateAccountInfo(this.value);
+        });
+    }
+    
+    // Amount change handler
+    const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+    if (amountInput) {
+        amountInput.addEventListener('input', function() {
+            updateBalancePreview();
+        });
+    }
+    
+    // Entry type change handler
+    const entryTypeSelect = document.getElementById('{{ form.entry_type.id_for_label }}');
+    if (entryTypeSelect) {
+        entryTypeSelect.addEventListener('change', function() {
+            updateBalancePreview();
+        });
+    }
+    
+    // Initialize account info if account is pre-selected
+    if (accountSelect && accountSelect.value) {
+        updateAccountInfo(accountSelect.value);
+    }
+});
+
+function updateAccountInfo(accountId) {
+    if (!accountId) {
+        document.getElementById('account-info').innerHTML = '<p class="text-muted">Select an account to view details</p>';
+        return;
+    }
+    
+    // Fetch account details via AJAX
+    fetch(`/chart-of-accounts/ajax/account/${accountId}/`)
+        .then(response => response.json())
+        .then(data => {
+            const accountInfo = document.getElementById('account-info');
+            accountInfo.innerHTML = `
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Account Code:</strong><br>
+                        <span class="text-muted">${data.account_code}</span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Account Type:</strong><br>
+                        <span class="text-muted">${data.account_type}</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Current Balance:</strong><br>
+                        <span class="text-primary fw-bold">${data.current_balance}</span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Account Nature:</strong><br>
+                        <span class="text-muted">${data.account_nature}</span>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error fetching account info:', error);
+            document.getElementById('account-info').innerHTML = '<p class="text-danger">Error loading account information</p>';
+        });
+}
+
+function updateBalancePreview() {
+    const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+    const entryTypeSelect = document.getElementById('{{ form.entry_type.id_for_label }}');
+    const accountSelect = document.getElementById('{{ form.account.id_for_label }}');
+    
+    if (!amountInput.value || !entryTypeSelect.value || !accountSelect.value) {
+        document.getElementById('balance-preview').innerHTML = '<p class="text-muted">Enter amount to see balance preview</p>';
+        return;
+    }
+    
+    const amount = parseFloat(amountInput.value);
+    const entryType = entryTypeSelect.value;
+    
+    // This is a simplified preview - in a real app, you'd fetch the current balance
+    const preview = document.getElementById('balance-preview');
+    preview.innerHTML = `
+        <div class="row">
+            <div class="col-6">
+                <strong>Transaction:</strong><br>
+                <span class="badge ${entryType === 'DR' ? 'bg-success' : 'bg-danger'}">${entryType}</span>
+                <span class="ms-2">${amount.toFixed(2)}</span>
+            </div>
+            <div class="col-6">
+                <strong>Effect:</strong><br>
+                <span class="text-${entryType === 'DR' ? 'success' : 'danger'}">
+                    ${entryType === 'DR' ? 'Increase' : 'Decrease'}
+                </span>
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %} 

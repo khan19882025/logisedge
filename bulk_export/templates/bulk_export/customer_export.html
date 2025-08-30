@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Customer Export{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bulk_export/css/export_forms.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'bulk_export:dashboard' %}">Bulk Export</a></li>
+                        <li class="breadcrumb-item active">Customer Export</li>
+                    </ol>
+                </div>
+                <h4 class="page-title">Customer Export</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="header-title">
+                        <i class="mdi mdi-account-group text-primary me-2"></i>
+                        Export Customer Data
+                    </h4>
+                    <p class="text-muted mb-0">Filter and export customer data in CSV or Excel format</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="customerExportForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Customer Code -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.customer_code.id_for_label }}" class="form-label">
+                                        Customer Code
+                                    </label>
+                                    {{ form.customer_code }}
+                                    {% if form.customer_code.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_code.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Customer Name -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.customer_name.id_for_label }}" class="form-label">
+                                        Customer Name
+                                    </label>
+                                    {{ form.customer_name }}
+                                    {% if form.customer_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Region -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.region.id_for_label }}" class="form-label">
+                                        Region
+                                    </label>
+                                    {{ form.region }}
+                                    {% if form.region.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.region.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Account Status -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.account_status.id_for_label }}" class="form-label">
+                                        Account Status
+                                    </label>
+                                    {{ form.account_status }}
+                                    {% if form.account_status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.account_status.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Registration Date From -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.registration_date_from.id_for_label }}" class="form-label">
+                                        Registration Date From
+                                    </label>
+                                    {{ form.registration_date_from }}
+                                    {% if form.registration_date_from.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.registration_date_from.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Registration Date To -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.registration_date_to.id_for_label }}" class="form-label">
+                                        Registration Date To
+                                    </label>
+                                    {{ form.registration_date_to }}
+                                    {% if form.registration_date_to.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.registration_date_to.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Export Format -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label class="form-label d-block">Export Format</label>
+                                    <div class="form-check form-check-inline">
+                                        {{ form.export_format.0 }}
+                                        <label class="form-check-label" for="{{ form.export_format.0.id_for_label }}">
+                                            Excel (.xlsx)
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        {{ form.export_format.1 }}
+                                        <label class="form-check-label" for="{{ form.export_format.1.id_for_label }}">
+                                            CSV (.csv)
+                                        </label>
+                                    </div>
+                                    {% if form.export_format.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.export_format.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Errors -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'bulk_export:dashboard' %}" class="btn btn-secondary">
+                                        <i class="mdi mdi-arrow-left me-1"></i>
+                                        Back to Dashboard
+                                    </a>
+                                    <button type="submit" class="btn btn-primary" id="exportBtn">
+                                        <i class="mdi mdi-download me-1"></i>
+                                        Export Customers
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Information -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="header-title">
+                        <i class="mdi mdi-information text-info me-2"></i>
+                        Export Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>What will be exported:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="mdi mdi-check text-success me-2"></i>Customer Code</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Customer Name</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Email Address</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Phone Number</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Address</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Region</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Account Status</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Registration Date</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Credit Limit</li>
+                                <li><i class="mdi mdi-check text-success me-2"></i>Payment Terms</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>File naming convention:</h6>
+                            <p class="text-muted">
+                                <code>customers_export_YYYY-MM-DD_HH-MM.xlsx</code><br>
+                                <small>Example: customers_export_2025-08-10_15-30.xlsx</small>
+                            </p>
+                            
+                            <h6>Notes:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="mdi mdi-alert text-warning me-2"></i>Leave filters empty to export all customers</li>
+                                <li><i class="mdi mdi-alert text-warning me-2"></i>Large exports may take several minutes</li>
+                                <li><i class="mdi mdi-alert text-warning me-2"></i>Export logs are maintained for audit purposes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bulk_export/js/export_forms.js' %}"></script>
+{% endblock %}

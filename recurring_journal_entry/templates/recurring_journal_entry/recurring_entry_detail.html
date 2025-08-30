@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ recurring_entry.template_name }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'recurring_journal_entry/css/recurring_journal_entry.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="recurring-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-sync-alt"></i> {{ recurring_entry.template_name }}</h2>
+                <p class="subtitle">{{ recurring_entry.narration }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                    {% if recurring_entry.status != 'COMPLETED' %}
+                        <a href="{% url 'recurring_journal_entry:recurring_entry_edit' recurring_entry.pk %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                    {% endif %}
+                    {% if recurring_entry.status == 'ACTIVE' %}
+                        <a href="{% url 'recurring_journal_entry:generate_entry' recurring_entry.pk %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Generate Entry
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'recurring_journal_entry:recurring_entry_list' %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Information -->
+        <div class="col-md-8">
+            <!-- Status and Actions Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Template Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label>Status:</label>
+                                {% if recurring_entry.status == 'ACTIVE' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif recurring_entry.status == 'PAUSED' %}
+                                    <span class="badge bg-warning">Paused</span>
+                                {% elif recurring_entry.status == 'COMPLETED' %}
+                                    <span class="badge bg-primary">Completed</span>
+                                {% elif recurring_entry.status == 'CANCELLED' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% endif %}
+                            </div>
+                            <div class="info-item">
+                                <label>Journal Type:</label>
+                                <span>{{ recurring_entry.get_journal_type_display }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Frequency:</label>
+                                <span>{{ recurring_entry.get_frequency_display }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Posting Day:</label>
+                                <span>{{ recurring_entry.get_posting_day_display }}</span>
+                                {% if recurring_entry.posting_day == 'CUSTOM' and recurring_entry.custom_day %}
+                                    <span class="text-muted">({{ recurring_entry.custom_day }})</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label>Start Date:</label>
+                                <span>{{ recurring_entry.start_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>End Date:</label>
+                                <span>{{ recurring_entry.end_date|date:"M d, Y"|default:"Not specified" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Occurrences:</label>
+                                <span>{{ recurring_entry.number_of_occurrences|default:"Unlimited" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Auto Post:</label>
+                                {% if recurring_entry.auto_post %}
+                                    <i class="fas fa-check text-success"></i> Yes
+                                {% else %}
+                                    <i class="fas fa-times text-muted"></i> No
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="action-buttons mt-3">
+                        {% if recurring_entry.status == 'ACTIVE' %}
+                            <form method="post" action="{% url 'recurring_journal_entry:recurring_entry_pause' recurring_entry.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-pause"></i> Pause Template
+                                </button>
+                            </form>
+                        {% elif recurring_entry.status == 'PAUSED' %}
+                            <form method="post" action="{% url 'recurring_journal_entry:recurring_entry_resume' recurring_entry.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-play"></i> Resume Template
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if recurring_entry.status in 'ACTIVE,PAUSED' %}
+                            <form method="post" action="{% url 'recurring_journal_entry:recurring_entry_cancel' recurring_entry.pk %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger" 
+                                        onclick="return confirm('Are you sure you want to cancel this recurring entry? This action cannot be undone.')">
+                                    <i class="fas fa-times"></i> Cancel Template
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Scheduled Dates -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-alt"></i> Next Scheduled Dates</h5>
+                </div>
+                <div class="card-body">
+                    {% if next_posting_date %}
+                        <div class="next-date-info">
+                            <div class="next-date">
+                                <strong>Next Due Date:</strong> {{ next_posting_date|date:"l, F d, Y" }}
+                                {% if next_posting_date == today %}
+                                    <span class="badge bg-danger ms-2">Due Today</span>
+                                {% elif next_posting_date < today %}
+                                    <span class="badge bg-warning ms-2">Overdue</span>
+                                {% else %}
+                                    <span class="badge bg-info ms-2">{{ next_posting_date|timeuntil }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if recurring_entry.status == 'ACTIVE' %}
+                                <div class="mt-3">
+                                    <a href="{% url 'recurring_journal_entry:generate_entry' recurring_entry.pk %}" class="btn btn-success">
+                                        <i class="fas fa-plus"></i> Generate Entry for {{ next_posting_date|date:"M d, Y" }}
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No more scheduled dates for this template.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Journal Line Items -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Journal Line Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Account</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Debit</th>
+                                    <th class="text-end">Credit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line in recurring_entry.lines.all %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ line.account.account_code }}</strong><br>
+                                            <small class="text-muted">{{ line.account.name }}</small>
+                                        </td>
+                                        <td>{{ line.description|default:"-" }}</td>
+                                        <td class="text-end">
+                                            {% if line.debit > 0 %}
+                                                {{ recurring_entry.currency.code }} {{ line.debit|floatformat:2 }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if line.credit > 0 %}
+                                                {{ recurring_entry.currency.code }} {{ line.credit|floatformat:2 }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="2">Total</th>
+                                    <th class="text-end">{{ recurring_entry.currency.code }} {{ recurring_entry.total_debit|floatformat:2 }}</th>
+                                    <th class="text-end">{{ recurring_entry.currency.code }} {{ recurring_entry.total_credit|floatformat:2 }}</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="3">Balance</th>
+                                    <td class="text-end">
+                                        {% if recurring_entry.is_balanced %}
+                                            <span class="text-success">
+                                                <i class="fas fa-check"></i> Balanced
+                                            </span>
+                                        {% else %}
+                                            <span class="text-danger">
+                                                <i class="fas fa-exclamation-triangle"></i> 
+                                                {{ recurring_entry.currency.code }} {{ recurring_entry.balance_difference|floatformat:2 }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Statistics Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="stat-item">
+                        <label>Total Generated:</label>
+                        <span class="stat-value">{{ total_generated }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Total Amount:</label>
+                        <span class="stat-value">{{ recurring_entry.currency.code }} {{ total_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Created:</label>
+                        <span class="stat-value">{{ recurring_entry.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Last Updated:</label>
+                        <span class="stat-value">{{ recurring_entry.updated_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Created By:</label>
+                        <span class="stat-value">{{ recurring_entry.created_by.get_full_name|default:recurring_entry.created_by.username }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Generated Entries -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Recent Entries</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_generated %}
+                        <div class="recent-entries">
+                            {% for generated in recent_generated %}
+                                <div class="recent-entry-item">
+                                    <div class="entry-date">{{ generated.posting_date|date:"M d, Y" }}</div>
+                                    <div class="entry-voucher">
+                                        <a href="{% url 'manual_journal_entry:journal_entry_detail' generated.journal_entry.pk %}" target="_blank">
+                                            {{ generated.journal_entry.voucher_number }}
+                                        </a>
+                                    </div>
+                                    <div class="entry-status">
+                                        {% if generated.journal_entry.status == 'POSTED' %}
+                                            <span class="badge bg-success">Posted</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Draft</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'recurring_journal_entry:generated_entries_list' recurring_entry.pk %}" class="btn btn-outline-primary btn-sm">
+                                View All Entries
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No entries generated yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if recurring_entry.status == 'ACTIVE' %}
+                            <a href="{% url 'recurring_journal_entry:generate_entry' recurring_entry.pk %}" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Generate Entry
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'recurring_journal_entry:generated_entries_list' recurring_entry.pk %}" class="btn btn-outline-info">
+                            <i class="fas fa-history"></i> View History
+                        </a>
+                        {% if recurring_entry.status != 'COMPLETED' %}
+                            <a href="{% url 'recurring_journal_entry:recurring_entry_edit' recurring_entry.pk %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-edit"></i> Edit Template
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

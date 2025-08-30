@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recipient Lists{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-users fa-fw"></i> Recipient Lists
+        </h1>
+        <a href="{% url 'bulk_email_sender:recipient_list_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus fa-fw"></i> New List
+        </a>
+    </div>
+
+    {% if page_obj %}
+        <div class="row">
+            {% for list in page_obj %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">{{ list.name }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">{{ list.description|default:"No description" }}</p>
+                        <small class="text-muted">
+                            Type: {{ list.get_list_type_display }}<br>
+                            Recipients: {{ list.recipients.count }}<br>
+                            Created: {{ list.created_at|date:"M d, Y" }}
+                        </small>
+                        <div class="mt-3">
+                            <a href="{% url 'bulk_email_sender:recipient_list_detail' list.pk %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye fa-fw"></i> View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Recipient list pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-5x text-muted mb-4"></i>
+            <h4 class="text-muted">No recipient lists found</h4>
+            <p class="text-muted mb-4">Get started by creating your first recipient list.</p>
+            <a href="{% url 'bulk_email_sender:recipient_list_create' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus fa-fw"></i> Create First List
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

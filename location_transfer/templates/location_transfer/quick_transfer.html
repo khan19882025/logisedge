@@ -1,0 +1,490 @@
+{% extends 'location_transfer/base.html' %}
+{% load static %}
+
+{% block location_transfer_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="page-title">
+                    <i class="bi bi-lightning me-2"></i>Quick Transfer
+                </h1>
+                <p class="text-muted">Quickly transfer a pallet to a new location</p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'location_transfer:location_transfer_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Quick Transfer Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Transfer Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="quick-transfer-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.pallet_id.id_for_label }}" class="form-label">
+                                    <i class="bi bi-box me-1"></i>Pallet ID *
+                                </label>
+                                {{ form.pallet_id }}
+                                {% if form.pallet_id.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.pallet_id.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Enter the pallet ID to transfer</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.destination_location.id_for_label }}" class="form-label">
+                                    <i class="bi bi-geo-alt me-1"></i>Destination Location *
+                                </label>
+                                {{ form.destination_location }}
+                                {% if form.destination_location.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.destination_location.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Select the destination location</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                <i class="bi bi-chat-text me-1"></i>Notes
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Optional notes about this transfer</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'location_transfer:location_transfer_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-arrow-right-circle me-1"></i>Transfer Pallet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Pallet Details (will be populated via AJAX) -->
+            <div class="card mt-4" id="pallet-details-card" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Pallet Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Pallet ID:</strong></td>
+                                    <td id="pallet-id-display"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Description:</strong></td>
+                                    <td id="pallet-description"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Current Location:</strong></td>
+                                    <td id="current-location"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td id="pallet-status"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Weight:</strong></td>
+                                    <td id="pallet-weight"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Volume:</strong></td>
+                                    <td id="pallet-volume"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dimensions:</strong></td>
+                                    <td id="pallet-dimensions"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Items:</strong></td>
+                                    <td id="total-items"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pallet Items (will be populated via AJAX) -->
+            <div class="card mt-4" id="pallet-items-card" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-boxes me-2"></i>Items on Pallet
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="pallet-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Code</th>
+                                    <th>Quantity</th>
+                                    <th>Unit</th>
+                                    <th>Batch/Serial</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pallet-items-tbody">
+                                <!-- Items will be populated via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Locations (will be populated via AJAX) -->
+            <div class="card mt-4" id="available-locations-card" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>Available Locations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="available-locations-grid">
+                        <!-- Locations will be populated via AJAX -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 mb-0">Processing transfer...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeQuickTransfer();
+});
+
+function initializeQuickTransfer() {
+    const palletIdInput = document.getElementById('quick-pallet-id');
+    const destinationSelect = document.getElementById('quick-destination-location');
+    const form = document.getElementById('quick-transfer-form');
+    
+    // Handle pallet ID input
+    if (palletIdInput) {
+        palletIdInput.addEventListener('blur', function() {
+            const palletId = this.value.trim();
+            if (palletId) {
+                getPalletDetails(palletId);
+            }
+        });
+        
+        // Auto-complete functionality
+        palletIdInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length >= 2) {
+                searchPallets(query);
+            }
+        });
+    }
+    
+    // Handle destination location change
+    if (destinationSelect) {
+        destinationSelect.addEventListener('change', function() {
+            const sourceLocationId = getCurrentPalletLocationId();
+            if (sourceLocationId && this.value) {
+                getAvailableLocations(sourceLocationId);
+            }
+        });
+    }
+    
+    // Handle form submission
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitQuickTransfer();
+        });
+    }
+}
+
+function getPalletDetails(palletId) {
+    fetch('{% url "location_transfer:get_pallet_details" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ pallet_id: palletId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showNotification(data.error, 'error');
+            hidePalletDetails();
+        } else {
+            displayPalletDetails(data);
+            getAvailableLocations(data.current_location.id);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error fetching pallet details', 'error');
+    });
+}
+
+function displayPalletDetails(data) {
+    // Update pallet details
+    document.getElementById('pallet-id-display').textContent = data.pallet_id;
+    document.getElementById('pallet-description').textContent = data.description || 'N/A';
+    document.getElementById('current-location').textContent = data.current_location ? data.current_location.name : 'No Location';
+    document.getElementById('pallet-status').textContent = data.status;
+    document.getElementById('pallet-weight').textContent = data.weight ? data.weight + ' KGS' : 'N/A';
+    document.getElementById('pallet-volume').textContent = data.volume ? data.volume + ' CBM' : 'N/A';
+    document.getElementById('pallet-dimensions').textContent = data.dimensions || 'N/A';
+    document.getElementById('total-items').textContent = data.total_items;
+    
+    // Show pallet details card
+    document.getElementById('pallet-details-card').style.display = 'block';
+    
+    // Display pallet items
+    displayPalletItems(data.items);
+    
+    // Show pallet items card
+    document.getElementById('pallet-items-card').style.display = 'block';
+}
+
+function displayPalletItems(items) {
+    const tbody = document.getElementById('pallet-items-tbody');
+    tbody.innerHTML = '';
+    
+    items.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.item_name}</td>
+            <td><span class="badge bg-secondary">${item.item_code}</span></td>
+            <td>${item.quantity}</td>
+            <td>${item.unit_of_measure || 'N/A'}</td>
+            <td>
+                ${item.batch_number ? `<div><strong>Batch:</strong> ${item.batch_number}</div>` : ''}
+                ${item.serial_number ? `<div><strong>Serial:</strong> ${item.serial_number}</div>` : ''}
+            </td>
+            <td>${item.total_value ? '$' + parseFloat(item.total_value).toFixed(2) : 'N/A'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function getAvailableLocations(sourceLocationId) {
+    fetch('{% url "location_transfer:get_available_locations" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ source_location_id: sourceLocationId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showNotification(data.error, 'error');
+        } else {
+            displayAvailableLocations(data.locations);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error fetching available locations', 'error');
+    });
+}
+
+function displayAvailableLocations(locations) {
+    const grid = document.getElementById('available-locations-grid');
+    grid.innerHTML = '';
+    
+    locations.forEach(location => {
+        const utilizationClass = location.utilization < 50 ? 'success' : 
+                               location.utilization < 80 ? 'warning' : 'danger';
+        
+        const card = document.createElement('div');
+        card.className = 'col-md-6 col-lg-4 mb-3';
+        card.innerHTML = `
+            <div class="card location-card ${location.is_available ? 'border-success' : 'border-danger'}">
+                <div class="card-body">
+                    <h6 class="card-title">${location.name}</h6>
+                    <p class="card-text text-muted">${location.code}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-${utilizationClass}">${location.utilization}% Full</span>
+                        <span class="badge bg-secondary">${location.type}</span>
+                    </div>
+                    ${location.is_available ? 
+                        '<div class="mt-2"><span class="badge bg-success">Available</span></div>' : 
+                        '<div class="mt-2"><span class="badge bg-danger">Full</span></div>'
+                    }
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+    
+    // Show available locations card
+    document.getElementById('available-locations-card').style.display = 'block';
+}
+
+function getCurrentPalletLocationId() {
+    const currentLocationElement = document.getElementById('current-location');
+    // This would need to be implemented based on how you store the current location ID
+    // For now, we'll return null and handle it in the backend
+    return null;
+}
+
+function submitQuickTransfer() {
+    const form = document.getElementById('quick-transfer-form');
+    const formData = new FormData(form);
+    
+    // Show loading modal
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else {
+            return response.text();
+        }
+    })
+    .then(html => {
+        if (html) {
+            // Handle form errors
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const errors = doc.querySelectorAll('.invalid-feedback');
+            
+            if (errors.length > 0) {
+                loadingModal.hide();
+                errors.forEach(error => {
+                    showNotification(error.textContent, 'error');
+                });
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        loadingModal.hide();
+        showNotification('Error submitting transfer', 'error');
+    });
+}
+
+function searchPallets(query) {
+    fetch('{% url "location_transfer:search_pallets" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ query: query })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.pallets && data.pallets.length > 0) {
+            showPalletSuggestions(data.pallets);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function showPalletSuggestions(pallets) {
+    // Create or update suggestions dropdown
+    let dropdown = document.getElementById('pallet-suggestions');
+    if (!dropdown) {
+        dropdown = document.createElement('div');
+        dropdown.id = 'pallet-suggestions';
+        dropdown.className = 'dropdown-menu show position-absolute w-100';
+        document.getElementById('quick-pallet-id').parentNode.style.position = 'relative';
+        document.getElementById('quick-pallet-id').parentNode.appendChild(dropdown);
+    }
+    
+    dropdown.innerHTML = '';
+    pallets.forEach(pallet => {
+        const item = document.createElement('a');
+        item.className = 'dropdown-item';
+        item.href = '#';
+        item.textContent = `${pallet.pallet_id} - ${pallet.current_location}`;
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('quick-pallet-id').value = pallet.pallet_id;
+            dropdown.remove();
+            getPalletDetails(pallet.pallet_id);
+        });
+        dropdown.appendChild(item);
+    });
+}
+
+function hidePalletDetails() {
+    document.getElementById('pallet-details-card').style.display = 'none';
+    document.getElementById('pallet-items-card').style.display = 'none';
+    document.getElementById('available-locations-card').style.display = 'none';
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function showNotification(message, type = 'info') {
+    // You can implement this using your preferred notification library
+    // For now, we'll use a simple alert
+    alert(message);
+}
+</script>
+{% endblock %} 

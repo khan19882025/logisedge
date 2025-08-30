@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load hr_letters_filters %}
+
+{% block title %}HR Letters & Documents Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'hr_letters_documents/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-file-alt me-2"></i>
+                    HR Letters & Documents Dashboard
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">HR Letters & Documents</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Letters
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_letters }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Draft Letters
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ draft_letters }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-edit fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Finalized Letters
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ finalized_letters }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Signed Letters
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ signed_letters }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-signature fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'hr_letters_documents:letter_create' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-plus me-2"></i>Generate New Letter
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'hr_letters_documents:bulk_letter_generation' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-copy me-2"></i>Bulk Letter Generation
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'hr_letters_documents:letter_template_create' %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-file-medical me-2"></i>Create Template
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'hr_letters_documents:hr_document_create' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-upload me-2"></i>Upload Document
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Letters -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Letters</h6>
+                    <a href="{% url 'hr_letters_documents:letter_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_letters %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Reference</th>
+                                        <th>Employee</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for letter in recent_letters %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'hr_letters_documents:letter_detail' letter.pk %}">
+                                                {{ letter.reference_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ letter.employee.full_name }}</td>
+                                        <td>{{ letter.letter_type.name }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ letter.status|status_badge }}">
+                                                {{ letter.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ letter.issue_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'hr_letters_documents:letter_detail' letter.pk %}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if letter.status == 'draft' %}
+                                            <a href="{% url 'hr_letters_documents:letter_edit' letter.pk %}" 
+                                               class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No letters generated yet.</p>
+                            <a href="{% url 'hr_letters_documents:letter_create' %}" class="btn btn-primary">
+                                Generate Your First Letter
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Letters by Type -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Letters by Type</h6>
+                </div>
+                <div class="card-body">
+                    {% if letters_by_type %}
+                        {% for type in letters_by_type %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>{{ type.name }}</span>
+                            <span class="badge badge-primary">{{ type.letter_count }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-gray-500">No letter types available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Documents -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Documents</h6>
+                    <a href="{% url 'hr_letters_documents:hr_document_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_documents %}
+                        {% for document in recent_documents %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ document.title }}</strong>
+                                <br>
+                                <small class="text-muted">{{ document.category.name }}</small>
+                            </div>
+                            <span class="badge badge-{{ document.is_public|yesno:'success,secondary' }}">
+                                {{ document.is_public|yesno:'Public,Private' }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-gray-500">No documents uploaded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Links</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'hr_letters_documents:letter_type_list' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tags me-2"></i>Letter Types
+                        </a>
+                        <a href="{% url 'hr_letters_documents:letter_template_list' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-medical me-2"></i>Letter Templates
+                        </a>
+                        <a href="{% url 'hr_letters_documents:document_category_list' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-folder me-2"></i>Document Categories
+                        </a>
+                        <a href="{% url 'hr_letters_documents:hr_document_list' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-archive me-2"></i>HR Documents
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'hr_letters_documents/js/dashboard.js' %}"></script>
+{% endblock %} 

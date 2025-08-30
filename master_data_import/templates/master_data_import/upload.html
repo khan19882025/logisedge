@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload File - Master Data Import{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'master_data_import/css/upload.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-upload me-2"></i>Upload File for Import
+        </h1>
+        <a href="{% url 'master_data_import:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Import Configuration</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="upload-form">
+                        {% csrf_token %}
+                        
+                        <!-- Template Selection -->
+                        <div class="mb-4">
+                            <label for="{{ form.template.id_for_label }}" class="form-label">
+                                <strong>{{ form.template.label }}</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.template }}
+                            {% if form.template.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.template.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Select the appropriate template for your data type. 
+                                <a href="{% url 'master_data_import:template_list' %}" target="_blank">View all templates</a>
+                            </small>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="mb-4">
+                            <label for="{{ form.import_file.id_for_label }}" class="form-label">
+                                <strong>{{ form.import_file.label }}</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="file-upload-area" id="file-upload-area">
+                                <div class="file-upload-content">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                    <h5>Drag and drop your file here</h5>
+                                    <p class="text-muted">or click to browse</p>
+                                    <p class="text-muted small">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                                    {{ form.import_file }}
+                                </div>
+                            </div>
+                            {% if form.import_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.import_file.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Job Name -->
+                        <div class="mb-4">
+                            <label for="{{ form.job_name.id_for_label }}" class="form-label">
+                                <strong>{{ form.job_name.label }}</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.job_name }}
+                            {% if form.job_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.job_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Give your import job a descriptive name for easy identification.
+                            </small>
+                        </div>
+
+                        <!-- Import Options -->
+                        <div class="mb-4">
+                            <h6 class="font-weight-bold">Import Options</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.skip_errors }}
+                                        <label class="form-check-label" for="{{ form.skip_errors.id_for_label }}">
+                                            {{ form.skip_errors.label }}
+                                        </label>
+                                        <small class="form-text text-muted d-block">
+                                            Skip rows with errors and continue with valid data.
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.preview_only }}
+                                        <label class="form-check-label" for="{{ form.preview_only.id_for_label }}">
+                                            {{ form.preview_only.label }}
+                                        </label>
+                                        <small class="form-text text-muted d-block">
+                                            Only preview the data without importing.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Template Information -->
+                        <div class="mb-4" id="template-info" style="display: none;">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Template Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="template-details">
+                                        <!-- Template details will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'master_data_import:dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                <i class="fas fa-arrow-right me-1"></i>Continue to Column Mapping
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-question-circle me-2"></i>Import Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>File Requirements:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>CSV or Excel format</li>
+                                <li><i class="fas fa-check text-success me-2"></i>First row should contain headers</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Maximum file size: 50MB</li>
+                                <li><i class="fas fa-check text-success me-2"></i>UTF-8 encoding recommended</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Best Practices:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Use provided templates</li>
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Validate data before import</li>
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Backup existing data</li>
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Test with small datasets first</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'master_data_import/js/upload.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Journal Entry - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'manual_journal_entry/css/manual_journal_entry.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="journal-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-trash"></i> Delete Journal Entry</h2>
+                <p class="subtitle">Confirm deletion of journal entry {{ journal_entry.voucher_number }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'manual_journal_entry:journal_entry_detail' journal_entry.pk %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Details
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Warning</h6>
+                        <p class="mb-0">You are about to delete the journal entry <strong>{{ journal_entry.voucher_number }}</strong>. This action cannot be undone.</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Journal Entry Details:</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">Voucher:</dt>
+                                <dd class="col-sm-8">{{ journal_entry.voucher_number }}</dd>
+                                
+                                <dt class="col-sm-4">Date:</dt>
+                                <dd class="col-sm-8">{{ journal_entry.date|date:"M d, Y" }}</dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    {% if journal_entry.status == 'DRAFT' %}
+                                        <span class="badge bg-warning">Draft</span>
+                                    {% elif journal_entry.status == 'POSTED' %}
+                                        <span class="badge bg-success">Posted</span>
+                                    {% elif journal_entry.status == 'VOID' %}
+                                        <span class="badge bg-danger">Void</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Total Debit:</dt>
+                                <dd class="col-sm-8 text-danger">{{ journal_entry.total_debit|floatformat:2 }}</dd>
+                                
+                                <dt class="col-sm-4">Total Credit:</dt>
+                                <dd class="col-sm-8 text-success">{{ journal_entry.total_credit|floatformat:2 }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Narration:</h6>
+                            <p class="text-muted">{{ journal_entry.narration|truncatechars:100 }}</p>
+                            
+                            <h6>Line Items:</h6>
+                            <p class="text-muted">{{ journal_entry.entries.count }} line items</p>
+                            
+                            {% if journal_entry.reference_number %}
+                                <h6>Reference:</h6>
+                                <p class="text-muted">{{ journal_entry.reference_number }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if journal_entry.status == 'POSTED' %}
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-ban"></i> Cannot Delete Posted Entry</h6>
+                            <p class="mb-0">Posted journal entries cannot be deleted. Please void the entry instead.</p>
+                        </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <div class="text-center">
+                        {% if journal_entry.status == 'DRAFT' %}
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-lg">
+                                    <i class="fas fa-trash"></i> Delete Journal Entry
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        <a href="{% url 'manual_journal_entry:journal_entry_detail' journal_entry.pk %}" class="btn btn-secondary btn-lg ms-2">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

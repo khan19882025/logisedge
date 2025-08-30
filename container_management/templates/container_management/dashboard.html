@@ -1,0 +1,456 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Container Management Dashboard{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-container me-2"></i>Container Management Dashboard
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:container_create' %}" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-plus me-1"></i>Add Container
+            </a>
+            <a href="{% url 'container_management:booking_create' %}" class="btn btn-success btn-sm me-2">
+                <i class="bi bi-calendar-plus me-1"></i>New Booking
+            </a>
+            <a href="{% url 'container_management:reports' %}" class="btn btn-info btn-sm">
+                <i class="bi bi-graph-up me-1"></i>Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <!-- Total Containers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Containers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-container fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Containers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Available Containers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ available_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Bookings -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Active Bookings
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_bookings }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overstayed Containers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Overstayed Containers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ overstayed_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Statistics -->
+    <div class="row mb-4">
+        <!-- Pending Bookings -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Bookings
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_bookings }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Due -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Maintenance Due
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ maintenance_due }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-tools fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booked Containers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Booked Containers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ booked_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-event fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- In Use Containers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                In Use Containers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ in_use_containers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-arrow-right-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'container_management:container_list' %}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-container me-2"></i>Manage Containers
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'container_management:booking_list' %}" class="btn btn-outline-success w-100">
+                                <i class="bi bi-calendar-check me-2"></i>Container Bookings
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'container_management:tracking_list' %}" class="btn btn-outline-info w-100">
+                                <i class="bi bi-geo-alt me-2"></i>Container Tracking
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'container_management:inventory_list' %}" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-building me-2"></i>Port Inventory
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'container_management:bulk_upload' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-upload me-2"></i>Bulk Upload
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'container_management:notification_list' %}" class="btn btn-outline-dark w-100">
+                                <i class="bi bi-bell me-2"></i>Notifications
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-clock-history me-2"></i>Recent Activities
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="activityTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="bookings-tab" data-bs-toggle="tab" data-bs-target="#bookings" type="button" role="tab">
+                                Recent Bookings
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tracking-tab" data-bs-toggle="tab" data-bs-target="#tracking" type="button" role="tab">
+                                Tracking Updates
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="movements-tab" data-bs-toggle="tab" data-bs-target="#movements" type="button" role="tab">
+                                Container Movements
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="activityTabContent">
+                        <div class="tab-pane fade show active" id="bookings" role="tabpanel">
+                            {% if recent_bookings %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Booking #</th>
+                                                <th>Container</th>
+                                                <th>Customer</th>
+                                                <th>Status</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for booking in recent_bookings %}
+                                                <tr>
+                                                    <td>
+                                                        <a href="{% url 'container_management:booking_detail' booking.pk %}">
+                                                            {{ booking.booking_number }}
+                                                        </a>
+                                                    </td>
+                                                    <td>{{ booking.container.container_number }}</td>
+                                                    <td>{{ booking.customer.name }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ booking.get_status_display_class }}">
+                                                            {{ booking.get_status_display }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ booking.booking_date|date:"M d, Y" }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center">No recent bookings</p>
+                            {% endif %}
+                        </div>
+                        <div class="tab-pane fade" id="tracking" role="tabpanel">
+                            {% if recent_tracking %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Container</th>
+                                                <th>Milestone</th>
+                                                <th>Location</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for tracking in recent_tracking %}
+                                                <tr>
+                                                    <td>{{ tracking.container.container_number }}</td>
+                                                    <td>{{ tracking.get_milestone_display }}</td>
+                                                    <td>{{ tracking.location }}</td>
+                                                    <td>{{ tracking.event_date|date:"M d, Y H:i" }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center">No recent tracking updates</p>
+                            {% endif %}
+                        </div>
+                        <div class="tab-pane fade" id="movements" role="tabpanel">
+                            {% if recent_movements %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Container</th>
+                                                <th>Movement</th>
+                                                <th>From</th>
+                                                <th>To</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for movement in recent_movements %}
+                                                <tr>
+                                                    <td>{{ movement.container.container_number }}</td>
+                                                    <td>{{ movement.get_movement_type_display }}</td>
+                                                    <td>{{ movement.from_location }}</td>
+                                                    <td>{{ movement.to_location }}</td>
+                                                    <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center">No recent movements</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Container Type Distribution -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-pie-chart me-2"></i>Container Types
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if container_types %}
+                        <div class="container-type-chart">
+                            {% for type in container_types %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>{{ type.container_type|title }}</span>
+                                    <span class="badge bg-primary">{{ type.count }}</span>
+                                </div>
+                                                                            <div class="progress mb-3" style="height: 8px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ type.percentage }}%"></div>
+                                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No container data available</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Port Inventory Summary -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-building me-2"></i>Port Inventory
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if port_inventory %}
+                        <div class="port-inventory-summary">
+                            {% for port in port_inventory %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>{{ port.port }}</span>
+                                    <span class="badge bg-info">{{ port.count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'container_management:inventory_list' %}" class="btn btn-sm btn-outline-primary">
+                                View All Ports
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No port inventory data</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Alerts & Notifications -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Alerts
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>{{ overstayed_containers }}</strong> containers are overstayed
+                    </div>
+                    {% if maintenance_due > 0 %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-tools me-2"></i>
+                            <strong>{{ maintenance_due }}</strong> containers need maintenance
+                        </div>
+                    {% endif %}
+                    {% if pending_bookings > 0 %}
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-clock me-2"></i>
+                            <strong>{{ pending_bookings }}</strong> bookings pending confirmation
+                        </div>
+                    {% endif %}
+                    <div class="text-center">
+                        <a href="{% url 'container_management:notification_list' %}" class="btn btn-sm btn-outline-primary">
+                            View All Notifications
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+{% endblock %}

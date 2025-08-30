@@ -1,0 +1,137 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Fiscal Year Settings{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fiscal_year/fiscal_year.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Delete Fiscal Period
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <h4>Are you sure?</h4>
+                        <p class="text-muted">
+                            You are about to delete the period <strong>"{{ period.name }}"</strong>.
+                            This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <!-- Period Details -->
+                    <div class="fiscal-year-detail mb-4">
+                        <div class="detail-row">
+                            <span class="detail-label">Name:</span>
+                            <span class="detail-value">{{ period.name }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Fiscal Year:</span>
+                            <span class="detail-value">{{ period.fiscal_year.name }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Period:</span>
+                            <span class="detail-value">
+                                {{ period.start_date|date:"M d, Y" }} - {{ period.end_date|date:"M d, Y" }}
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value">
+                                <span class="badge bg-info">{{ period.get_period_type_display }}</span>
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Status:</span>
+                            <span class="detail-value">
+                                <span class="period-status {{ period.status }}">
+                                    {{ period.get_status_display }}
+                                </span>
+                            </span>
+                        </div>
+                        {% if period.is_current %}
+                        <div class="detail-row">
+                            <span class="detail-label">Current:</span>
+                            <span class="detail-value">
+                                <span class="current-badge">
+                                    <i class="bi bi-star-fill"></i>Current Period
+                                </span>
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Warning Messages -->
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-exclamation-triangle me-2"></i>Warning:</h6>
+                        <ul class="mb-0">
+                            <li>This action will permanently delete the period and all its data</li>
+                            {% if period.is_current %}
+                            <li>This is the current period - deleting it may affect system operations</li>
+                            {% endif %}
+                            <li>Any transactions or data associated with this period may be affected</li>
+                            <li>This action cannot be undone</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'fiscal_year:fiscal_period_detail' period.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Delete Period
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Alternative Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>Alternative Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Instead of deleting, consider these alternatives:
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'fiscal_year:fiscal_period_update' period.pk %}" class="btn btn-outline-warning">
+                            <i class="bi bi-pencil me-2"></i>Edit Period
+                        </a>
+                        {% if not period.is_current %}
+                        <button class="btn btn-outline-success toggle-period-status" 
+                                data-period-id="{{ period.pk }}">
+                            <i class="bi bi-star me-2"></i>Set as Current
+                        </button>
+                        {% endif %}
+                        <a href="{% url 'fiscal_year:fiscal_year_detail' period.fiscal_year.pk %}" class="btn btn-outline-info">
+                            <i class="bi bi-calendar-range me-2"></i>View Fiscal Year
+                        </a>
+                        <a href="{% url 'fiscal_year:fiscal_period_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list me-2"></i>View All Periods
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/fiscal_year/fiscal_year.js' %}"></script>
+{% endblock %} 

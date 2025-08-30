@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Budget Details - {{ budget.budget_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-pie mr-2"></i>{{ budget.budget_name }}
+        </h1>
+        <div>
+            <a href="{% url 'budget_planning:budget_edit' budget.pk %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit mr-1"></i>Edit Budget
+            </a>
+            <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Budgets
+            </a>
+        </div>
+    </div>
+
+    <!-- Budget Summary Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Budget
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ budget.total_budget_amount|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Allocated Amount
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ budget.total_allocated_amount|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Actual Amount
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ budget.total_actual_amount|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-bar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Variance
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ budget.total_variance|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Details -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <!-- Budget Items -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Budget Items</h6>
+                    <a href="{% url 'budget_planning:budget_item_create' budget.pk %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus mr-1"></i>Add Item
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if budget_items %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Cost Center</th>
+                                        <th>Department</th>
+                                        <th>Account</th>
+                                        <th>Budget Amount</th>
+                                        <th>Actual Amount</th>
+                                        <th>Variance</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in budget_items %}
+                                    <tr class="budget-item-row {% if item.is_over_budget %}over-budget{% else %}under-budget{% endif %}">
+                                        <td>
+                                            <strong>{{ item.cost_center.code }}</strong><br>
+                                            <small class="text-muted">{{ item.cost_center.name }}</small>
+                                        </td>
+                                        <td>{{ item.department.name }}</td>
+                                        <td>
+                                            {{ item.account.account_code }} - {{ item.account.name }}
+                                        </td>
+                                        <td>
+                                            <strong>AED {{ item.budget_amount|floatformat:2 }}</strong>
+                                        </td>
+                                        <td>
+                                            <strong>AED {{ item.actual_amount|floatformat:2 }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if item.variance < 0 %}danger{% else %}success{% endif %}">
+                                                AED {{ item.variance|floatformat:2 }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if item.is_over_budget %}
+                                                <span class="badge badge-danger">Over Budget</span>
+                                            {% else %}
+                                                <span class="badge badge-success">Under Budget</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'budget_planning:budget_item_edit' item.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'budget_planning:budget_item_delete' item.pk %}" 
+                                                   class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-pie fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No budget items found.</p>
+                            <a href="{% url 'budget_planning:budget_item_create' budget.pk %}" class="btn btn-primary">
+                                <i class="fas fa-plus mr-1"></i>Add First Item
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <!-- Budget Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Budget Information</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Budget Code:</strong></td>
+                            <td>{{ budget.budget_code }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Budget Name:</strong></td>
+                            <td>{{ budget.budget_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fiscal Year:</strong></td>
+                            <td>{{ budget.fiscal_year }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Budget Period:</strong></td>
+                            <td>{{ budget.get_budget_period_display }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Date Range:</strong></td>
+                            <td>{{ budget.start_date|date:"M d, Y" }} - {{ budget.end_date|date:"M d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge badge-{% if budget.status == 'approved' %}success{% elif budget.status == 'draft' %}warning{% elif budget.status == 'submitted' %}info{% elif budget.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                    {{ budget.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Currency:</strong></td>
+                            <td>{{ budget.currency }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created:</strong></td>
+                            <td>{{ budget.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% if budget.created_by %}
+                        <tr>
+                            <td><strong>Created By:</strong></td>
+                            <td>{{ budget.created_by.get_full_name|default:budget.created_by.username }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if budget.approved_by %}
+                        <tr>
+                            <td><strong>Approved By:</strong></td>
+                            <td>{{ budget.approved_by.get_full_name|default:budget.approved_by.username }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Approved At:</strong></td>
+                            <td>{{ budget.approved_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <!-- Approval Workflow -->
+            {% if approvals %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Approval History</h6>
+                </div>
+                <div class="card-body">
+                    <div class="budget-approval-workflow">
+                        {% for approval in approvals %}
+                        <div class="budget-approval-step">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ approval.get_approval_type_display }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        by {{ approval.approved_by.get_full_name|default:approval.approved_by.username }}
+                                    </small>
+                                </div>
+                                <small class="text-muted">
+                                    {{ approval.approved_at|date:"M d, Y H:i" }}
+                                </small>
+                            </div>
+                            {% if approval.comments %}
+                            <div class="mt-2">
+                                <small class="text-muted">{{ approval.comments }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Budget Notes -->
+    {% if budget.notes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Notes</h6>
+                </div>
+                <div class="card-body">
+                    {{ budget.notes|linebreaks }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/budget_planning/script.js' %}"></script>
+{% endblock %}

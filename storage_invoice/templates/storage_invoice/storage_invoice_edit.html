@@ -1,0 +1,542 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Storage Invoice - Storage Invoice Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/storage_invoice/storage_invoice.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="page-title">
+                    <i class="bi bi-pencil me-2"></i>Edit Storage Invoice
+                </h1>
+                <p class="text-muted">Invoice #{{ object.invoice_number }}</p>
+            </div>
+            <div class="col-auto">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'storage_invoice:storage_invoice_detail' object.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Details
+                    </a>
+                    <a href="{% url 'storage_invoice:storage_invoice_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list me-1"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Invoice Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear me-2"></i>Invoice Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="invoice-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.invoice_number.id_for_label }}" class="form-label">
+                                    Invoice Number
+                                </label>
+                                {{ form.invoice_number }}
+                                {% if form.invoice_number.errors %}
+                                    <div class="text-danger mt-1">{{ form.invoice_number.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Auto-generated invoice number</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.customer.id_for_label }}" class="form-label required-field">
+                                    Customer
+                                </label>
+                                {{ form.customer }}
+                                {% if form.customer.errors %}
+                                    <div class="text-danger mt-1">{{ form.customer.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.invoice_date.id_for_label }}" class="form-label required-field">
+                                    Invoice Date
+                                </label>
+                                {{ form.invoice_date }}
+                                {% if form.invoice_date.errors %}
+                                    <div class="text-danger mt-1">{{ form.invoice_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.due_date.id_for_label }}" class="form-label required-field">
+                                    Due Date
+                                </label>
+                                {{ form.due_date }}
+                                {% if form.due_date.errors %}
+                                    <div class="text-danger mt-1">{{ form.due_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.storage_period_from.id_for_label }}" class="form-label required-field">
+                                    Storage Period From
+                                </label>
+                                {{ form.storage_period_from }}
+                                {% if form.storage_period_from.errors %}
+                                    <div class="text-danger mt-1">{{ form.storage_period_from.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.storage_period_to.id_for_label }}" class="form-label required-field">
+                                    Storage Period To
+                                </label>
+                                {{ form.storage_period_to }}
+                                {% if form.storage_period_to.errors %}
+                                    <div class="text-danger mt-1">{{ form.storage_period_to.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                Notes
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger mt-1">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Optional notes for this invoice</div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Note:</strong> Only draft invoices can be edited. Once finalized, changes cannot be made.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'storage_invoice:storage_invoice_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check me-1"></i>Update Invoice
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Invoice Items -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-list-ul me-2"></i>Invoice Items
+                            </h5>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addInvoiceItem()">
+                                <i class="bi bi-plus me-1"></i>Add Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="items-form">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        
+                        <div id="items-container">
+                            {% for form in formset %}
+                            <div class="item-row border rounded p-3 mb-3" data-form-index="{{ forloop.counter0 }}">
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label small">Item</label>
+                                        {{ form.item }}
+                                        {% if form.item.errors %}
+                                            <div class="text-danger small">{{ form.item.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label small">Location</label>
+                                        {{ form.location }}
+                                        {% if form.location.errors %}
+                                            <div class="text-danger small">{{ form.location.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label small">Charge Type</label>
+                                        {{ form.charge_type }}
+                                        {% if form.charge_type.errors %}
+                                            <div class="text-danger small">{{ form.charge_type.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label small">Quantity</label>
+                                        {{ form.quantity }}
+                                        {% if form.quantity.errors %}
+                                            <div class="text-danger small">{{ form.quantity.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label small">Rate</label>
+                                        {{ form.rate }}
+                                        {% if form.rate.errors %}
+                                            <div class="text-danger small">{{ form.rate.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-1 mb-2">
+                                        <label class="form-label small">Days</label>
+                                        {{ form.days }}
+                                        {% if form.days.errors %}
+                                            <div class="text-danger small">{{ form.days.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label small">Amount</label>
+                                        <input type="text" class="form-control form-control-sm" value="${{ form.instance.amount|default:'0.00' }}" readonly>
+                                    </div>
+                                    <div class="col-md-9 d-flex align-items-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeInvoiceItem(this)">
+                                            <i class="bi bi-trash"></i> Remove
+                                        </button>
+                                    </div>
+                                </div>
+                                {{ form.id }}
+                                {% if form.DELETE %}
+                                    {{ form.DELETE }}
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-outline-primary" onclick="addInvoiceItem()">
+                                <i class="bi bi-plus me-1"></i>Add Another Item
+                            </button>
+                            <div class="text-end">
+                                <h5>Total Amount: <span class="text-primary" id="total-amount">${{ object.total_amount|floatformat:2 }}</span></h5>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Invoice Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Invoice Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Status</label>
+                        <p class="mb-0">
+                            {% if object.status == 'draft' %}
+                                <span class="badge bg-warning">Draft</span>
+                            {% elif object.status == 'finalized' %}
+                                <span class="badge bg-success">Finalized</span>
+                            {% elif object.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ object.get_status_display }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Current Total</label>
+                        <p class="mb-0">
+                            <strong class="text-primary">${{ object.total_amount|floatformat:2 }}</strong>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Items Count</label>
+                        <p class="mb-0">{{ object.items.count }} items</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Generated By</label>
+                        <p class="mb-0">{{ object.generated_by.get_full_name|default:"System" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Generated Date</label>
+                        <p class="mb-0">{{ object.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-question-circle me-2"></i>Help
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Editing Rules:</h6>
+                    <ul class="small">
+                        <li>Only draft invoices can be edited</li>
+                        <li>Changes to items will recalculate totals</li>
+                        <li>All required fields must be filled</li>
+                        <li>Save changes before finalizing</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Charge Types:</h6>
+                    <ul class="small">
+                        <li><strong>Per Pallet/Day:</strong> Fixed rate per pallet per day</li>
+                        <li><strong>Per CBM/Day:</strong> Rate based on volume per day</li>
+                        <li><strong>Per Item/Day:</strong> Rate based on item quantity per day</li>
+                        <li><strong>Per Weight/Day:</strong> Rate based on weight per day</li>
+                        <li><strong>Fixed Monthly:</strong> Fixed monthly rate</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/storage_invoice/storage_invoice.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeInvoiceEditForm();
+});
+
+function initializeInvoiceEditForm() {
+    // Initialize form validation
+    const form = document.getElementById('invoice-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateInvoiceForm()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+    
+    // Initialize items form
+    initializeItemsForm();
+    
+    // Calculate totals on load
+    calculateTotalAmount();
+}
+
+function initializeItemsForm() {
+    // Add event listeners to existing form fields
+    const itemRows = document.querySelectorAll('.item-row');
+    itemRows.forEach(row => {
+        const quantityInput = row.querySelector('input[name*="quantity"]');
+        const rateInput = row.querySelector('input[name*="rate"]');
+        const daysInput = row.querySelector('input[name*="days"]');
+        
+        [quantityInput, rateInput, daysInput].forEach(input => {
+            if (input) {
+                input.addEventListener('input', function() {
+                    calculateItemAmount(row);
+                    calculateTotalAmount();
+                });
+            }
+        });
+    });
+}
+
+function addInvoiceItem() {
+    const container = document.getElementById('items-container');
+    const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+    const currentIndex = parseInt(totalForms.value);
+    
+    // Clone the first item row as template
+    const template = document.querySelector('.item-row');
+    if (!template) return;
+    
+    const newRow = template.cloneNode(true);
+    newRow.setAttribute('data-form-index', currentIndex);
+    
+    // Update form field names and IDs
+    const inputs = newRow.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (input.name) {
+            input.name = input.name.replace(/items-\d+/, `items-${currentIndex}`);
+        }
+        if (input.id) {
+            input.id = input.id.replace(/items-\d+/, `items-${currentIndex}`);
+        }
+        // Clear values
+        if (input.type !== 'hidden') {
+            input.value = '';
+        }
+    });
+    
+    // Update labels
+    const labels = newRow.querySelectorAll('label');
+    labels.forEach(label => {
+        if (label.getAttribute('for')) {
+            label.setAttribute('for', label.getAttribute('for').replace(/items-\d+/, `items-${currentIndex}`));
+        }
+    });
+    
+    // Add event listeners to new fields
+    const quantityInput = newRow.querySelector('input[name*="quantity"]');
+    const rateInput = newRow.querySelector('input[name*="rate"]');
+    const daysInput = newRow.querySelector('input[name*="days"]');
+    
+    [quantityInput, rateInput, daysInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', function() {
+                calculateItemAmount(newRow);
+                calculateTotalAmount();
+            });
+        }
+    });
+    
+    container.appendChild(newRow);
+    totalForms.value = currentIndex + 1;
+}
+
+function removeInvoiceItem(button) {
+    const row = button.closest('.item-row');
+    const deleteField = row.querySelector('input[name*="DELETE"]');
+    
+    if (deleteField) {
+        deleteField.value = 'on';
+        row.style.display = 'none';
+    } else {
+        row.remove();
+    }
+    
+    calculateTotalAmount();
+}
+
+function calculateItemAmount(row) {
+    const quantityInput = row.querySelector('input[name*="quantity"]');
+    const rateInput = row.querySelector('input[name*="rate"]');
+    const daysInput = row.querySelector('input[name*="days"]');
+    const amountInput = row.querySelector('input[readonly]');
+    
+    if (quantityInput && rateInput && daysInput && amountInput) {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const rate = parseFloat(rateInput.value) || 0;
+        const days = parseFloat(daysInput.value) || 0;
+        
+        const amount = quantity * rate * days;
+        amountInput.value = `$${amount.toFixed(2)}`;
+    }
+}
+
+function calculateTotalAmount() {
+    const visibleRows = document.querySelectorAll('.item-row:not([style*="display: none"])');
+    let total = 0;
+    
+    visibleRows.forEach(row => {
+        const amountInput = row.querySelector('input[readonly]');
+        if (amountInput) {
+            const amountText = amountInput.value.replace('$', '');
+            const amount = parseFloat(amountText) || 0;
+            total += amount;
+        }
+    });
+    
+    const totalElement = document.getElementById('total-amount');
+    if (totalElement) {
+        totalElement.textContent = `$${total.toFixed(2)}`;
+    }
+}
+
+function validateInvoiceForm() {
+    let isValid = true;
+    
+    // Clear previous errors
+    const errorElements = document.querySelectorAll('.text-danger');
+    errorElements.forEach(element => element.remove());
+    
+    // Validate required fields
+    const requiredFields = [
+        '{{ form.customer.id_for_label }}',
+        '{{ form.invoice_date.id_for_label }}',
+        '{{ form.due_date.id_for_label }}',
+        '{{ form.storage_period_from.id_for_label }}',
+        '{{ form.storage_period_to.id_for_label }}'
+    ];
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field && !field.value) {
+            field.classList.add('is-invalid');
+            showValidationError(field, 'This field is required');
+            isValid = false;
+        } else if (field) {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    // Validate date ranges
+    const invoiceDateInput = document.getElementById('{{ form.invoice_date.id_for_label }}');
+    const dueDateInput = document.getElementById('{{ form.due_date.id_for_label }}');
+    const periodFromInput = document.getElementById('{{ form.storage_period_from.id_for_label }}');
+    const periodToInput = document.getElementById('{{ form.storage_period_to.id_for_label }}');
+    
+    if (invoiceDateInput && dueDateInput && invoiceDateInput.value && dueDateInput.value) {
+        const invoiceDate = new Date(invoiceDateInput.value);
+        const dueDate = new Date(dueDateInput.value);
+        
+        if (dueDate < invoiceDate) {
+            dueDateInput.classList.add('is-invalid');
+            showValidationError(dueDateInput, 'Due date must be after invoice date');
+            isValid = false;
+        }
+    }
+    
+    if (periodFromInput && periodToInput && periodFromInput.value && periodToInput.value) {
+        const periodFrom = new Date(periodFromInput.value);
+        const periodTo = new Date(periodToInput.value);
+        
+        if (periodTo < periodFrom) {
+            periodToInput.classList.add('is-invalid');
+            showValidationError(periodToInput, 'End date must be after start date');
+            isValid = false;
+        }
+    }
+    
+    return isValid;
+}
+
+function showValidationError(input, message) {
+    if (!input) return;
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'text-danger mt-1';
+    errorDiv.textContent = message;
+    
+    const parent = input.parentNode;
+    parent.appendChild(errorDiv);
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ bank_account.bank_name }} - Bank Account Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_accounts/css/bank_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="bank-accounts-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-university"></i> {{ bank_account.bank_name }}</h2>
+                <p class="subtitle">Bank Account Details</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'bank_accounts:bank_account_edit' bank_account.pk %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Account
+                </a>
+                <a href="{% url 'bank_accounts:bank_account_list' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="bank-account-detail-content">
+        <div class="row">
+            <!-- Account Information -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Account Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">Bank Name</label>
+                                    <div class="info-value">{{ bank_account.bank_name }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">Account Number</label>
+                                    <div class="info-value">{{ bank_account.masked_account_number }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">Account Type</label>
+                                    <div class="info-value">
+                                        <span class="account-type-badge account-type-{{ bank_account.account_type }}">
+                                            {{ bank_account.get_account_type_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">Status</label>
+                                    <div class="info-value">
+                                        <span class="status-badge status-{{ bank_account.status }}">
+                                            {{ bank_account.get_status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if bank_account.branch_name %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">Branch Name</label>
+                                    <div class="info-value">{{ bank_account.branch_name }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">IFSC / SWIFT Code</label>
+                                    <div class="info-value">{{ bank_account.ifsc_code|default:"Not provided" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">Currency</label>
+                                    <div class="info-value">
+                                        {{ bank_account.currency.code }} - {{ bank_account.currency.name }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-group">
+                                    <label class="info-label">Chart of Account</label>
+                                    <div class="info-value">
+                                        {{ bank_account.chart_account.account_code }} - {{ bank_account.chart_account.name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if bank_account.notes %}
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="info-group">
+                                    <label class="info-label">Notes</label>
+                                    <div class="info-value">{{ bank_account.notes }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Financial Information -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-coins"></i> Financial Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="financial-stat">
+                                    <div class="stat-label">Opening Balance</div>
+                                    <div class="stat-value">{{ bank_account.currency.symbol }} {{ bank_account.opening_balance|floatformat:2 }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="financial-stat">
+                                    <div class="stat-label">Current Balance</div>
+                                    <div class="stat-value current-balance">{{ bank_account.balance_formatted }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="financial-stat">
+                                    <div class="stat-label">Balance Change</div>
+                                    <div class="stat-value">
+                                        {% if bank_account.current_balance > bank_account.opening_balance %}
+                                            <span class="text-success">
+                                                <i class="fas fa-arrow-up"></i> 
+                                                {{ bank_account.currency.symbol }} {{ bank_account.current_balance|add:bank_account.opening_balance|floatformat:2 }}
+                                            </span>
+                                        {% elif bank_account.current_balance < bank_account.opening_balance %}
+                                            <span class="text-danger">
+                                                <i class="fas fa-arrow-down"></i> 
+                                                {{ bank_account.currency.symbol }} {{ bank_account.opening_balance|add:bank_account.current_balance|floatformat:2 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">No change</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Default Account Settings -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cog"></i> Default Account Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="default-setting">
+                                    <i class="fas fa-{% if bank_account.is_default_for_payments %}check-circle text-success{% else %}times-circle text-muted{% endif %}"></i>
+                                    <span>Default for Payments</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="default-setting">
+                                    <i class="fas fa-{% if bank_account.is_default_for_receipts %}check-circle text-success{% else %}times-circle text-muted{% endif %}"></i>
+                                    <span>Default for Receipts</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="quick-actions">
+                            <a href="{% url 'bank_accounts:bank_account_add_transaction' bank_account.pk %}" class="btn btn-primary w-100 mb-2">
+                                <i class="fas fa-plus"></i> Add Transaction
+                            </a>
+                            <a href="{% url 'bank_accounts:bank_account_transactions' bank_account.pk %}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-exchange-alt"></i> View All Transactions
+                            </a>
+                            <a href="{% url 'bank_accounts:bank_account_edit' bank_account.pk %}" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="fas fa-edit"></i> Edit Account
+                            </a>
+                            {% if bank_account.status == 'active' %}
+                                <a href="{% url 'bank_accounts:bank_account_toggle_status' bank_account.pk %}" class="btn btn-outline-warning w-100 mb-2">
+                                    <i class="fas fa-pause"></i> Deactivate Account
+                                </a>
+                            {% else %}
+                                <a href="{% url 'bank_accounts:bank_account_toggle_status' bank_account.pk %}" class="btn btn-outline-success w-100 mb-2">
+                                    <i class="fas fa-play"></i> Activate Account
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Statistics -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar"></i> Transaction Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="transaction-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Total Credits</div>
+                                <div class="stat-value text-success">
+                                    {{ bank_account.currency.symbol }} {{ transaction_stats.total_credits|default:0|floatformat:2 }}
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Total Debits</div>
+                                <div class="stat-value text-danger">
+                                    {{ bank_account.currency.symbol }} {{ transaction_stats.total_debits|default:0|floatformat:2 }}
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Transaction Count</div>
+                                <div class="stat-value">
+                                    {{ transaction_stats.transaction_count|default:0 }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit Information -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Audit Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="audit-info">
+                            <div class="audit-item">
+                                <label>Created By:</label>
+                                <span>{{ bank_account.created_by.get_full_name|default:bank_account.created_by.username|default:"System" }}</span>
+                            </div>
+                            <div class="audit-item">
+                                <label>Created On:</label>
+                                <span>{{ bank_account.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            {% if bank_account.updated_by %}
+                            <div class="audit-item">
+                                <label>Last Updated By:</label>
+                                <span>{{ bank_account.updated_by.get_full_name|default:bank_account.updated_by.username }}</span>
+                            </div>
+                            <div class="audit-item">
+                                <label>Last Updated:</label>
+                                <span>{{ bank_account.updated_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-history"></i> Recent Transactions</h5>
+                        <a href="{% url 'bank_accounts:bank_account_transactions' bank_account.pk %}" class="btn btn-outline-primary btn-sm">
+                            View All Transactions
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_transactions %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                            <th>Reference</th>
+                                            <th>Balance After</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for transaction in recent_transactions %}
+                                            <tr>
+                                                <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                                <td>
+                                                    <span class="badge bg-{% if transaction.transaction_type == 'credit' %}success{% else %}danger{% endif %}">
+                                                        {{ transaction.get_transaction_type_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="{% if transaction.transaction_type == 'credit' %}text-success{% else %}text-danger{% endif %}">
+                                                        {{ bank_account.currency.symbol }} {{ transaction.amount|floatformat:2 }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ transaction.description|truncatechars:50 }}</td>
+                                                <td>{{ transaction.reference_number|default:"-" }}</td>
+                                                <td>{{ bank_account.currency.symbol }} {{ transaction.balance_after|floatformat:2 }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="empty-state small">
+                                <i class="fas fa-exchange-alt"></i>
+                                <p>No transactions found for this account.</p>
+                                <a href="{% url 'bank_accounts:bank_account_add_transaction' bank_account.pk %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus"></i> Add First Transaction
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_accounts/js/bank_accounts.js' %}"></script>
+{% endblock %} 

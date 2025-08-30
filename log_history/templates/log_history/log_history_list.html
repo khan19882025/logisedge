@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Log History - All Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-list"></i> Log History
+                </h1>
+                <p class="page-subtitle">Complete log of all system and user activities</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-search"></i> Search & Filter</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                   value="{{ search_form.date_from.value|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" 
+                                   value="{{ search_form.date_to.value|default:'' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="action_type" class="form-label">Action Type</label>
+                            <select class="form-select" id="action_type" name="action_type">
+                                <option value="">All Actions</option>
+                                <option value="CREATE" {% if search_form.action_type.value == 'CREATE' %}selected{% endif %}>Create</option>
+                                <option value="UPDATE" {% if search_form.action_type.value == 'UPDATE' %}selected{% endif %}>Update</option>
+                                <option value="DELETE" {% if search_form.action_type.value == 'DELETE' %}selected{% endif %}>Delete</option>
+                                <option value="LOGIN" {% if search_form.action_type.value == 'LOGIN' %}selected{% endif %}>Login</option>
+                                <option value="LOGOUT" {% if search_form.action_type.value == 'LOGOUT' %}selected{% endif %}>Logout</option>
+                                <option value="EXPORT" {% if search_form.action_type.value == 'EXPORT' %}selected{% endif %}>Export</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="severity" class="form-label">Severity</label>
+                            <select class="form-select" id="severity" name="severity">
+                                <option value="">All Severities</option>
+                                <option value="LOW" {% if search_form.severity.value == 'LOW' %}selected{% endif %}>Low</option>
+                                <option value="MEDIUM" {% if search_form.severity.value == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                                <option value="HIGH" {% if search_form.severity.value == 'HIGH' %}selected{% endif %}>High</option>
+                                <option value="CRITICAL" {% if search_form.action_type.value == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="module" class="form-label">Module</label>
+                            <input type="text" class="form-control" id="module" name="module" 
+                                   value="{{ search_form.module.value|default:'' }}" placeholder="Module name">
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <a href="{% url 'log_history:log_history_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                                <a href="{% url 'log_history:log_history_export' %}" class="btn btn-outline-success">
+                                    <i class="fas fa-download"></i> Export
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" action="{% url 'log_history:bulk_action' %}" id="bulk-action-form">
+                        {% csrf_token %}
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="select-all">
+                                <label class="form-check-label" for="select-all">
+                                    Select All
+                                </label>
+                            </div>
+                            <select class="form-select" name="action" style="width: auto;">
+                                <option value="">Bulk Actions</option>
+                                <option value="archive">Archive Selected</option>
+                                <option value="delete">Delete Selected</option>
+                                <option value="export">Export Selected</option>
+                                <option value="tag">Add Tags</option>
+                                <option value="untag">Remove Tags</option>
+                            </select>
+                            <input type="text" class="form-control" name="tags" placeholder="Tags (comma-separated)" style="width: 200px;">
+                            <button type="submit" class="btn btn-primary" id="bulk-action-btn" disabled>
+                                Apply Action
+                            </button>
+                        </div>
+                        <input type="hidden" name="selected_logs" id="selected-logs">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table"></i> Log Entries 
+                        <span class="badge bg-secondary">{{ page_obj.paginator.count }}</span>
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'log_history:dashboard' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-chart-bar"></i> Dashboard
+                        </a>
+                        <a href="{% url 'log_history:log_history_search' %}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-search"></i> Advanced Search
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if logs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="30">
+                                            <input type="checkbox" class="form-check-input" id="select-all-checkbox">
+                                        </th>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                        <th>Severity</th>
+                                        <th>User</th>
+                                        <th>Description</th>
+                                        <th>Module</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="form-check-input log-checkbox" value="{{ log.id }}">
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ log.timestamp|date:"M d, Y H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if log.action_type == 'CREATE' %}success{% elif log.action_type == 'UPDATE' %}info{% elif log.action_type == 'DELETE' %}danger{% elif log.action_type == 'LOGIN' %}primary{% elif log.action_type == 'LOGOUT' %}secondary{% else %}warning{% endif %}">
+                                                {{ log.get_action_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}success{% endif %}">
+                                                {{ log.get_severity_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if log.user %}
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-user-circle text-primary me-2"></i>
+                                                    {{ log.user.username }}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">System</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 200px;" title="{{ log.description }}">
+                                                {{ log.description|truncatechars:50 }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if log.module %}
+                                                <span class="badge bg-light text-dark">{{ log.module }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if log.status == 'ACTIVE' %}success{% elif log.status == 'ARCHIVED' %}warning{% else %}secondary{% endif %}">
+                                                {{ log.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'log_history:log_history_detail' log.pk %}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if log.tags %}
+                                                <button type="button" class="btn btn-outline-info" 
+                                                        data-bs-toggle="tooltip" title="Tags: {{ log.tags|join:', ' }}">
+                                                    <i class="fas fa-tags"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Log history pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No logs found</h5>
+                            <p class="text-muted">Try adjusting your search criteria or check back later.</p>
+                            <a href="{% url 'log_history:log_history_list' %}" class="btn btn-primary">
+                                <i class="fas fa-refresh"></i> Clear Filters
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+    
+    .page-subtitle {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .table th {
+        background-color: #f8f9fc;
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .pagination .page-link {
+        color: #4e73df;
+        border-color: #e3e6f0;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #4e73df;
+        border-color: #4e73df;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const logCheckboxes = document.querySelectorAll('.log-checkbox');
+    const bulkActionBtn = document.getElementById('bulk-action-btn');
+    const selectedLogsInput = document.getElementById('selected-logs');
+    
+    // Select all functionality
+    selectAllCheckbox.addEventListener('change', function() {
+        logCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActionButton();
+    });
+    
+    // Individual checkbox change
+    logCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBulkActionButton();
+            updateSelectAllCheckbox();
+        });
+    });
+    
+    function updateBulkActionButton() {
+        const checkedBoxes = document.querySelectorAll('.log-checkbox:checked');
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+        
+        if (selectedIds.length > 0) {
+            bulkActionBtn.disabled = false;
+            selectedLogsInput.value = JSON.stringify(selectedIds);
+        } else {
+            bulkActionBtn.disabled = true;
+            selectedLogsInput.value = '';
+        }
+    }
+    
+    function updateSelectAllCheckbox() {
+        const checkedBoxes = document.querySelectorAll('.log-checkbox:checked');
+        const totalBoxes = logCheckboxes.length;
+        
+        if (checkedBoxes.length === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (checkedBoxes.length === totalBoxes) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+            selectAllCheckbox.checked = false;
+        }
+    }
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

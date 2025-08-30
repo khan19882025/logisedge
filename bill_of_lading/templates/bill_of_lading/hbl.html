@@ -1,0 +1,933 @@
+{% extends 'base.html' %}
+
+{% block title %}House Bill of Lading{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 px-md-4">
+    {% csrf_token %}
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                <h5 class="mb-0">House Bill of Lading</h5>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    {% if mode != 'list' %}
+                    <!-- Status -->
+                    <div class="d-flex align-items-center">
+                        <label class="form-label text-white mb-0 me-2">Status:</label>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="status" id="statusDraft" value="Draft" checked>
+                            <label class="btn btn-outline-light btn-sm" for="statusDraft">Draft</label>
+                            
+                            <input type="radio" class="btn-check" name="status" id="statusOriginal" value="Original">
+                            <label class="btn btn-outline-light btn-sm" for="statusOriginal">Original</label>
+                            
+                            <input type="radio" class="btn-check" name="status" id="statusSeaway" value="SEAWAY BILL">
+                            <label class="btn btn-outline-light btn-sm" for="statusSeaway">SEAWAY BILL</label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'bill_of_lading:hbl_create' %}" class="btn btn-light btn-sm">New HBL</a>
+                        <a href="{% url 'bill_of_lading:hbl_list' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-list"></i> List
+                        </a>
+                        {% if mode == 'list' %}
+                        <a href="{% url 'bill_of_lading:dashboard' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left"></i> Bill of Lading Dashboard
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if mode == 'list' %}
+            <!-- HBL List View -->
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th class="d-none d-md-table-cell">MBL Number</th>
+                            <th>HBL Number</th>
+                            <th class="d-none d-lg-table-cell">Container No</th>
+                            <th class="d-none d-lg-table-cell">Shipper</th>
+                            <th class="d-none d-xl-table-cell">Consignee</th>
+                            <th class="d-none d-xl-table-cell">Notify Party</th>
+                            <th class="d-none d-lg-table-cell">Vessel</th>
+                            <th class="d-none d-xl-table-cell">Port of Loading</th>
+                            <th class="d-none d-xl-table-cell">Port of Discharge</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hbl in hbls %}
+                        <tr data-hbl-id="{{ hbl.id }}">
+                            <td class="d-none d-md-table-cell">{{ hbl.mbl_number }}</td>
+                            <td>{{ hbl.hbl_number }}</td>
+                            <td class="d-none d-lg-table-cell">
+                                {% for cargo in hbl.cargo_items.all %}
+                                    {{ cargo.container_no }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td class="d-none d-lg-table-cell">{{ hbl.shipper.name|default:"N/A" }}</td>
+                            <td class="d-none d-xl-table-cell">{{ hbl.consignee.name|default:"N/A" }}</td>
+                            <td class="d-none d-xl-table-cell">{{ hbl.notify_party.name|default:"N/A" }}</td>
+                            <td class="d-none d-lg-table-cell">{{ hbl.ocean_vessel }}</td>
+                            <td class="d-none d-xl-table-cell">{{ hbl.port_of_loading }}</td>
+                            <td class="d-none d-xl-table-cell">{{ hbl.port_of_discharge }}</td>
+                            <td>
+                                <span class="badge {% if hbl.status == 'Draft' %}bg-warning{% elif hbl.status == 'Original' %}bg-success{% else %}bg-info{% endif %}">
+                                    {{ hbl.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'bill_of_lading:hbl_detail' hbl.id %}" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{% url 'bill_of_lading:print_hbl' hbl.id %}" class="btn btn-sm btn-secondary" target="_blank">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeStatus('{{ hbl.id }}', 'Draft', event)">Draft</a></li>
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeStatus('{{ hbl.id }}', 'Original', event)">Original</a></li>
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeStatus('{{ hbl.id }}', 'SEAWAY BILL', event)">SEAWAY BILL</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="text-center">No HBL records found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- HBL Form View -->
+            <form method="POST" class="needs-validation" novalidate id="hblForm">
+                {% csrf_token %}
+                {% if mode == 'edit' %}
+                <input type="hidden" name="hbl_id" value="{{ hbl.id }}">
+                {% endif %}
+                <input type="hidden" name="status" id="statusField" value="{{ hbl.status|default:'Draft' }}">
+                <input type="hidden" name="number_of_packages" id="totalPackagesField" value="{{ hbl.number_of_packages|default:0 }}">
+                <input type="hidden" name="gross_weight" id="totalGrossWeightField" value="{{ hbl.gross_weight|default:0 }}">
+                <input type="hidden" name="measurement" id="totalMeasurementField" value="{{ hbl.measurement|default:0 }}">
+                <input type="hidden" name="currency" id="currencyField" value="{{ hbl.currency|default:'USD' }}">
+                
+                <div class="row g-3">
+                    <!-- Left Column - Basic Information -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <!-- HBL Number Display (only show if editing existing HBL) -->
+                                {% if hbl.hbl_number %}
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="hblNumber" class="form-label mb-0" style="min-width: 120px;">HBL Number:</label>
+                                        <div class="flex-grow-1">
+                                            <input type="text" class="form-control" id="hblNumber" value="{{ hbl.hbl_number }}" readonly>
+                                            <small class="text-muted">Auto-generated HBL number</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="mb-3">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>HBL number will be automatically generated when you save this form.
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- MBL Number -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="mblNumber" class="form-label mb-0" style="min-width: 120px;">MBL Number:</label>
+                                        <input type="text" class="form-control" id="mblNumber" name="mbl_number" value="{{ hbl.mbl_number|default:'' }}">
+                                    </div>
+                                </div>
+
+                                <!-- Shipper -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="shipper" class="form-label mb-0" style="min-width: 120px;">Shipper:</label>
+                                        <div class="d-flex flex-grow-1 gap-2">
+                                            <select class="form-select" id="shipper" name="shipper" required>
+                                                <option value="">Select Shipper</option>
+                                                {% for customer in shipper_customers %}
+                                                    <option value="{{ customer.id }}" {% if hbl.shipper_id == customer.id %}selected{% endif %}>{{ customer.customer_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" onclick="openAddCustomerModal('Shipper')">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Consignee -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="consignee" class="form-label mb-0" style="min-width: 120px;">Consignee:</label>
+                                        <div class="d-flex flex-grow-1 gap-2">
+                                            <select class="form-select" id="consignee" name="consignee" required>
+                                                <option value="">Select Consignee</option>
+                                                {% for customer in consignee_customers %}
+                                                    <option value="{{ customer.id }}" {% if hbl.consignee_id == customer.id %}selected{% endif %}>{{ customer.customer_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" onclick="openAddCustomerModal('Consignee')">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Notify Party -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="notifyParty" class="form-label mb-0" style="min-width: 120px;">Notify Party:</label>
+                                        <div class="d-flex flex-grow-1 gap-2">
+                                            <select class="form-select" id="notifyParty" name="notify_party" required>
+                                                <option value="">Select Notify Party</option>
+                                                {% for customer in notify_customers %}
+                                                    <option value="{{ customer.id }}" {% if hbl.notify_party_id == customer.id %}selected{% endif %}>{{ customer.customer_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" onclick="openAddCustomerModal('Notify1')">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Shipped on Board -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="shippedOnBoard" class="form-label mb-0" style="min-width: 120px;">Shipped on Board:</label>
+                                        <input type="date" class="form-control" id="shippedOnBoard" name="shipped_on_board" value="{{ hbl.shipped_on_board|default:today|date:'Y-m-d' }}">
+                                    </div>
+                                </div>
+
+                                <!-- Issue Date -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="issueDate" class="form-label mb-0" style="min-width: 120px;">Issue Date:</label>
+                                        <input type="date" class="form-control" id="issueDate" name="issue_date" value="{{ hbl.issue_date|default:today|date:'Y-m-d' }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Shipping Details -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <!-- Pre-Carriage By -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="preCarriageBy" class="form-label mb-0" style="min-width: 150px;">Pre-Carriage By:</label>
+                                        <input type="text" class="form-control" id="preCarriageBy" name="pre_carriage_by" value="{{ hbl.pre_carriage_by|default:'BY SEA' }}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Place of Receipt -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="placeOfReceipt" class="form-label mb-0" style="min-width: 150px;">Place of Receipt:</label>
+                                        <input type="text" class="form-control" id="placeOfReceipt" name="place_of_receipt" value="{{ hbl.place_of_receipt|default:'' }}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Ocean Vessel -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="oceanVessel" class="form-label mb-0" style="min-width: 150px;">Ocean Vessel:</label>
+                                        <input type="text" class="form-control" id="oceanVessel" name="ocean_vessel" value="{{ hbl.ocean_vessel|default:'' }}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Port of Loading -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="portOfLoading" class="form-label mb-0" style="min-width: 150px;">Port of Loading:</label>
+                                        <input type="text" class="form-control" id="portOfLoading" name="port_of_loading" value="{{ hbl.port_of_loading|default:'' }}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Port of Discharge -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="portOfDischarge" class="form-label mb-0" style="min-width: 150px;">Port of Discharge:</label>
+                                        <input type="text" class="form-control" id="portOfDischarge" name="port_of_discharge" value="{{ hbl.port_of_discharge|default:'' }}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Place of Delivery -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="placeOfDelivery" class="form-label mb-0" style="min-width: 150px;">Place of Delivery:</label>
+                                        <input type="text" class="form-control" id="placeOfDelivery" name="place_of_delivery" value="{{ hbl.place_of_delivery|default:'' }}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Terms -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2">
+                                        <label for="terms" class="form-label mb-0" style="min-width: 150px;">Terms:</label>
+                                        <select class="form-select" id="terms" name="terms" required>
+                                            <option value="">Select Terms</option>
+                                            <option value="FCL/FCL" {% if hbl.terms == 'FCL/FCL' %}selected{% endif %}>FCL/FCL</option>
+                                            <option value="FCL/LCL" {% if hbl.terms == 'FCL/LCL' %}selected{% endif %}>FCL/LCL</option>
+                                            <option value="LCL/LCL" {% if hbl.terms == 'LCL/LCL' %}selected{% endif %}>LCL/LCL</option>
+                                            <option value="LCL/FCL" {% if hbl.terms == 'LCL/FCL' %}selected{% endif %}>LCL/FCL</option>
+                                            <option value="RO-RO" {% if hbl.terms == 'RO-RO' %}selected{% endif %}>RO-RO</option>
+                                            <option value="Break Bulk" {% if hbl.terms == 'Break Bulk' %}selected{% endif %}>Break Bulk</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cargo Details Section -->
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Cargo Details</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="cargoTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Container No</th>
+                                            <th>Container Size</th>
+                                            <th>Seal No</th>
+                                            <th>No. of Packages</th>
+                                            <th>Package Type</th>
+                                            <th>Description</th>
+                                            <th>Gross Weight</th>
+                                            <th>Net Weight</th>
+                                            <th>Measurement</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if mode == 'edit' and cargo_items %}
+                                            {% for cargo in cargo_items %}
+                                            <tr>
+                                                <td><input type="text" class="form-control" name="cargo_container_no[]" value="{{ cargo.container_no }}" required></td>
+                                                <td>
+                                                    <select class="form-select" name="cargo_container_size[]" required>
+                                                        <option value="">Select Size</option>
+                                                        <option value="20STD" {% if cargo.container_size == '20STD' %}selected{% endif %}>20STD</option>
+                                                        <option value="40STD" {% if cargo.container_size == '40STD' %}selected{% endif %}>40STD</option>
+                                                        <option value="40HC" {% if cargo.container_size == '40HC' %}selected{% endif %}>40HC</option>
+                                                        <option value="45HC" {% if cargo.container_size == '45HC' %}selected{% endif %}>45HC</option>
+                                                    </select>
+                                                </td>
+                                                <td><input type="text" class="form-control" name="cargo_seal_no[]" value="{{ cargo.seal_no }}" required></td>
+                                                <td><input type="number" class="form-control" name="cargo_number_of_packages[]" value="{{ cargo.number_of_packages }}" required></td>
+                                                <td>
+                                                    <select class="form-select package-type-select" name="cargo_package_type[]" required onchange="handlePackageTypeChange(this)">
+                                                        <option value="">Select Type</option>
+                                                        <option value="CTN" {% if cargo.package_type == 'CTN' %}selected{% endif %}>CTN</option>
+                                                        <option value="PLT" {% if cargo.package_type == 'PLT' %}selected{% endif %}>PLT</option>
+                                                        <option value="CASE" {% if cargo.package_type == 'CASE' %}selected{% endif %}>CASE</option>
+                                                        <option value="PCS" {% if cargo.package_type == 'PCS' %}selected{% endif %}>PCS</option>
+                                                        <option value="OTHER" {% if cargo.package_type == 'OTHER' %}selected{% endif %}>OTHER</option>
+                                                    </select>
+                                                    <input type="text" class="form-control mt-1 custom-package-type" name="cargo_custom_package_type[]" 
+                                                           placeholder="Specify package type" style="display: none;"
+                                                           value="{{ cargo.custom_package_type|default:'' }}">
+                                                </td>
+                                                <td><textarea class="form-control" name="cargo_description[]" rows="2" required>{{ cargo.description }}</textarea></td>
+                                                <td><input type="number" step="0.01" class="form-control" name="cargo_gross_weight[]" value="{{ cargo.gross_weight }}" required></td>
+                                                <td><input type="number" step="0.01" class="form-control" name="cargo_net_weight[]" value="{{ cargo.net_weight }}" required></td>
+                                                <td><input type="number" step="0.01" class="form-control" name="cargo_measurement[]" value="{{ cargo.measurement }}" required></td>
+                                                <td>
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="removeCargoRow(this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                        <tr>
+                                            <td><input type="text" class="form-control" name="cargo_container_no[]" required></td>
+                                            <td>
+                                                <select class="form-select" name="cargo_container_size[]" required>
+                                                    <option value="">Select Size</option>
+                                                    <option value="20STD">20STD</option>
+                                                    <option value="40STD">40STD</option>
+                                                    <option value="40HC">40HC</option>
+                                                    <option value="45HC">45HC</option>
+                                                </select>
+                                            </td>
+                                            <td><input type="text" class="form-control" name="cargo_seal_no[]" required></td>
+                                            <td><input type="number" class="form-control" name="cargo_number_of_packages[]" required></td>
+                                            <td>
+                                                <select class="form-select package-type-select" name="cargo_package_type[]" required onchange="handlePackageTypeChange(this)">
+                                                    <option value="">Select Type</option>
+                                                    <option value="CTN">CTN</option>
+                                                    <option value="PLT">PLT</option>
+                                                    <option value="CASE">CASE</option>
+                                                    <option value="PCS">PCS</option>
+                                                    <option value="OTHER">OTHER</option>
+                                                </select>
+                                                <input type="text" class="form-control mt-1 custom-package-type" name="cargo_custom_package_type[]" 
+                                                       placeholder="Specify package type" style="display: none;">
+                                            </td>
+                                            <td><textarea class="form-control" name="cargo_description[]" rows="2" required></textarea></td>
+                                            <td><input type="number" step="0.01" class="form-control" name="cargo_gross_weight[]" required></td>
+                                            <td><input type="number" step="0.01" class="form-control" name="cargo_net_weight[]" required></td>
+                                            <td><input type="number" step="0.01" class="form-control" name="cargo_measurement[]" required></td>
+                                            <td>
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeCargoRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="addCargoRow()">
+                                <i class="bi bi-plus"></i> Add Cargo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <a href="{% url 'bill_of_lading:hbl_list' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save HBL</button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCustomerForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="customerType" name="customer_type">
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="customerName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerAddress" class="form-label">Address</label>
+                        <textarea class="form-control" id="customerAddress" name="address" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charges Modal -->
+<div class="modal fade" id="chargesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">HBL Charges</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="chargesForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="hblId" name="hbl_id">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Charge Type</th>
+                                    <th>Amount</th>
+                                    <th>Currency</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chargesTableBody">
+                                <!-- Charges will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addChargeRow()">
+                        <i class="bi bi-plus"></i> Add Charge
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveCharges()">Save Charges</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vendor Modal -->
+<div class="modal fade" id="vendorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Vendor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="vendorForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="vendorHblId" name="hbl_id">
+                    <div class="mb-3">
+                        <label for="vendorSelect" class="form-label">Vendor</label>
+                        <select class="form-select" id="vendorSelect" name="vendor_id" required>
+                            <option value="">Select Vendor</option>
+                            {% for customer in vendor_customers %}
+                                <option value="{{ customer.id }}">{{ customer.customer_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveVendor()">Save Vendor</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('hblForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Compute totals from cargo rows
+                const rows = Array.from(document.querySelectorAll('#cargoTable tbody tr'));
+                let totalPackages = 0;
+                let totalGross = 0;
+                let totalMeasurement = 0;
+                rows.forEach(row => {
+                    const numPackages = parseInt(row.querySelector('[name="cargo_number_of_packages[]"]').value || '0', 10);
+                    const gross = parseFloat(row.querySelector('[name="cargo_gross_weight[]"]').value || '0');
+                    const meas = parseFloat(row.querySelector('[name="cargo_measurement[]"]').value || '0');
+                    if (!isNaN(numPackages)) totalPackages += numPackages;
+                    if (!isNaN(gross)) totalGross += gross;
+                    if (!isNaN(meas)) totalMeasurement += meas;
+                });
+
+                document.getElementById('totalPackagesField').value = totalPackages;
+                document.getElementById('totalGrossWeightField').value = totalGross;
+                document.getElementById('totalMeasurementField').value = totalMeasurement;
+
+                // Sync status radio -> hidden status field
+                const checkedStatus = document.querySelector('input[name="status"]:checked');
+                if (checkedStatus) {
+                    document.getElementById('statusField').value = checkedStatus.value;
+                }
+
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+        }
+    });
+
+    // Handle package type change
+    function handlePackageTypeChange(select) {
+        const customInput = select.parentElement.querySelector('.custom-package-type');
+        if (select.value === 'OTHER') {
+            customInput.style.display = 'block';
+            customInput.required = true;
+        } else {
+            customInput.style.display = 'none';
+            customInput.required = false;
+        }
+    }
+
+    // Add new cargo row
+    function addCargoRow() {
+        const tbody = document.querySelector('#cargoTable tbody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><input type="text" class="form-control" name="cargo_container_no[]" required></td>
+            <td>
+                <select class="form-select" name="cargo_container_size[]" required>
+                    <option value="">Select Size</option>
+                    <option value="20STD">20STD</option>
+                    <option value="40STD">40STD</option>
+                    <option value="40HC">40HC</option>
+                    <option value="45HC">45HC</option>
+                </select>
+            </td>
+            <td><input type="text" class="form-control" name="cargo_seal_no[]" required></td>
+            <td><input type="number" class="form-control" name="cargo_number_of_packages[]" required></td>
+            <td>
+                <select class="form-select package-type-select" name="cargo_package_type[]" required onchange="handlePackageTypeChange(this)">
+                    <option value="">Select Type</option>
+                    <option value="CTN">CTN</option>
+                    <option value="PLT">PLT</option>
+                    <option value="CASE">CASE</option>
+                    <option value="PCS">PCS</option>
+                    <option value="OTHER">OTHER</option>
+                </select>
+                <input type="text" class="form-control mt-1 custom-package-type" name="cargo_custom_package_type[]" 
+                       placeholder="Specify package type" style="display: none;">
+            </td>
+            <td><textarea class="form-control" name="cargo_description[]" rows="2" required></textarea></td>
+            <td><input type="number" step="0.01" class="form-control" name="cargo_gross_weight[]" required></td>
+            <td><input type="number" step="0.01" class="form-control" name="cargo_net_weight[]" required></td>
+            <td><input type="number" step="0.01" class="form-control" name="cargo_measurement[]" required></td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeCargoRow(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(newRow);
+    }
+
+    // Initialize package type fields on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const packageTypeSelects = document.querySelectorAll('.package-type-select');
+        packageTypeSelects.forEach(select => {
+            handlePackageTypeChange(select);
+        });
+    });
+
+    // Remove cargo row
+    function removeCargoRow(button) {
+        const tbody = document.querySelector('#cargoTable tbody');
+        if (tbody.children.length > 1) {
+            button.closest('tr').remove();
+        } else {
+            alert('At least one cargo item is required.');
+        }
+    }
+
+    // Change HBL Status
+    function changeStatus(hblId, newStatus, event) {
+        if (event) {
+            event.preventDefault();
+        }
+        
+        console.log('changeStatus called with:', { hblId, newStatus });
+        
+        if (!hblId || !newStatus) {
+            console.error('Missing required parameters:', { hblId, newStatus });
+            alert('Missing required parameters. Please try again.');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to change the status to ${newStatus}?`)) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
+            
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                alert('Security token not found. Please refresh the page and try again.');
+                return;
+            }
+
+            const baseUrlPattern = "{% url 'bill_of_lading:change_status' '00000000-0000-0000-0000-000000000000' %}";
+            const url = baseUrlPattern.replace('00000000-0000-0000-0000-000000000000', hblId);
+            console.log('Sending request to:', url);
+            console.log('Request payload:', { status: newStatus });
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        console.error('Error response:', data);
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    const row = document.querySelector(`tr[data-hbl-id="${hblId}"]`);
+                    console.log('Found row:', row ? 'Yes' : 'No');
+                    
+                    if (row) {
+                        const statusCell = row.querySelector('td:nth-last-child(2) span.badge');
+                        console.log('Found status cell:', statusCell ? 'Yes' : 'No');
+                        
+                        if (statusCell) {
+                            statusCell.textContent = newStatus;
+                            statusCell.className = 'badge ' + 
+                                (newStatus === 'Draft' ? 'bg-warning' : 
+                                 newStatus === 'Original' ? 'bg-success' : 'bg-info');
+                            console.log('Status badge updated successfully');
+                            alert(data.message || 'Status updated successfully');
+                        } else {
+                            console.error('Status badge element not found');
+                            throw new Error('Could not find status badge element in the table');
+                        }
+                    } else {
+                        console.error('Row not found for HBL ID:', hblId);
+                        throw new Error('Could not find the HBL row in the table');
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to update status');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating status:', error);
+                alert('Failed to update status: ' + error.message);
+            });
+        }
+    }
+
+    // Customer Modal Functions
+    function openAddCustomerModal(type) {
+        document.getElementById('customerType').value = type;
+        const modal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
+        modal.show();
+    }
+
+    function saveCustomer() {
+        const form = document.getElementById('addCustomerForm');
+        const formData = new FormData(form);
+        formData.append('status', 'Active');
+
+        fetch('{% url "bill_of_lading:add_customer" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Add new customer to appropriate select
+                const type = document.getElementById('customerType').value;
+                const selectId = type === 'Shipper' ? 'shipper' : 
+                               type === 'Consignee' ? 'consignee' : 'notifyParty';
+                
+                const select = document.getElementById(selectId);
+                const option = new Option(data.customer.name, data.customer.id);
+                select.add(option);
+                select.value = data.customer.id;
+
+                // Close modal and reset form
+                bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+                form.reset();
+            } else {
+                alert('Error saving customer: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the customer');
+        });
+    }
+
+    // Add these new JavaScript functions
+    function openChargesModal(hblId) {
+        document.getElementById('hblId').value = hblId;
+        const modal = new bootstrap.Modal(document.getElementById('chargesModal'));
+        modal.show();
+        loadCharges(hblId);
+    }
+
+    function openVendorModal(hblId) {
+        document.getElementById('vendorHblId').value = hblId;
+        const modal = new bootstrap.Modal(document.getElementById('vendorModal'));
+        modal.show();
+        loadVendor(hblId);
+    }
+
+    function addChargeRow() {
+        const tbody = document.getElementById('chargesTableBody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>
+                <select class="form-select" name="charge_type[]" required>
+                    <option value="">Select Type</option>
+                    <option value="OCEAN FREIGHT">Ocean Freight</option>
+                    <option value="THC">THC</option>
+                    <option value="DOCUMENTATION">Documentation</option>
+                    <option value="CUSTOMS CLEARANCE">Customs Clearance</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </td>
+            <td><input type="number" step="0.01" class="form-control" name="charge_amount[]" required></td>
+            <td>
+                <select class="form-select" name="charge_currency[]" required>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="JPY">JPY</option>
+                </select>
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeChargeRow(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(newRow);
+    }
+
+    function removeChargeRow(button) {
+        button.closest('tr').remove();
+    }
+
+    function loadCharges(hblId) {
+        fetch(`/master/charges/?hbl_id=${hblId}`)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('chargesTableBody');
+                tbody.innerHTML = '';
+                data.charges.forEach(charge => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <select class="form-select" name="charge_type[]" required>
+                                <option value="">Select Type</option>
+                                <option value="OCEAN FREIGHT" ${charge.type === 'OCEAN FREIGHT' ? 'selected' : ''}>Ocean Freight</option>
+                                <option value="THC" ${charge.type === 'THC' ? 'selected' : ''}>THC</option>
+                                <option value="DOCUMENTATION" ${charge.type === 'DOCUMENTATION' ? 'selected' : ''}>Documentation</option>
+                                <option value="CUSTOMS CLEARANCE" ${charge.type === 'CUSTOMS CLEARANCE' ? 'selected' : ''}>Customs Clearance</option>
+                                <option value="OTHER" ${charge.type === 'OTHER' ? 'selected' : ''}>Other</option>
+                            </select>
+                        </td>
+                        <td><input type="number" step="0.01" class="form-control" name="charge_amount[]" value="${charge.amount}" required></td>
+                        <td>
+                            <select class="form-select" name="charge_currency[]" required>
+                                <option value="USD" ${charge.currency === 'USD' ? 'selected' : ''}>USD</option>
+                                <option value="EUR" ${charge.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                                <option value="GBP" ${charge.currency === 'GBP' ? 'selected' : ''}>GBP</option>
+                                <option value="JPY" ${charge.currency === 'JPY' ? 'selected' : ''}>JPY</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeChargeRow(this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading charges:', error);
+                alert('Error loading charges');
+            });
+    }
+
+    function saveCharges() {
+        const form = document.getElementById('chargesForm');
+        const formData = new FormData(form);
+        
+        fetch('/master/save-charges/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('chargesModal')).hide();
+                alert('Charges saved successfully');
+            } else {
+                alert('Error saving charges: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving charges');
+        });
+    }
+
+    function loadVendor(hblId) {
+        fetch(`/master/vendors/?hbl_id=${hblId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.vendor_id) {
+                    document.getElementById('vendorSelect').value = data.vendor_id;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading vendor:', error);
+                alert('Error loading vendor');
+            });
+    }
+
+    function saveVendor() {
+        const form = document.getElementById('vendorForm');
+        const formData = new FormData(form);
+        
+        fetch('/master/save-vendors/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('vendorModal')).hide();
+                alert('Vendor saved successfully');
+            } else {
+                alert('Error saving vendor: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving vendor');
+        });
+    }
+</script>
+{% endblock %}
+{% endblock %}

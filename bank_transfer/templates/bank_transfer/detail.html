@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% load static %}
+<!-- eslint-disable -->
+
+{% block title %}Bank Transfer Details - {{ transfer.transfer_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_transfer/css/bank_transfer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1 class="page-title">
+                        <i class="fas fa-exchange-alt"></i>
+                        Bank Transfer Details
+                    </h1>
+                    <div class="header-actions">
+                        <a href="{% url 'bank_transfer:list' %}" class="btn btn-secondary">
+                            <i class="fas fa-list"></i> Back to List
+                        </a>
+                        {% if transfer.can_edit %}
+                        <a href="{% url 'bank_transfer:edit' transfer.pk %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Transfer
+                        </a>
+                        {% endif %}
+                        {% if transfer.can_complete %}
+                        <button class="btn btn-success complete-btn" data-transfer-id="{{ transfer.pk }}">
+                            <i class="fas fa-check"></i> Complete Transfer
+                        </button>
+                        {% endif %}
+                        {% if transfer.can_cancel %}
+                        <button class="btn btn-warning cancel-btn" data-transfer-id="{{ transfer.pk }}">
+                            <i class="fas fa-ban"></i> Cancel Transfer
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transfer Information -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Basic Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-info-circle"></i>
+                                Transfer Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label>Transfer Number:</label>
+                                        <span class="info-value">{{ transfer.transfer_number }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Transfer Date:</label>
+                                        <span class="info-value">{{ transfer.transfer_date|date:"F d, Y" }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Transfer Type:</label>
+                                        <span class="info-value">{{ transfer.get_transfer_type_display }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Status:</label>
+                                        <span class="status-badge status-{{ transfer.status }}">
+                                            {{ transfer.get_status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label>Reference Number:</label>
+                                        <span class="info-value">{{ transfer.reference_number|default:"Not provided" }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Created By:</label>
+                                        <span class="info-value">{{ transfer.created_by.get_full_name|default:transfer.created_by.username }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Created At:</label>
+                                        <span class="info-value">{{ transfer.created_at|date:"F d, Y H:i" }}</span>
+                                    </div>
+                                    {% if transfer.completed_at %}
+                                    <div class="info-item">
+                                        <label>Completed At:</label>
+                                        <span class="info-value">{{ transfer.completed_at|date:"F d, Y H:i" }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-university"></i>
+                                Account Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="account-card">
+                                        <div class="account-header">
+                                            <i class="fas fa-arrow-down"></i>
+                                            From Account
+                                        </div>
+                                        <div class="account-details">
+                                            <div class="account-name">{{ transfer.from_account.name }}</div>
+                                            <div class="account-code">{{ transfer.from_account.account_code }}</div>
+                                            <div class="account-balance">
+                                                Balance: {{ transfer.from_account.current_balance|floatformat:2 }} {{ transfer.from_account.currency.code }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="account-card">
+                                        <div class="account-header">
+                                            <i class="fas fa-arrow-up"></i>
+                                            To Account
+                                        </div>
+                                        <div class="account-details">
+                                            <div class="account-name">{{ transfer.to_account.name }}</div>
+                                            <div class="account-code">{{ transfer.to_account.account_code }}</div>
+                                            <div class="account-balance">
+                                                Balance: {{ transfer.to_account.current_balance|floatformat:2 }} {{ transfer.to_account.currency.code }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-money-bill-wave"></i>
+                                Financial Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label>Transfer Amount:</label>
+                                        <span class="info-value amount">{{ transfer.amount|floatformat:2 }} {{ transfer.currency.code }}</span>
+                                    </div>
+                                    {% if transfer.is_multi_currency %}
+                                    <div class="info-item">
+                                        <label>Exchange Rate:</label>
+                                        <span class="info-value">{{ transfer.exchange_rate|floatformat:6 }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Converted Amount:</label>
+                                        <span class="info-value amount">{{ transfer.converted_amount|floatformat:2 }} {{ transfer.to_account.currency.code }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>FX Gain/Loss:</label>
+                                        <span class="info-value {% if transfer.fx_gain_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ transfer.fx_gain_loss|floatformat:2 }} {{ transfer.to_account.currency.code }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-item">
+                                        <label>Currency:</label>
+                                        <span class="info-value">{{ transfer.currency.name }} ({{ transfer.currency.code }})</span>
+                                    </div>
+                                    {% if transfer.narration %}
+                                    <div class="info-item">
+                                        <label>Narration:</label>
+                                        <span class="info-value">{{ transfer.narration }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audit Trail -->
+                    {% if audit_trail %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-history"></i>
+                                Audit Trail
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="audit-timeline">
+                                {% for audit in audit_trail %}
+                                <div class="audit-item">
+                                    <div class="audit-icon">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <div class="audit-content">
+                                        <div class="audit-action">{{ audit.get_action_display }}</div>
+                                        <div class="audit-description">{{ audit.description }}</div>
+                                        <div class="audit-meta">
+                                            by {{ audit.user.get_full_name|default:audit.user.username }} 
+                                            on {{ audit.timestamp|date:"F d, Y H:i" }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Balance Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-balance-scale"></i>
+                                Balance Summary
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="balance-item">
+                                <div class="balance-label">From Account (Before):</div>
+                                <div class="balance-value">{{ transfer.get_from_account_balance|floatformat:2 }} {{ transfer.from_account.currency.code }}</div>
+                            </div>
+                            <div class="balance-item">
+                                <div class="balance-label">To Account (Before):</div>
+                                <div class="balance-value">{{ transfer.get_to_account_balance|floatformat:2 }} {{ transfer.to_account.currency.code }}</div>
+                            </div>
+                            <hr>
+                            <div class="balance-item">
+                                <div class="balance-label">Transfer Amount:</div>
+                                <div class="balance-value text-danger">-{{ transfer.amount|floatformat:2 }} {{ transfer.currency.code }}</div>
+                            </div>
+                            <div class="balance-item">
+                                <div class="balance-label">Converted Amount:</div>
+                                <div class="balance-value text-success">+{{ transfer.converted_amount|floatformat:2 }} {{ transfer.to_account.currency.code }}</div>
+                            </div>
+                            <hr>
+                            <div class="balance-item">
+                                <div class="balance-label">From Account (After):</div>
+                                <div class="balance-value">{{ transfer.get_updated_from_balance|floatformat:2 }} {{ transfer.from_account.currency.code }}</div>
+                            </div>
+                            <div class="balance-item">
+                                <div class="balance-label">To Account (After):</div>
+                                <div class="balance-value">{{ transfer.get_updated_to_balance|floatformat:2 }} {{ transfer.to_account.currency.code }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-tools"></i>
+                                Quick Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="action-buttons-vertical">
+                                <button class="btn btn-outline-primary btn-block mb-2" onclick="printTransfer({{ transfer.pk }})">
+                                    <i class="fas fa-print"></i> Print Transfer
+                                </button>
+                                <button class="btn btn-outline-secondary btn-block mb-2" onclick="copyToClipboard('{{ transfer.transfer_number }}')">
+                                    <i class="fas fa-copy"></i> Copy Transfer Number
+                                </button>
+                                <a href="{% url 'bank_transfer:create' %}" class="btn btn-outline-success btn-block">
+                                    <i class="fas fa-plus"></i> Create New Transfer
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_transfer/js/bank_transfer.js' %}"></script>
+<script src="{% static 'bank_transfer/js/bank_transfer_detail.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,550 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Asset - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'asset_register/css/asset_register.css' %}">
+<style>
+/* Tabbed Form Styles */
+.tabbed-form {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.tab-nav {
+    display: flex;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+.tab-nav-item {
+    flex: 1;
+    min-width: 150px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.tab-nav-item.active {
+    background: white;
+    border-bottom-color: var(--primary-color);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.tab-nav-item:hover {
+    background: #f1f5f9;
+}
+
+.tab-content {
+    display: none;
+    padding: 2rem;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-content h4 {
+    margin-bottom: 1.5rem;
+    color: var(--dark-color);
+    font-weight: 600;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+}
+
+.form-control.is-invalid {
+    border-color: var(--danger-color);
+}
+
+.invalid-feedback {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.tab-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: #f8fafc;
+    border-top: 1px solid var(--border-color);
+}
+
+.tab-navigation {
+    display: flex;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .tab-nav {
+        flex-direction: column;
+    }
+    
+    .tab-nav-item {
+        min-width: auto;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="asset-register-container">
+    <!-- Header -->
+    <div class="asset-register-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-edit"></i> {{ title }}</h1>
+                <p>{{ action }} asset information</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'asset_register:asset_list' %}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+                {% if asset %}
+                <a href="{% url 'asset_register:asset_detail' asset.id %}" class="btn btn-outline">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabbed Form Container -->
+    <div class="tabbed-form" data-auto-save="true" data-save-url="{% url 'asset_register:asset_create' %}">
+        <form method="post" data-validate="true" id="asset-form">
+            {% csrf_token %}
+            
+            <!-- Auto-save indicator -->
+            <div id="auto-save-indicator" class="alert alert-info" style="display: none; margin: 1rem 2rem;">
+                <i class="fas fa-save"></i> Auto-saving...
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <div class="tab-nav-item active" data-tab="basic">
+                    <i class="fas fa-info-circle"></i> Basic Info
+                </div>
+                <div class="tab-nav-item" data-tab="financial">
+                    <i class="fas fa-dollar-sign"></i> Financial
+                </div>
+                <div class="tab-nav-item" data-tab="assignment">
+                    <i class="fas fa-user"></i> Assignment
+                </div>
+                <div class="tab-nav-item" data-tab="technical">
+                    <i class="fas fa-cogs"></i> Technical
+                </div>
+                <div class="tab-nav-item" data-tab="warranty">
+                    <i class="fas fa-shield-alt"></i> Warranty
+                </div>
+                <div class="tab-nav-item" data-tab="maintenance">
+                    <i class="fas fa-tools"></i> Maintenance
+                </div>
+            </div>
+
+            <!-- Tab Content -->
+            <!-- Basic Information Tab -->
+            <div class="tab-content active" id="basic">
+                <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.asset_name.id_for_label }}">Asset Name *</label>
+                        {{ form.asset_name }}
+                        {% if form.asset_name.errors %}
+                        <div class="invalid-feedback">{{ form.asset_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.category.id_for_label }}">Category *</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <div class="invalid-feedback">{{ form.category.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.location.id_for_label }}">Location *</label>
+                        {{ form.location }}
+                        {% if form.location.errors %}
+                        <div class="invalid-feedback">{{ form.location.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.status.id_for_label }}">Status *</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                        <div class="invalid-feedback">{{ form.status.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.description.id_for_label }}">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <div class="invalid-feedback">{{ form.description.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Financial Information Tab -->
+            <div class="tab-content" id="financial">
+                <h4><i class="fas fa-dollar-sign"></i> Financial Information</h4>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.purchase_date.id_for_label }}">Purchase Date *</label>
+                        {{ form.purchase_date }}
+                        {% if form.purchase_date.errors %}
+                        <div class="invalid-feedback">{{ form.purchase_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.purchase_value.id_for_label }}">Purchase Value *</label>
+                        {{ form.purchase_value }}
+                        {% if form.purchase_value.errors %}
+                        <div class="invalid-feedback">{{ form.purchase_value.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.current_value.id_for_label }}">Current Value *</label>
+                        {{ form.current_value }}
+                        {% if form.current_value.errors %}
+                        <div class="invalid-feedback">{{ form.current_value.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.salvage_value.id_for_label }}">Salvage Value</label>
+                        {{ form.salvage_value }}
+                        {% if form.salvage_value.errors %}
+                        <div class="invalid-feedback">{{ form.salvage_value.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.depreciation_method.id_for_label }}">Depreciation Method *</label>
+                        {{ form.depreciation_method }}
+                        {% if form.depreciation_method.errors %}
+                        <div class="invalid-feedback">{{ form.depreciation_method.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.useful_life_years.id_for_label }}">Useful Life (Years)</label>
+                        {{ form.useful_life_years }}
+                        {% if form.useful_life_years.errors %}
+                        <div class="invalid-feedback">{{ form.useful_life_years.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Information Tab -->
+            <div class="tab-content" id="assignment">
+                <h4><i class="fas fa-user"></i> Assignment Information</h4>
+                
+                <div class="form-group">
+                    <label for="{{ form.assigned_to.id_for_label }}">Assigned To</label>
+                    {{ form.assigned_to }}
+                    {% if form.assigned_to.errors %}
+                    <div class="invalid-feedback">{{ form.assigned_to.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Technical Details Tab -->
+            <div class="tab-content" id="technical">
+                <h4><i class="fas fa-cogs"></i> Technical Details</h4>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.serial_number.id_for_label }}">Serial Number</label>
+                        {{ form.serial_number }}
+                        {% if form.serial_number.errors %}
+                        <div class="invalid-feedback">{{ form.serial_number.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.model_number.id_for_label }}">Model Number</label>
+                        {{ form.model_number }}
+                        {% if form.model_number.errors %}
+                        <div class="invalid-feedback">{{ form.model_number.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.manufacturer.id_for_label }}">Manufacturer</label>
+                    {{ form.manufacturer }}
+                    {% if form.manufacturer.errors %}
+                    <div class="invalid-feedback">{{ form.manufacturer.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Warranty & Insurance Tab -->
+            <div class="tab-content" id="warranty">
+                <h4><i class="fas fa-shield-alt"></i> Warranty & Insurance</h4>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.warranty_expiry.id_for_label }}">Warranty Expiry</label>
+                        {{ form.warranty_expiry }}
+                        {% if form.warranty_expiry.errors %}
+                        <div class="invalid-feedback">{{ form.warranty_expiry.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.insurance_expiry.id_for_label }}">Insurance Expiry</label>
+                        {{ form.insurance_expiry }}
+                        {% if form.insurance_expiry.errors %}
+                        <div class="invalid-feedback">{{ form.insurance_expiry.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.insurance_policy.id_for_label }}">Insurance Policy Number</label>
+                    {{ form.insurance_policy }}
+                    {% if form.insurance_policy.errors %}
+                    <div class="invalid-feedback">{{ form.insurance_policy.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Maintenance Information Tab -->
+            <div class="tab-content" id="maintenance">
+                <h4><i class="fas fa-tools"></i> Maintenance Information</h4>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.last_maintenance_date.id_for_label }}">Last Maintenance Date</label>
+                        {{ form.last_maintenance_date }}
+                        {% if form.last_maintenance_date.errors %}
+                        <div class="invalid-feedback">{{ form.last_maintenance_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.next_maintenance_date.id_for_label }}">Next Maintenance Date</label>
+                        {{ form.next_maintenance_date }}
+                        {% if form.next_maintenance_date.errors %}
+                        <div class="invalid-feedback">{{ form.next_maintenance_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.maintenance_notes.id_for_label }}">Maintenance Notes</label>
+                    {{ form.maintenance_notes }}
+                    {% if form.maintenance_notes.errors %}
+                    <div class="invalid-feedback">{{ form.maintenance_notes.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="tab-actions">
+                <div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Fields marked with * are required. Form will auto-save as you type.
+                    </small>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'asset_register:asset_list' %}" class="btn btn-outline">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {{ action }} Asset
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'asset_register/js/asset_register.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab functionality
+    const tabNavItems = document.querySelectorAll('.tab-nav-item');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabNavItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+            
+            // Remove active class from all tabs and contents
+            tabNavItems.forEach(nav => nav.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
+        });
+    });
+    
+    // Set default values for date fields
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Set purchase date to today if not set
+    const purchaseDateField = document.getElementById('{{ form.purchase_date.id_for_label }}');
+    if (purchaseDateField && !purchaseDateField.value) {
+        purchaseDateField.value = today;
+    }
+    
+    // Set current value to purchase value if not set
+    const purchaseValueField = document.getElementById('{{ form.purchase_value.id_for_label }}');
+    const currentValueField = document.getElementById('{{ form.current_value.id_for_label }}');
+    if (purchaseValueField && currentValueField && !currentValueField.value) {
+        purchaseValueField.addEventListener('input', function() {
+            if (!currentValueField.value) {
+                currentValueField.value = this.value;
+            }
+        });
+    }
+    
+    // Auto-calculate book value
+    const purchaseValue = document.getElementById('{{ form.purchase_value.id_for_label }}');
+    const currentValue = document.getElementById('{{ form.current_value.id_for_label }}');
+    const salvageValue = document.getElementById('{{ form.salvage_value.id_for_label }}');
+    
+    function updateBookValue() {
+        const purchase = parseFloat(purchaseValue.value) || 0;
+        const current = parseFloat(currentValue.value) || 0;
+        const salvage = parseFloat(salvageValue.value) || 0;
+        
+        // Simple calculation - in real implementation, this would use depreciation method
+        const bookValue = Math.max(current - salvage, 0);
+        
+        // Update a hidden field or display element for book value
+        const bookValueDisplay = document.getElementById('book-value-display');
+        if (bookValueDisplay) {
+            bookValueDisplay.textContent = 'AED ' + bookValue.toFixed(2);
+        }
+    }
+    
+    [purchaseValue, currentValue, salvageValue].forEach(field => {
+        if (field) {
+            field.addEventListener('input', updateBookValue);
+        }
+    });
+    
+    // Initialize book value calculation
+    updateBookValue();
+    
+    // Form validation
+    const form = document.getElementById('asset-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            // Validate purchase date
+            const purchaseDate = document.getElementById('{{ form.purchase_date.id_for_label }}');
+            if (purchaseDate && purchaseDate.value > today) {
+                purchaseDate.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            // Validate values
+            const purchaseVal = parseFloat(purchaseValue.value) || 0;
+            const currentVal = parseFloat(currentValue.value) || 0;
+            const salvageVal = parseFloat(salvageValue.value) || 0;
+            
+            if (currentVal > purchaseVal) {
+                currentValue.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (salvageVal > purchaseVal) {
+                salvageValue.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                // Show error message
+                const alertContainer = document.getElementById('alert-container');
+                if (alertContainer) {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-danger alert-dismissible fade show';
+                    alert.innerHTML = `
+                        <i class="fas fa-exclamation-triangle"></i> Please correct the errors in the form.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    alertContainer.appendChild(alert);
+                    
+                    setTimeout(() => alert.remove(), 5000);
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,555 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Permissions - {{ role.name }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'roles_permissions/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-key text-primary"></i> Manage Permissions
+            </h1>
+            <p class="mb-0 text-muted">Configure permissions for role: <strong>{{ role.name }}</strong></p>
+        </div>
+        <div>
+            <a href="{% url 'roles_permissions:role_detail' role.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Role
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'roles_permissions:dashboard' %}">Roles & Permissions</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'roles_permissions:role_list' %}">Roles</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'roles_permissions:role_detail' role.pk %}">{{ role.name }}</a></li>
+            <li class="breadcrumb-item active">Permissions</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Current Permissions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-check-circle"></i> Current Permissions ({{ current_permissions.count }})
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAllPermissions()">
+                        <i class="fas fa-trash"></i> Remove All
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if current_permissions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th width="30">
+                                        <input type="checkbox" id="selectAllCurrent" onchange="toggleSelectAllCurrent()">
+                                    </th>
+                                    <th>Permission</th>
+                                    <th>Module</th>
+                                    <th>Action</th>
+                                    <th>Group</th>
+                                    <th>Priority</th>
+                                    <th width="100">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for role_permission in current_permissions %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="current-permission-checkbox" value="{{ role_permission.id }}">
+                                    </td>
+                                    <td>
+                                        <strong>{{ role_permission.permission.name }}</strong>
+                                        {% if role_permission.permission.description %}
+                                            <br><small class="text-muted">{{ role_permission.permission.description|truncatechars:40 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ role_permission.permission.module }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ role_permission.permission.action }}</span>
+                                    </td>
+                                    <td>
+                                        {% if role_permission.permission.group %}
+                                            <span class="badge badge-light">{{ role_permission.permission.group.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if role_permission.permission.priority == 'critical' %}
+                                            <span class="badge badge-danger">Critical</span>
+                                        {% elif role_permission.permission.priority == 'high' %}
+                                            <span class="badge badge-warning">High</span>
+                                        {% elif role_permission.permission.priority == 'medium' %}
+                                            <span class="badge badge-info">Medium</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="removePermission('{{ role_permission.id }}', '{{ role_permission.permission.name }}')" 
+                                                title="Remove">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-key fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">No permissions assigned</h6>
+                        <p class="text-muted">This role doesn't have any permissions yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Permissions Card -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-plus-circle"></i> Available Permissions ({{ available_permissions.count }})
+                    </h6>
+                    <div class="d-flex">
+                        <button type="button" class="btn btn-sm btn-outline-success mr-2" onclick="addSelectedPermissions()">
+                            <i class="fas fa-plus"></i> Add Selected
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAllPermissions()">
+                            <i class="fas fa-plus"></i> Add All
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Search and Filter -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="permissionSearch" placeholder="Search permissions...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="moduleFilter">
+                                <option value="">All Modules</option>
+                                {% for module in available_modules %}
+                                <option value="{{ module }}">{{ module }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="actionFilter">
+                                <option value="">All Actions</option>
+                                {% for action in available_actions %}
+                                <option value="{{ action }}">{{ action }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-control" id="groupFilter">
+                                <option value="">All Groups</option>
+                                {% for group in available_groups %}
+                                <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {% if available_permissions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="availablePermissionsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th width="30">
+                                        <input type="checkbox" id="selectAllAvailable" onchange="toggleSelectAllAvailable()">
+                                    </th>
+                                    <th>Permission</th>
+                                    <th>Module</th>
+                                    <th>Action</th>
+                                    <th>Group</th>
+                                    <th>Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for permission in available_permissions %}
+                                <tr class="permission-row" 
+                                    data-name="{{ permission.name|lower }}" 
+                                    data-module="{{ permission.module }}" 
+                                    data-action="{{ permission.action }}" 
+                                    data-group="{{ permission.group.id|default:'' }}">
+                                    <td>
+                                        <input type="checkbox" class="available-permission-checkbox" value="{{ permission.id }}">
+                                    </td>
+                                    <td>
+                                        <strong>{{ permission.name }}</strong>
+                                        {% if permission.description %}
+                                            <br><small class="text-muted">{{ permission.description|truncatechars:40 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ permission.module }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ permission.action }}</span>
+                                    </td>
+                                    <td>
+                                        {% if permission.group %}
+                                            <span class="badge badge-light">{{ permission.group.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if permission.priority == 'critical' %}
+                                            <span class="badge badge-danger">Critical</span>
+                                        {% elif permission.priority == 'high' %}
+                                            <span class="badge badge-warning">High</span>
+                                        {% elif permission.priority == 'medium' %}
+                                            <span class="badge badge-info">Medium</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Low</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">All permissions assigned</h6>
+                        <p class="text-muted">This role has all available permissions</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Role Information Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Role Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="font-weight-bold">{{ role.name }}</h6>
+                        <p class="text-muted small">{{ role.description|default:"No description" }}</p>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-right">
+                                <div class="h4 text-primary">{{ current_permissions.count }}</div>
+                                <div class="small text-muted">Assigned</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 text-success">{{ available_permissions.count }}</div>
+                            <div class="small text-muted">Available</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small">
+                        <div class="d-flex justify-content-between">
+                            <span>Role Type:</span>
+                            <span class="font-weight-bold">{{ role.get_role_type_display }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Status:</span>
+                            <span class="font-weight-bold {% if role.is_active %}text-success{% else %}text-secondary{% endif %}">
+                                {% if role.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        {% if role.parent_role %}
+                        <div class="d-flex justify-content-between">
+                            <span>Parent Role:</span>
+                            <span class="font-weight-bold">{{ role.parent_role.name }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <button type="button" class="list-group-item list-group-item-action" onclick="addAllPermissions()">
+                            <i class="fas fa-plus text-success"></i> Add All Permissions
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" onclick="removeAllPermissions()">
+                            <i class="fas fa-trash text-danger"></i> Remove All Permissions
+                        </button>
+                        <a href="{% url 'roles_permissions:permission_list' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-key text-primary"></i> Manage Permissions
+                        </a>
+                        <a href="{% url 'roles_permissions:role_detail' role.pk %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-arrow-left text-secondary"></i> Back to Role
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permission Groups Card -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-layer-group"></i> Permission Groups
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for group in permission_groups %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ group.name }}</h6>
+                                <small class="text-muted">{{ group.description|default:"No description" }}</small>
+                            </div>
+                            <span class="badge badge-primary badge-pill">{{ group.permissions.count }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small">No permission groups available</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Permission Confirmation Modal -->
+<div class="modal fade" id="removePermissionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Remove Permission</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove the permission "<strong id="permissionName"></strong>" from this role?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRemovePermission">Remove Permission</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'roles_permissions/js/dashboard.js' %}"></script>
+<script>
+let permissionToRemove = null;
+
+function removePermission(rolePermissionId, permissionName) {
+    permissionToRemove = rolePermissionId;
+    document.getElementById('permissionName').textContent = permissionName;
+    $('#removePermissionModal').modal('show');
+}
+
+function toggleSelectAllCurrent() {
+    const selectAllCheckbox = document.getElementById('selectAllCurrent');
+    const checkboxes = document.querySelectorAll('.current-permission-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+function toggleSelectAllAvailable() {
+    const selectAllCheckbox = document.getElementById('selectAllAvailable');
+    const checkboxes = document.querySelectorAll('.available-permission-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+function addSelectedPermissions() {
+    const selectedCheckboxes = document.querySelectorAll('.available-permission-checkbox:checked');
+    const permissionIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+    
+    if (permissionIds.length === 0) {
+        alert('Please select permissions to add');
+        return;
+    }
+    
+    if (confirm(`Add ${permissionIds.length} selected permission(s) to this role?`)) {
+        addPermissions(permissionIds);
+    }
+}
+
+function addAllPermissions() {
+    const allCheckboxes = document.querySelectorAll('.available-permission-checkbox');
+    const permissionIds = Array.from(allCheckboxes).map(cb => cb.value);
+    
+    if (permissionIds.length === 0) {
+        alert('No permissions available to add');
+        return;
+    }
+    
+    if (confirm(`Add all ${permissionIds.length} available permission(s) to this role?`)) {
+        addPermissions(permissionIds);
+    }
+}
+
+function removeAllPermissions() {
+    const currentPermissions = document.querySelectorAll('.current-permission-checkbox');
+    
+    if (currentPermissions.length === 0) {
+        alert('No permissions to remove');
+        return;
+    }
+    
+    if (confirm(`Remove all ${currentPermissions.length} assigned permission(s) from this role?`)) {
+        const permissionIds = Array.from(currentPermissions).map(cb => cb.value);
+        removePermissions(permissionIds);
+    }
+}
+
+function addPermissions(permissionIds) {
+    const formData = new FormData();
+    formData.append('permission_ids', JSON.stringify(permissionIds));
+    formData.append('action', 'add');
+    
+    fetch(`{% url 'roles_permissions:role_permissions' role.pk %}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding permissions');
+    });
+}
+
+function removePermissions(permissionIds) {
+    const formData = new FormData();
+    formData.append('permission_ids', JSON.stringify(permissionIds));
+    formData.append('action', 'remove');
+    
+    fetch(`{% url 'roles_permissions:role_permissions' role.pk %}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while removing permissions');
+    });
+}
+
+document.getElementById('confirmRemovePermission').addEventListener('click', function() {
+    if (permissionToRemove) {
+        removePermissions([permissionToRemove]);
+        $('#removePermissionModal').modal('hide');
+    }
+});
+
+// Search and filter functionality
+document.getElementById('permissionSearch').addEventListener('input', filterPermissions);
+document.getElementById('moduleFilter').addEventListener('change', filterPermissions);
+document.getElementById('actionFilter').addEventListener('change', filterPermissions);
+document.getElementById('groupFilter').addEventListener('change', filterPermissions);
+
+function filterPermissions() {
+    const searchTerm = document.getElementById('permissionSearch').value.toLowerCase();
+    const moduleFilter = document.getElementById('moduleFilter').value;
+    const actionFilter = document.getElementById('actionFilter').value;
+    const groupFilter = document.getElementById('groupFilter').value;
+    
+    const rows = document.querySelectorAll('.permission-row');
+    
+    rows.forEach(row => {
+        const name = row.dataset.name;
+        const module = row.dataset.module;
+        const action = row.dataset.action;
+        const group = row.dataset.group;
+        
+        const matchesSearch = name.includes(searchTerm);
+        const matchesModule = !moduleFilter || module === moduleFilter;
+        const matchesAction = !actionFilter || action === actionFilter;
+        const matchesGroup = !groupFilter || group === groupFilter;
+        
+        if (matchesSearch && matchesModule && matchesAction && matchesGroup) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Update select all checkbox states
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('current-permission-checkbox')) {
+        updateSelectAllState('selectAllCurrent', '.current-permission-checkbox');
+    } else if (e.target.classList.contains('available-permission-checkbox')) {
+        updateSelectAllState('selectAllAvailable', '.available-permission-checkbox');
+    }
+});
+
+function updateSelectAllState(selectAllId, checkboxClass) {
+    const selectAllCheckbox = document.getElementById(selectAllId);
+    const checkboxes = document.querySelectorAll(checkboxClass);
+    const checkedCheckboxes = document.querySelectorAll(checkboxClass + ':checked');
+    
+    if (checkedCheckboxes.length === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (checkedCheckboxes.length === checkboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+</script>
+{% endblock %}

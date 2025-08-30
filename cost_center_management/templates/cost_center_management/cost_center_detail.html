@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ cost_center.name }} - Cost Center Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-pie mr-2"></i>{{ cost_center.name }}
+            <small class="text-muted">({{ cost_center.code }})</small>
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_management:cost_center_update' cost_center.pk %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit mr-1"></i>Edit
+            </a>
+            <a href="{% url 'cost_center_management:cost_center_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Cost Centers
+            </a>
+        </div>
+    </div>
+
+    <!-- Cost Center Information -->
+    <div class="row">
+        <!-- Main Information -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle mr-1"></i>Cost Center Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Code:</strong></td>
+                                    <td>{{ cost_center.code }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ cost_center.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Department:</strong></td>
+                                    <td>
+                                        <a href="#" class="text-primary">{{ cost_center.department.name }}</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Manager:</strong></td>
+                                    <td>
+                                        {% if cost_center.manager %}
+                                            {{ cost_center.manager.get_full_name|default:cost_center.manager.username }}
+                                        {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if cost_center.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Budget Amount:</strong></td>
+                                    <td>{{ cost_center.budget_amount|floatformat:2 }} {{ cost_center.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Expenses:</strong></td>
+                                    <td>{{ cost_center.total_expenses|floatformat:2 }} {{ cost_center.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Budget Variance:</strong></td>
+                                    <td>
+                                        <span class="text-{% if cost_center.budget_variance < 0 %}danger{% else %}success{% endif %}">
+                                            {{ cost_center.budget_variance|floatformat:2 }} {{ cost_center.currency }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Utilization:</strong></td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if cost_center.budget_utilization_percentage > 100 %}bg-danger{% elif cost_center.budget_utilization_percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ cost_center.budget_utilization_percentage|floatformat:0 }}%"
+                                                 aria-valuenow="{{ cost_center.budget_utilization_percentage|floatformat:0 }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ cost_center.budget_utilization_percentage|floatformat:0 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ cost_center.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if cost_center.description %}
+                    <div class="mt-3">
+                        <h6 class="font-weight-bold">Description</h6>
+                        <p class="text-muted">{{ cost_center.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if cost_center.parent_cost_center %}
+                    <div class="mt-3">
+                        <h6 class="font-weight-bold">Parent Cost Center</h6>
+                        <p>
+                            <a href="{% url 'cost_center_management:cost_center_detail' cost_center.parent_cost_center.pk %}" class="text-primary">
+                                {{ cost_center.parent_cost_center.name }} ({{ cost_center.parent_cost_center.code }})
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    {% if cost_center.child_cost_centers.exists %}
+                    <div class="mt-3">
+                        <h6 class="font-weight-bold">Child Cost Centers</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Budget</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for child in cost_center.child_cost_centers.all %}
+                                    <tr>
+                                        <td>{{ child.code }}</td>
+                                        <td>
+                                            <a href="{% url 'cost_center_management:cost_center_detail' child.pk %}" class="text-primary">
+                                                {{ child.name }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if child.is_active %}
+                                                <span class="badge badge-success">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ child.budget_amount|floatformat:2 }} {{ child.currency }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar mr-1"></i>Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border-right">
+                                <div class="h4 mb-0 text-primary">{{ cost_center.budget_amount|floatformat:0 }}</div>
+                                <div class="text-xs text-muted">Budget</div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border-right">
+                                <div class="h4 mb-0 text-info">{{ cost_center.total_expenses|floatformat:0 }}</div>
+                                <div class="text-xs text-muted">Expenses</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border-right">
+                                <div class="h4 mb-0 text-{% if cost_center.budget_variance < 0 %}danger{% else %}success{% endif %}">
+                                    {{ cost_center.budget_variance|floatformat:0 }}
+                                </div>
+                                <div class="text-xs text-muted">Variance</div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border-right">
+                                <div class="h4 mb-0 text-warning">{{ cost_center.budget_utilization_percentage|floatformat:0 }}%</div>
+                                <div class="text-xs text-muted">Utilization</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cogs mr-1"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'cost_center_management:cost_center_update' cost_center.pk %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit mr-1"></i>Edit Cost Center
+                        </a>
+                        <a href="{% url 'cost_center_management:cost_center_budget_create' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-dollar-sign mr-1"></i>Add Budget
+                        </a>
+                        <a href="{% url 'cost_center_management:cost_center_transaction_create' %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus mr-1"></i>Add Transaction
+                        </a>
+                        <a href="{% url 'cost_center_management:cost_center_report_create' %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-chart-bar mr-1"></i>Generate Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-exchange-alt mr-1"></i>Recent Transactions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if cost_center.cost_center_transactions.exists %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Amount</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in cost_center.cost_center_transactions.all|slice:":10" %}
+                                    <tr>
+                                        <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                        <td>{{ transaction.description|truncatechars:50 }}</td>
+                                        <td>{{ transaction.amount|floatformat:2 }} {{ transaction.currency }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if transaction.transaction_type == 'expense' %}danger{% elif transaction.transaction_type == 'income' %}success{% else %}info{% endif %}">
+                                                {{ transaction.get_transaction_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if transaction.is_active %}
+                                                <span class="badge badge-success">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'cost_center_management:cost_center_transaction_list' %}" class="btn btn-primary btn-sm">
+                                View All Transactions
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No transactions found</h5>
+                            <p class="text-muted">This cost center doesn't have any transactions yet.</p>
+                            <a href="{% url 'cost_center_management:cost_center_transaction_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus mr-1"></i>Add Transaction
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Auto-refresh page every 5 minutes
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+});
+</script>
+{% endblock %}

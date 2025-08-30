@@ -1,0 +1,478 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load shipment_filters %}
+
+{% block title %}{{ title|default:"Shipment Form" }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shipment_tracking/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-ship fa-fw"></i> {{ title|default:"Shipment Form" }}
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+            <a href="{% url 'shipment_tracking:dashboard' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ title|default:"Shipment Form" }}</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.container_number.id_for_label }}">Container Number</label>
+                                    {{ form.container_number }}
+                                    {% if form.container_number.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.container_number.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.booking_id.id_for_label }}">Booking ID</label>
+                                    {{ form.booking_id }}
+                                    {% if form.booking_id.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.booking_id.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.hbl_number.id_for_label }}">HBL Number</label>
+                                    {{ form.hbl_number }}
+                                    {% if form.hbl_number.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.hbl_number.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.customer_reference.id_for_label }}">Customer Reference</label>
+                                    {{ form.customer_reference }}
+                                    {% if form.customer_reference.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_reference.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer Information -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-user"></i> Customer Information
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.customer.id_for_label }}">Customer *</label>
+                                    {{ form.customer }}
+                                    {% if form.customer.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.customer_name.id_for_label }}">Customer Name *</label>
+                                    {{ form.customer_name }}
+                                    {% if form.customer_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.customer_email.id_for_label }}">Customer Email</label>
+                                    {{ form.customer_email }}
+                                    {% if form.customer_email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_email.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.customer_phone.id_for_label }}">Customer Phone</label>
+                                    {{ form.customer_phone }}
+                                    {% if form.customer_phone.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_phone.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Route Information -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-route"></i> Route Information
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.origin_port.id_for_label }}">Origin Port *</label>
+                                    {{ form.origin_port }}
+                                    {% if form.origin_port.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.origin_port.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.destination_port.id_for_label }}">Destination Port *</label>
+                                    {{ form.destination_port }}
+                                    {% if form.destination_port.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.destination_port.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.origin_country.id_for_label }}">Origin Country *</label>
+                                    {{ form.origin_country }}
+                                    {% if form.origin_country.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.origin_country.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.destination_country.id_for_label }}">Destination Country *</label>
+                                    {{ form.destination_country }}
+                                    {% if form.destination_country.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.destination_country.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Dates -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-calendar"></i> Important Dates
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.booking_date.id_for_label }}">Booking Date *</label>
+                                    {{ form.booking_date }}
+                                    {% if form.booking_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.booking_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.expected_departure.id_for_label }}">Expected Departure</label>
+                                    {{ form.expected_departure }}
+                                    {% if form.expected_departure.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.expected_departure.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.expected_arrival.id_for_label }}">Expected Arrival</label>
+                                    {{ form.expected_arrival }}
+                                    {% if form.expected_arrival.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.expected_arrival.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Vessel Information -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-anchor"></i> Vessel Information
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.vessel_name.id_for_label }}">Vessel Name</label>
+                                    {{ form.vessel_name }}
+                                    {% if form.vessel_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.vessel_name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.voyage_number.id_for_label }}">Voyage Number</label>
+                                    {{ form.voyage_number }}
+                                    {% if form.voyage_number.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.voyage_number.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.shipping_line.id_for_label }}">Shipping Line</label>
+                                    {{ form.shipping_line }}
+                                    {% if form.shipping_line.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.shipping_line.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cargo Information -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-box"></i> Cargo Information
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.cargo_description.id_for_label }}">Cargo Description</label>
+                                    {{ form.cargo_description }}
+                                    {% if form.cargo_description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.cargo_description.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.cargo_weight.id_for_label }}">Cargo Weight (kg)</label>
+                                    {{ form.cargo_weight }}
+                                    {% if form.cargo_weight.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.cargo_weight.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.cargo_volume.id_for_label }}">Cargo Volume (m³)</label>
+                                    {{ form.cargo_volume }}
+                                    {% if form.cargo_volume.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.cargo_volume.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status and Tracking -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-map-marker-alt"></i> Status and Tracking
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.current_status.id_for_label }}">Current Status</label>
+                                    {{ form.current_status }}
+                                    {% if form.current_status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.current_status.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.current_location.id_for_label }}">Current Location</label>
+                                    {{ form.current_location }}
+                                    {% if form.current_location.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.current_location.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ form.is_tracking_enabled.id_for_label }}">Tracking Enabled</label>
+                                    <div class="custom-control custom-switch">
+                                        {{ form.is_tracking_enabled }}
+                                        <label class="custom-control-label" for="{{ form.is_tracking_enabled.id_for_label }}">
+                                            Enable GPS tracking
+                                        </label>
+                                    </div>
+                                    {% if form.is_tracking_enabled.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.is_tracking_enabled.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-sticky-note"></i> Notes
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.internal_notes.id_for_label }}">Internal Notes</label>
+                                    {{ form.internal_notes }}
+                                    {% if form.internal_notes.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.internal_notes.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.customer_notes.id_for_label }}">Customer Notes</label>
+                                    {{ form.customer_notes }}
+                                    {% if form.customer_notes.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.customer_notes.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <hr>
+                                <div class="text-right">
+                                    <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> {{ button_text|default:"Save Shipment" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'shipment_tracking/js/dashboard.js' %}"></script>
+<script>
+    // Auto-populate customer name when customer is selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const customerSelect = document.getElementById('{{ form.customer.id_for_label }}');
+        const customerNameField = document.getElementById('{{ form.customer_name.id_for_label }}');
+        
+        if (customerSelect && customerNameField) {
+            customerSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.text) {
+                    customerNameField.value = selectedOption.text.split(' - ')[1] || selectedOption.text;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

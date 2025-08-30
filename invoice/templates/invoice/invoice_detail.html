@@ -1,0 +1,476 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+{% load invoice_extras %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/invoice/invoice.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <h1 class="h3 mb-0 me-3">
+                            <i class="bi bi-receipt me-2"></i>Invoice {{ invoice.invoice_number }}
+                        </h1>
+                        <span class="text-muted small">
+                            Date: {{ invoice.invoice_date|date:"M d, Y" }}
+                        </span>
+                    </div>
+                    <p class="text-muted mb-0">{{ invoice.customer.customer_name }}</p>
+                </div>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'invoice:invoice_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to List
+                    </a>
+                    <a href="{% url 'invoice:invoice_edit' invoice.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>Edit
+                    </a>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-printer me-2"></i>Print
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'invoice:invoice_print' invoice.pk %}" target="_blank">
+                                <i class="bi bi-file-text me-2"></i>Invoice
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'invoice:invoice_cost_sale_print' invoice.pk %}" target="_blank">
+                                <i class="bi bi-calculator me-2"></i>Cost & Sale
+                            </a></li>
+                        </ul>
+                    </div>
+                    <a href="{% url 'invoice:invoice_delete' invoice.pk %}" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </a>
+                </div>
+            </div>
+
+            <!-- Basic Information -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="border-bottom pb-2 mb-0">
+                                <i class="bi bi-info-circle me-2"></i>Basic Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Left Column -->
+                                <div class="col-md-6">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Invoice No</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.invoice_number }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Customer Name</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.customer.customer_name }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Bill To</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.bill_to|default:"-" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-start">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Bill to Address</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.bill_to_address|default:"-"|linebreaks }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-start">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Job No (Multiple)</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    {% if invoice.jobs.all %}
+                                                        {% for job in invoice.jobs.all %}
+                                                            <span class="badge bg-primary me-1">{{ job.job_code }}</span>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <p class="mb-0 text-muted">-</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Shipper</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.shipper|default:"-" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Consignee</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.consignee|default:"-" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Right Column -->
+                                <div class="col-md-6">
+                                    <div class="row g-3">
+                                        <!-- Date, Origin, Destination on same line -->
+                                        <div class="col-12">
+                                            <div class="row">
+                                                <div class="col-4">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-4">
+                                                            <label class="form-label fw-bold mb-0">Origin</label>
+                                                        </div>
+                                                        <div class="col-8">
+                                                            <p class="mb-0">{{ invoice.origin|default:"-" }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-4">
+                                                            <label class="form-label fw-bold mb-0">Destination</label>
+                                                        </div>
+                                                        <div class="col-8">
+                                                            <p class="mb-0">{{ invoice.destination|default:"-" }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">BL</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.bl_number|default:"-" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">ED</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.ed_number|default:"-" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">CNTR</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.container_number|default:"-" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-start">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Items</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    {% if invoice.jobs.all %}
+                                                        {% for job in invoice.jobs.all %}
+                                                            {% if job.cargo_items.all %}
+                                                                {% for cargo in job.cargo_items.all %}
+                                                                    <span class="badge bg-info me-1 mb-1">
+                                                                        {% if cargo.item and cargo.item.item_name %}
+                                                                            {{ cargo.item.item_name }}
+                                                                        {% elif cargo.item_code %}
+                                                                            {{ cargo.item_code }}
+                                                                        {% else %}
+                                                                            Unknown Item
+                                                                        {% endif %}
+                                                                        {% if cargo.quantity %}
+                                                                            ({{ cargo.quantity }})
+                                                                        {% endif %}
+                                                                    </span>
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        {% if not invoice.jobs.all|length %}
+                                                            <span class="badge bg-secondary me-1">No items</span>
+                                                        {% endif %}
+                                                    {% elif invoice.items_count %}
+                                                        <p class="mb-0">{{ invoice.items_count }} items</p>
+                                                    {% else %}
+                                                        <p class="mb-0 text-muted">-</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Total Qty</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.total_qty|default:"0" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Delivery Order</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.delivery_order.do_number|default:"-" }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-center">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Status</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' %}danger{% elif invoice.status == 'sent' %}warning{% else %}secondary{% endif %}">
+                                                        {{ invoice.get_status_display }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="row align-items-start">
+                                                <div class="col-4">
+                                                    <label class="form-label fw-bold mb-0">Remark</label>
+                                                </div>
+                                                <div class="col-8">
+                                                    <p class="mb-0">{{ invoice.notes|default:"-"|linebreaks }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Items Table -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="border-bottom pb-2 mb-0">
+                                <i class="bi bi-list-ul me-2"></i>Invoice Items
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if invoice.invoice_items %}
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="5%">Sr No</th>
+                                                <th width="15%">Description</th>
+                                                <th colspan="6" class="text-center">Cost</th>
+                                                <th colspan="5" class="text-center">Sale</th>
+                                                <th width="10%">Remark</th>
+                                            </tr>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                                <th width="8%">Qty</th>
+                                                <th width="8%">Rate</th>
+                                                <th width="8%">Amount</th>
+                                                <th width="8%">VAT</th>
+                                                <th width="8%">T-Amount</th>
+                                                <th width="8%">Vendor</th>
+                                                <th width="8%">Qty</th>
+                                                <th width="8%">Rate</th>
+                                                <th width="8%">Amount</th>
+                                                <th width="8%">VAT</th>
+                                                <th width="8%">T-Amount</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in invoice.invoice_items %}
+                                                <tr>
+                                                    <td>{{ forloop.counter }}</td>
+                                                    <td>{{ item.description|service_name_only }}</td>
+                                                    <td>{{ item.cost_qty|default:"0" }}</td>
+                                                    <td>{{ item.cost_rate|default:"0.00" }}</td>
+                                                    <td>{{ item.cost_amount|default:"0.00" }}</td>
+                                                    <td>{{ item.cost_vat|default:"0.00" }}</td>
+                                                    <td>{{ item.cost_total|default:"0.00" }}</td>
+                                                    <td>{{ item.vendor|default:"-" }}</td>
+                                                    <td>{{ item.sale_qty|default:"0" }}</td>
+                                                    <td>{{ item.sale_rate|default:"0.00" }}</td>
+                                                    <td>{{ item.sale_amount|default:"0.00" }}</td>
+                                                    <td>{{ item.sale_vat|default:"0.00" }}</td>
+                                                    <td>{{ item.sale_total|default:"0.00" }}</td>
+                                                    <td>{{ item.remark|default:"-" }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Totals -->
+                                <div class="d-flex justify-content-end gap-3 mt-3">
+                                    <div class="text-end">
+                                        <strong>Total Cost: AED {{ invoice.total_cost|default:"0.00" }}</strong>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>Total Sale: AED {{ invoice.total_sale|default:"0.00" }}</strong>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>Profit: AED {{ invoice.total_profit|default:"0.00" }}</strong>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <p class="text-muted mb-0">No invoice items found.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment History Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="border-bottom pb-2 mb-0">
+                                <i class="bi bi-credit-card me-2"></i>Payment History
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if payment_history %}
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Payment ID</th>
+                                                <th>Payment Date</th>
+                                                <th>Amount Received</th>
+                                                <th>Discount Applied</th>
+                                                <th>Payment Method</th>
+                                                <th>Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for payment_invoice in payment_history %}
+                                            <tr>
+                                                <td>
+                                                    <a href="{% url 'customer_payments:payment_detail' payment_invoice.payment.pk %}" class="text-decoration-none">
+                                                        <strong>{{ payment_invoice.payment.formatted_payment_id }}</strong>
+                                                    </a>
+                                                </td>
+                                                <td>{{ payment_invoice.payment.payment_date }}</td>
+                                                <td><span class="text-success fw-bold">AED {{ payment_invoice.amount_received }}</span></td>
+                                                <td>
+                                                    {% if payment_invoice.discount_amount > 0 %}
+                                                        <span class="text-danger">AED {{ payment_invoice.discount_amount }}</span>
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">{{ payment_invoice.payment.get_payment_method_display }}</span>
+                                                </td>
+                                                <td>
+                                                    <small>{{ payment_invoice.payment.notes|default:"-" }}</small>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Payment Summary -->
+                                <div class="row mt-3">
+                                    <div class="col-md-6 offset-md-6">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Invoice Total:</span>
+                                                    <span class="fw-bold">AED {{ invoice.total_sale }}</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Total Paid:</span>
+                                                    <span class="text-success fw-bold">AED {{ total_paid }}</span>
+                                                </div>
+                                                {% if total_discount > 0 %}
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span>Total Discount:</span>
+                                                    <span class="text-danger fw-bold">AED {{ total_discount }}</span>
+                                                </div>
+                                                {% endif %}
+                                                <hr>
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="fw-bold">Remaining Balance:</span>
+                                                    {% if remaining_balance > 0 %}
+                                                        <span class="text-warning fw-bold">AED {{ remaining_balance }}</span>
+                                                    {% else %}
+                                                        <span class="text-success fw-bold">AED 0.00</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-credit-card-2-front text-muted" style="font-size: 3rem;"></i>
+                                    <p class="text-muted mb-0 mt-2">No payments received for this invoice yet.</p>
+                                    <p class="text-muted">Outstanding Amount: <strong>AED {{ invoice.total_sale }}</strong></p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- No JavaScript needed for detail page -->
+{% endblock %}

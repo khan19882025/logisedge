@@ -1,0 +1,191 @@
+{% extends 'asset_movement_log/base.html' %}
+{% load static %}
+
+{% block title %}Quick Movement{% endblock %}
+
+{% block asset_movement_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-bolt"></i>
+                Quick Movement
+            </h1>
+            <a href="{% url 'asset_movement_log:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-edit"></i>
+                    Quick Movement Form
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="quick-movement-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.asset.id_for_label }}">{{ form.asset.label }}</label>
+                                {{ form.asset }}
+                                {% if form.asset.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.asset.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.movement_type.id_for_label }}">{{ form.movement_type.label }}</label>
+                                {{ form.movement_type }}
+                                {% if form.movement_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.movement_type.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.to_location.id_for_label }}">{{ form.to_location.label }}</label>
+                                {{ form.to_location }}
+                                {% if form.to_location.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.to_location.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.to_user.id_for_label }}">{{ form.to_user.label }}</label>
+                                {{ form.to_user }}
+                                {% if form.to_user.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.to_user.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.notes.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Create Movement
+                        </button>
+                        <a href="{% url 'asset_movement_log:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Quick Movement Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Use this form to quickly create asset movements with minimal required information.
+                </p>
+                
+                <h6>Quick Movement Benefits:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Fast data entry</li>
+                    <li><i class="fas fa-check text-success"></i> Minimal required fields</li>
+                    <li><i class="fas fa-check text-success"></i> Instant movement creation</li>
+                    <li><i class="fas fa-check text-success"></i> Automatic timestamps</li>
+                </ul>
+
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb"></i> Tips:</h6>
+                    <ul class="mb-0">
+                        <li>Select the asset you want to move</li>
+                        <li>Choose the movement type</li>
+                        <li>Specify the destination location</li>
+                        <li>Add any relevant notes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Asset selection change handler
+    $('#id_asset').on('change', function() {
+        var assetId = $(this).val();
+        if (assetId) {
+            // Fetch asset details via AJAX
+            $.ajax({
+                url: '{% url "asset_movement_log:api_movements" %}',
+                data: { asset_id: assetId },
+                success: function(data) {
+                    if (data.success) {
+                        // Auto-fill location if available
+                        if (data.current_location) {
+                            $('#id_to_location').val(data.current_location);
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    // Movement type change handler
+    $('#id_movement_type').on('change', function() {
+        var movementType = $(this).val();
+        
+        // Show/hide relevant fields based on movement type
+        if (movementType === 'assignment') {
+            $('.to-user-field').show();
+        } else if (movementType === 'return') {
+            $('.to-user-field').hide();
+        } else {
+            $('.to-user-field').show();
+        }
+    });
+});
+</script>
+{% endblock %}

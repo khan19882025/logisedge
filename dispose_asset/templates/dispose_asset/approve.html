@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Approve Disposal Request - Dispose Asset{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dispose_asset/css/dispose_asset.css' %}">
+<style>
+    .approval-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .request-summary {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .request-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+    }
+    
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-pending {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    
+    .summary-item {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .summary-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    
+    .summary-value {
+        font-weight: 600;
+        color: #495057;
+        font-size: 1.1rem;
+    }
+    
+    .approval-form {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 25px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        outline: none;
+    }
+    
+    .form-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        padding-right: 2.5rem;
+    }
+    
+    .btn {
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        color: white;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40,167,69,0.3);
+        color: white;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(220,53,69,0.3);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        border: none;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+        color: #0c5460;
+    }
+    
+    .alert-warning {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+    }
+    
+    .asset-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .asset-table th {
+        background: #f8f9fa;
+        border: none;
+        padding: 15px;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .asset-table td {
+        padding: 15px;
+        border-top: 1px solid #dee2e6;
+        vertical-align: middle;
+    }
+    
+    .asset-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .approval-level-info {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .level-progress {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .progress-bar {
+        flex: 1;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+    }
+    
+    .level-text {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .approval-history {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .history-item:last-child {
+        border-bottom: none;
+    }
+    
+    .history-user {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .history-action {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .action-approve {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .action-reject {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .history-date {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-check-circle text-primary me-2"></i>
+                    Approve Disposal Request
+                </h2>
+                <a href="{% url 'dispose_asset:disposal_detail' disposal_request.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Details
+                </a>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="approval-container">
+                <!-- Request Summary -->
+                <div class="request-summary">
+                    <div class="summary-header">
+                        <h3 class="request-title">{{ disposal_request.title }}</h3>
+                        <span class="status-badge status-{{ disposal_request.status }}">
+                            {{ disposal_request.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-label">Request ID</div>
+                            <div class="summary-value">#{{ disposal_request.id }}</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Disposal Type</div>
+                            <div class="summary-value">{{ disposal_request.disposal_type.name }}</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Total Value</div>
+                            <div class="summary-value">${{ disposal_request.disposal_value|default:"0.00" }}</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Assets Count</div>
+                            <div class="summary-value">{{ disposal_request.disposal_items.count }}</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Created By</div>
+                            <div class="summary-value">{{ disposal_request.created_by.get_full_name }}</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Submitted Date</div>
+                            <div class="summary-value">{{ disposal_request.submitted_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Approval Level Information -->
+                <div class="approval-level-info">
+                    <h5 class="mb-3">
+                        <i class="fas fa-layer-group me-2"></i>Approval Level Progress
+                    </h5>
+                    <div class="level-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" data-percentage="{{ approval_percentage|default:0 }}"></div>
+                        </div>
+                        <span class="level-text">{{ disposal_request.current_approval_level }} / {{ disposal_request.required_approval_levels }}</span>
+                    </div>
+                    <p class="mb-0 text-muted">
+                        Current level: {{ disposal_request.current_approval_level }} of {{ disposal_request.required_approval_levels }} required approvals
+                    </p>
+                </div>
+                
+                <!-- Assets to be Disposed -->
+                <div class="mb-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cubes me-2"></i>Assets to be Disposed
+                    </h5>
+                    <div class="asset-table">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Asset Code</th>
+                                    <th>Asset Name</th>
+                                    <th>Category</th>
+                                    <th>Book Value</th>
+                                    <th>Disposal Value</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in disposal_request.disposal_items.all %}
+                                <tr>
+                                    <td>{{ item.asset.asset_code }}</td>
+                                    <td>{{ item.asset.asset_name }}</td>
+                                    <td>{{ item.asset.category.name }}</td>
+                                    <td>${{ item.asset.book_value }}</td>
+                                    <td>${{ item.disposal_value|default:"0.00" }}</td>
+                                    <td>{{ item.reason|default:"-" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Approval History -->
+                {% if disposal_request.approvals.exists %}
+                <div class="approval-history mb-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-history me-2"></i>Approval History
+                    </h5>
+                    {% for approval in disposal_request.approvals.all %}
+                    <div class="history-item">
+                        <div>
+                            <span class="history-user">{{ approval.approver.get_full_name }}</span>
+                            <span class="history-action action-{{ approval.action }}">
+                                {{ approval.get_action_display|upper }}
+                            </span>
+                        </div>
+                        <span class="history-date">{{ approval.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Approval Form -->
+                <div class="approval-form">
+                    <h5 class="mb-3">
+                        <i class="fas fa-edit me-2"></i>Your Decision
+                    </h5>
+                    
+                    <form method="post" id="approval-form">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="{{ form.action.id_for_label }}" class="form-label required-field">Action</label>
+                            {{ form.action }}
+                            {% if form.action.errors %}
+                                <div class="text-danger mt-1">{{ form.action.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Choose whether to approve, reject, or return this request for revision</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.comments.id_for_label }}" class="form-label">Comments</label>
+                            {{ form.comments }}
+                            {% if form.comments.errors %}
+                                <div class="text-danger mt-1">{{ form.comments.errors.0 }}</div>
+                            {% endif %}
+                            <div class="help-text">Provide any comments or feedback about your decision (optional)</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Important:</strong> Your decision will be recorded and cannot be changed once submitted.
+                            {% if disposal_request.current_approval_level < disposal_request.required_approval_levels %}
+                                If approved, this request will proceed to the next approval level.
+                            {% else %}
+                                If approved, this request will be ready for execution.
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dispose_asset:disposal_detail' disposal_request.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <div class="btn-group">
+                                <button type="submit" name="action" value="reject" class="btn btn-danger">
+                                    <i class="fas fa-times me-2"></i>Reject
+                                </button>
+                                <button type="submit" name="action" value="approve" class="btn btn-success">
+                                    <i class="fas fa-check me-2"></i>Approve
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dispose_asset/js/dispose_asset.js' %}"></script>
+<script>
+    // Set progress bar width
+    document.addEventListener('DOMContentLoaded', function() {
+        const progressFill = document.querySelector('.progress-fill');
+        if (progressFill) {
+            const percentage = progressFill.getAttribute('data-percentage') || 0;
+            progressFill.style.width = percentage + '%';
+        }
+    });
+    
+    // Form validation
+    document.getElementById('approval-form').addEventListener('submit', function(e) {
+        const actionField = document.getElementById('{{ form.action.id_for_label }}');
+        const commentsField = document.getElementById('{{ form.comments.id_for_label }}');
+        
+        // Clear previous errors
+        actionField.classList.remove('is-invalid');
+        commentsField.classList.remove('is-invalid');
+        
+        let hasErrors = false;
+        
+        // Validate action
+        if (!actionField.value) {
+            actionField.classList.add('is-invalid');
+            hasErrors = true;
+        }
+        
+        // Validate comments for rejections
+        if (actionField.value === 'reject' && !commentsField.value.trim()) {
+            commentsField.classList.add('is-invalid');
+            hasErrors = true;
+            alert('Please provide comments when rejecting a request.');
+        }
+        
+        if (hasErrors) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Confirm action
+        const action = actionField.value;
+        const confirmMessage = action === 'approve' 
+            ? 'Are you sure you want to approve this disposal request?' 
+            : 'Are you sure you want to reject this disposal request?';
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Dynamic form behavior
+    document.getElementById('{{ form.action.id_for_label }}').addEventListener('change', function() {
+        const commentsField = document.getElementById('{{ form.comments.id_for_label }}');
+        const action = this.value;
+        
+        if (action === 'reject') {
+            commentsField.setAttribute('required', 'required');
+            commentsField.placeholder = 'Please provide a reason for rejection...';
+        } else {
+            commentsField.removeAttribute('required');
+            commentsField.placeholder = 'Enter your comments...';
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,314 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Data Quality Reports - Data Cleaning Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-chart-bar me-2"></i>Data Quality Reports
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'data_cleaning_tool:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Reports</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Reports Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Reports
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ reports.count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                High Quality Data
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if reports %}
+                                    {% with high_quality=reports|slice:":5" %}
+                                        {% for report in high_quality %}
+                                            {% if report.overall_score >= 90 %}
+                                                {{ forloop.counter }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Needs Attention
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if reports %}
+                                    {% with needs_attention=reports|slice:":5" %}
+                                        {% for report in needs_attention %}
+                                            {% if report.overall_score < 70 %}
+                                                {{ forloop.counter }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                This Month
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {% if reports %}
+                                    {% with this_month=reports|slice:":5" %}
+                                        {% for report in this_month %}
+                                            {% if report.generated_at|date:"Y-m" == "now"|date:"Y-m" %}
+                                                {{ forloop.counter }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-list me-2"></i>Quality Reports
+                </h6>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportReports()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="generateNewReport()">
+                        <i class="fas fa-plus me-1"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if reports %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="reportsTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Report ID</th>
+                                <th>Session</th>
+                                <th>Generated At</th>
+                                <th>Overall Score</th>
+                                <th>Data Quality</th>
+                                <th>Completeness</th>
+                                <th>Accuracy</th>
+                                <th>Consistency</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary">#{{ report.id }}</span>
+                                </td>
+                                <td>
+                                    {% if report.session %}
+                                        <a href="{% url 'data_cleaning_tool:session_detail' pk=report.session.pk %}" class="text-decoration-none">
+                                            {{ report.session.name|truncatechars:30 }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ report.generated_at|date:"M d, Y H:i" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if report.overall_score >= 90 %}
+                                        <span class="badge bg-success">{{ report.overall_score }}%</span>
+                                    {% elif report.overall_score >= 70 %}
+                                        <span class="badge bg-warning text-dark">{{ report.overall_score }}%</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ report.overall_score }}%</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if report.data_quality_score >= 90 %}bg-success{% elif report.data_quality_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ report.data_quality_score }}%"
+                                             aria-valuenow="{{ report.data_quality_score }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ report.data_quality_score }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if report.completeness_score >= 90 %}bg-success{% elif report.completeness_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ report.completeness_score }}%"
+                                             aria-valuenow="{{ report.completeness_score }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ report.completeness_score }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if report.accuracy_score >= 90 %}bg-success{% elif report.accuracy_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ report.accuracy_score }}%"
+                                             aria-valuenow="{{ report.accuracy_score }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ report.accuracy_score }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if report.consistency_score >= 90 %}bg-success{% elif report.consistency_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ report.consistency_score }}%"
+                                             aria-valuenow="{{ report.consistency_score }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ report.consistency_score }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'data_cleaning_tool:report_detail' pk=report.pk %}" 
+                                           class="btn btn-primary btn-sm" 
+                                           title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-primary btn-sm" 
+                                                onclick="downloadReport({{ report.id }})"
+                                                title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-success btn-sm" 
+                                                onclick="shareReport({{ report.id }})"
+                                                title="Share">
+                                            <i class="fas fa-share"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No reports generated yet</h5>
+                    <p class="text-muted">Start by running a data cleaning session to generate quality reports.</p>
+                    <a href="{% url 'data_cleaning_tool:session_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Create Session
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReports() {
+    // Export functionality would go here
+    showAlert('Export functionality coming soon!', 'info');
+}
+
+function generateNewReport() {
+    // Generate new report functionality would go here
+    showAlert('Report generation functionality coming soon!', 'info');
+}
+
+function downloadReport(reportId) {
+    // Download functionality would go here
+    showAlert('Download functionality coming soon!', 'info');
+}
+
+function shareReport(reportId) {
+    // Share functionality would go here
+    showAlert('Share functionality coming soon!', 'info');
+}
+
+// Initialize DataTable if available
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('#reportsTable').DataTable({
+            order: [[2, 'desc']], // Sort by generated_at descending
+            pageLength: 25,
+            responsive: true
+        });
+    }
+});
+</script>
+{% endblock %}

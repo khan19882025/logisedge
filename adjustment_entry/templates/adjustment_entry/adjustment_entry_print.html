@@ -1,0 +1,440 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Adjustment Entry {{ adjustment_entry.voucher_number }} - Print{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        body { margin: 0; padding: 20px; }
+        .no-print { display: none !important; }
+        .print-header { display: block !important; }
+        .page-break { page-break-before: always; }
+    }
+    
+    .print-header {
+        display: none;
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #333;
+        padding-bottom: 20px;
+    }
+    
+    .print-header h1 {
+        color: #333;
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .print-header .company-info {
+        margin-top: 10px;
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .adjustment-entry-print {
+        max-width: 800px;
+        margin: 0 auto;
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+    }
+    
+    .entry-header {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .entry-header h2 {
+        color: #333;
+        margin: 0 0 15px 0;
+        font-size: 20px;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        color: #495057;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        color: #333;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-draft { background-color: #ffc107; color: #212529; }
+    .status-posted { background-color: #28a745; color: white; }
+    .status-cancelled { background-color: #dc3545; color: white; }
+    
+    .adjustment-type-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        margin: 2px;
+    }
+    
+    .adjustment-type-prepaid_expense { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .adjustment-type-accrued_expense { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .adjustment-type-accrued_income { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    .adjustment-type-depreciation { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    .adjustment-type-reclassification { background-color: #e2d9f3; color: #5a2d82; border: 1px solid #d6c7e7; }
+    .adjustment-type-others { background-color: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
+    
+    .narration-box {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    
+    .narration-label {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+    
+    .narration-text {
+        color: #333;
+        line-height: 1.6;
+        font-size: 14px;
+    }
+    
+    .entries-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .entries-table th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .entries-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 14px;
+    }
+    
+    .entries-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .amount-debit { color: #dc3545; font-weight: 600; }
+    .amount-credit { color: #28a745; font-weight: 600; }
+    .amount-zero { color: #6c757d; font-style: italic; }
+    
+    .balance-summary {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .balance-summary h4 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 16px;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 10px;
+    }
+    
+    .balance-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    
+    .balance-item {
+        text-align: center;
+        padding: 15px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .balance-label {
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    
+    .balance-amount {
+        font-size: 18px;
+        font-weight: 700;
+        color: #495057;
+    }
+    
+    .balance-balanced { color: #28a745; }
+    
+    .footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+        text-align: center;
+        color: #6c757d;
+        font-size: 12px;
+    }
+    
+    .signature-section {
+        margin-top: 40px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 40px;
+    }
+    
+    .signature-box {
+        text-align: center;
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+    }
+    
+    .signature-line {
+        border-top: 1px solid #333;
+        margin-top: 50px;
+        padding-top: 10px;
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    @media print {
+        .adjustment-entry-print { max-width: none; }
+        .info-grid { grid-template-columns: repeat(2, 1fr); }
+        .balance-grid { grid-template-columns: repeat(3, 1fr); }
+        .signature-section { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="adjustment-entry-print">
+    <!-- Print Header -->
+    <div class="print-header">
+        <h1>LogisEdge ERP System</h1>
+        <div class="company-info">
+            Adjustment Journal Entry<br>
+            Generated on {{ adjustment_entry.created_at|date:"F d, Y at H:i" }}
+        </div>
+    </div>
+
+    <!-- Entry Header -->
+    <div class="entry-header">
+        <h2>Adjustment Journal Entry</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Voucher Number</div>
+                <div class="info-value">{{ adjustment_entry.voucher_number }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Date</div>
+                <div class="info-value">{{ adjustment_entry.date|date:"F d, Y" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Adjustment Type</div>
+                <div class="info-value">
+                    <span class="adjustment-type-badge adjustment-type-{{ adjustment_entry.adjustment_type }}">
+                        {{ adjustment_entry.get_adjustment_type_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    <span class="status-badge status-{{ adjustment_entry.status }}">
+                        {{ adjustment_entry.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Reference Number</div>
+                <div class="info-value">
+                    {% if adjustment_entry.reference_number %}
+                        {{ adjustment_entry.reference_number }}
+                    {% else %}
+                        <span style="color: #6c757d; font-style: italic;">Not specified</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Created By</div>
+                <div class="info-value">
+                    {{ adjustment_entry.created_by.get_full_name|default:adjustment_entry.created_by.username }}
+                    <br><small style="color: #6c757d;">{{ adjustment_entry.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+            {% if adjustment_entry.posted_at %}
+            <div class="info-item">
+                <div class="info-label">Posted By</div>
+                <div class="info-value">
+                    {{ adjustment_entry.posted_by.get_full_name|default:adjustment_entry.posted_by.username }}
+                    <br><small style="color: #6c757d;">{{ adjustment_entry.posted_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Narration -->
+    <div class="narration-box">
+        <div class="narration-label">Narration</div>
+        <div class="narration-text">{{ adjustment_entry.narration }}</div>
+    </div>
+
+    <!-- Balance Summary -->
+    <div class="balance-summary">
+        <h4>Summary</h4>
+        <div class="balance-grid">
+            <div class="balance-item">
+                <div class="balance-label">Total Debit</div>
+                <div class="balance-amount">AED {{ adjustment_entry.total_debit|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Total Credit</div>
+                <div class="balance-amount">AED {{ adjustment_entry.total_credit|floatformat:2 }}</div>
+            </div>
+            <div class="balance-item">
+                <div class="balance-label">Balance</div>
+                <div class="balance-amount {% if adjustment_entry.is_balanced %}balance-balanced{% endif %}">
+                    {% if adjustment_entry.is_balanced %}
+                        ✓ Balanced
+                    {% else %}
+                        ✗ Unbalanced
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry Details -->
+    <table class="entries-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 35%;">Account</th>
+                <th style="width: 15%;">Account Code</th>
+                <th style="width: 15%;">Debit Amount</th>
+                <th style="width: 15%;">Credit Amount</th>
+                <th style="width: 15%;">Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    <strong>{{ entry.account.name }}</strong>
+                    {% if entry.account.account_type %}
+                        <br><small style="color: #6c757d;">{{ entry.account.get_account_type_display }}</small>
+                    {% endif %}
+                </td>
+                <td>{{ entry.account.account_code }}</td>
+                <td class="amount-debit">
+                    {% if entry.debit %}
+                        AED {{ entry.debit|floatformat:2 }}
+                    {% else %}
+                        <span class="amount-zero">-</span>
+                    {% endif %}
+                </td>
+                <td class="amount-credit">
+                    {% if entry.credit %}
+                        AED {{ entry.credit|floatformat:2 }}
+                    {% else %}
+                        <span class="amount-zero">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if entry.entry_type == 'debit' %}
+                        <span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">DEBIT</span>
+                    {% else %}
+                        <span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">CREDIT</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line">Prepared By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">Approved By</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>This document was generated by LogisEdge ERP System</p>
+        <p>Page 1 of 1 | {{ adjustment_entry.voucher_number }} | {{ adjustment_entry.created_at|date:"Y-m-d H:i:s" }}</p>
+    </div>
+</div>
+
+<!-- Print Button (Hidden when printing) -->
+<div class="no-print" style="text-align: center; margin: 20px 0;">
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print"></i> Print Document
+    </button>
+    <a href="{% url 'adjustment_entry:adjustment_entry_detail' adjustment_entry.pk %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Details
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-print when page loads (optional)
+    // window.onload = function() { window.print(); }
+</script>
+{% endblock %} 

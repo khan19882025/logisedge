@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Duplicate Group Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'merge_duplicates/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-layer-group text-primary me-2"></i>
+                    Duplicate Group Details
+                </h1>
+                <p class="text-muted">Review and manage duplicate records in this group</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Group Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Group Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Entity Type:</dt>
+                                <dd class="col-sm-8">{{ duplicate_group.entity_type|title }}</dd>
+                                
+                                <dt class="col-sm-4">Confidence Score:</dt>
+                                <dd class="col-sm-8">
+                                    <div class="progress" style="height: 25px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ duplicate_group.confidence_score|floatformat:0 }}%"
+                                             aria-valuenow="{{ duplicate_group.confidence_score|floatformat:0 }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ duplicate_group.confidence_score|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    {% if duplicate_group.is_merged %}
+                                        <span class="badge badge-success">Merged</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">Pending Review</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">{{ duplicate_group.created_at|date:"M d, Y H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">Records Count:</dt>
+                                <dd class="col-sm-8">{{ records|length }}</dd>
+                                
+                                {% if duplicate_group.is_merged %}
+                                <dt class="col-sm-4">Merged At:</dt>
+                                <dd class="col-sm-8">{{ duplicate_group.merged_at|date:"M d, Y H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">Merged By:</dt>
+                                <dd class="col-sm-8">{{ duplicate_group.merged_by.get_full_name|default:duplicate_group.merged_by.username }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if not duplicate_group.is_merged %}
+                            <a href="{% url 'data_cleaning_tool:merge_duplicates_group_review' duplicate_group.pk %}" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Review & Merge
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'data_cleaning_tool:merge_duplicates_session_detail' duplicate_group.session.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Session
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Duplicate Records -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Duplicate Records</h6>
+                </div>
+                <div class="card-body">
+                    {% if records %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Record ID</th>
+                                        <th>Data Preview</th>
+                                        <th>Master Status</th>
+                                        <th>Overall Score</th>
+                                        <th>Completeness</th>
+                                        <th>Recency</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in records %}
+                                    <tr {% if record.is_master %}class="table-success"{% endif %}>
+                                        <td>
+                                            <strong>{{ record.record_id }}</strong>
+                                            {% if record.is_master %}
+                                                <span class="badge badge-success ms-2">Master</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="record-preview">
+                                                {% for key, value in record.record_data.items|slice:":3" %}
+                                                    <div class="small">
+                                                        <strong>{{ key }}:</strong> {{ value|truncatechars:30 }}
+                                                    </div>
+                                                {% endfor %}
+                                                {% if record.record_data.items|length > 3 %}
+                                                    <div class="small text-muted">... and {{ record.record_data.items|length|add:"-3" }} more fields</div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if record.is_master %}
+                                                <span class="badge badge-success">Master Record</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Duplicate</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ record.overall_score|floatformat:0 }}%"
+                                                     aria-valuenow="{{ record.overall_score|floatformat:0 }}" 
+                                                     aria-valuemin="0" aria-valuemax="100">
+                                                    {{ record.overall_score|floatformat:1 }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-info" role="progressbar" 
+                                                     style="width: {{ record.completeness_score|floatformat:0 }}%"
+                                                     aria-valuenow="{{ record.completeness_score|floatformat:0 }}" 
+                                                     aria-valuemin="0" aria-valuemax="100">
+                                                    {{ record.completeness_score|floatformat:1 }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-warning" role="progressbar" 
+                                                     style="width: {{ record.recency_score|floatformat:0 }}%"
+                                                     aria-valuenow="{{ record.recency_score|floatformat:0 }}" 
+                                                     aria-valuemin="0" aria-valuemax="100">
+                                                    {{ record.recency_score|floatformat:1 }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    onclick="viewRecordDetails({{ record.id }})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-muted">No records found in this group.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Merge Operation Details -->
+    {% if merge_operation %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Merge Operation Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-{{ merge_operation.status|yesno:'success,warning,info,danger,secondary' }}">
+                                        {{ merge_operation.get_status_display }}
+                                    </span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Master Record:</dt>
+                                <dd class="col-sm-8">{{ merge_operation.master_record.record_id }}</dd>
+                                
+                                <dt class="col-sm-4">Created By:</dt>
+                                <dd class="col-sm-8">{{ merge_operation.created_by.get_full_name|default:merge_operation.created_by.username }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">{{ merge_operation.created_at|date:"M d, Y H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">Started:</dt>
+                                <dd class="col-sm-8">
+                                    {% if merge_operation.started_at %}
+                                        {{ merge_operation.started_at|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">Not started</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Completed:</dt>
+                                <dd class="col-sm-8">
+                                    {% if merge_operation.completed_at %}
+                                        {{ merge_operation.completed_at|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">Not completed</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if merge_operation.merge_config.notes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <dt>Merge Notes:</dt>
+                            <dd>{{ merge_operation.merge_config.notes }}</dd>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Record Details Modal -->
+<div class="modal fade" id="recordDetailsModal" tabindex="-1" aria-labelledby="recordDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recordDetailsModalLabel">Record Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="recordDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'merge_duplicates/js/dashboard.js' %}"></script>
+<script>
+function viewRecordDetails(recordId) {
+    // This would typically make an AJAX call to get record details
+    // For now, we'll show a placeholder
+    document.getElementById('recordDetailsContent').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary mb-3"></i>
+            <p>Loading record details...</p>
+        </div>
+    `;
+    
+    // Show the modal
+    var modal = new bootstrap.Modal(document.getElementById('recordDetailsModal'));
+    modal.show();
+    
+    // In a real implementation, you would make an AJAX call here
+    // to fetch the record details and populate the modal content
+}
+</script>
+{% endblock %}

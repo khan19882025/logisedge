@@ -1,0 +1,545 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Chart of Accounts{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chart_of_accounts/chart_of_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-pencil-square text-primary"></i>
+                {{ title }}
+            </h1>
+            <p class="text-muted">
+                {% if form.instance.pk %}
+                    Edit account details and settings
+                {% else %}
+                    Create a new account in the chart of accounts
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'chart_of_accounts:account_list' %}" class="coa-btn coa-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Account Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="coa-form-card">
+                <form method="post" class="coa-form" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Hidden field for account ID in edit mode -->
+                    {% if form.instance.pk %}
+                        <input type="hidden" id="account-id" value="{{ form.instance.pk }}">
+                    {% endif %}
+                    
+                    <div class="row">
+                        <!-- Basic Information -->
+                        <div class="col-md-6">
+                            <h5 class="form-title">
+                                <i class="bi bi-info-circle"></i>
+                                Basic Information
+                            </h5>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.account_code.id_for_label }}" class="form-label">
+                                    Account Code <span class="text-danger">*</span>
+                                </label>
+                                
+                                <!-- Auto-generate checkbox -->
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="auto_generate_code" name="auto_generate_code" checked>
+                                    <label class="form-check-label" for="auto_generate_code">
+                                        Auto-generate account code based on account type
+                                    </label>
+                                </div>
+                                
+                                {{ form.account_code }}
+                                {% if form.account_code.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.account_code.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Account code will be auto-generated based on account type. You can also enter a custom code if needed.
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    Account Name <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    Description
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Account Classification -->
+                        <div class="col-md-6">
+                            <h5 class="form-title">
+                                <i class="bi bi-tags"></i>
+                                Account Classification
+                            </h5>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.account_type.id_for_label }}" class="form-label">
+                                    Account Type <span class="text-danger">*</span>
+                                </label>
+                                {{ form.account_type }}
+                                {% if form.account_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.account_type.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.account_nature.id_for_label }}" class="form-label">
+                                    Account Nature <span class="text-danger">*</span>
+                                </label>
+                                {{ form.account_nature }}
+                                {% if form.account_nature.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.account_nature.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Normal balance side for this account type
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                    Currency <span class="text-danger">*</span>
+                                </label>
+                                {{ form.currency }}
+                                {% if form.currency.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.currency.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="row">
+                        <!-- Hierarchical Structure -->
+                        <div class="col-md-6">
+                            <h5 class="form-title">
+                                <i class="bi bi-diagram-2"></i>
+                                Hierarchical Structure
+                            </h5>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ form.is_group }}
+                                    <label class="form-check-label" for="{{ form.is_group.id_for_label }}">
+                                        This is a Group Account (Parent)
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    Check if this account can have sub-accounts
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" id="parent-account-field">
+                                <label for="parent-account-code" class="form-label">
+                                    Parent Account Code (Account Type)
+                                </label>
+                                <input type="text" class="form-control" id="parent-account-code" 
+                                       name="parent_account_code" 
+                                       value="{% if form.instance.parent_account %}{{ form.instance.parent_account.account_code }}{% endif %}"
+                                       placeholder="Search and select account type as parent">
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Select an Account Type as the parent to create better chart structure. 
+                                    Only main account type categories are shown for better organization.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Financial Settings -->
+                        <div class="col-md-6">
+                            <h5 class="form-title">
+                                <i class="bi bi-cash-coin"></i>
+                                Financial Settings
+                            </h5>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.opening_balance.id_for_label }}" class="form-label">
+                                    Opening Balance
+                                </label>
+                                {{ form.opening_balance }}
+                                {% if form.opening_balance.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.opening_balance.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Initial balance for this account
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        Account is Active
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    Inactive accounts cannot be used in transactions
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+                        <div>
+                            <a href="{% url 'chart_of_accounts:account_list' %}" class="coa-btn coa-btn-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                Cancel
+                            </a>
+                        </div>
+                        <div class="d-flex gap-2">
+                            {% if form.instance.pk %}
+                                <a href="{% url 'chart_of_accounts:account_detail' form.instance.pk %}" class="coa-btn coa-btn-secondary">
+                                    <i class="bi bi-eye"></i>
+                                    View Details
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="coa-btn coa-btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if form.instance.pk %}Update Account{% else %}Create Account{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-question-circle"></i>
+                        Help & Guidelines
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Account Code Guidelines:</h6>
+                    <ul class="list-unstyled small">
+                        <li><i class="bi bi-check text-success"></i> Use only numbers (0-9)</li>
+                        <li><i class="bi bi-check text-success"></i> Must be unique within your company</li>
+                        <li><i class="bi bi-check text-success"></i> Recommended: 4-digit codes (1000, 1100, etc.)</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Account Types:</h6>
+                    <ul class="list-unstyled small">
+                        <li><strong>Assets:</strong> What you own (Debit balance)</li>
+                        <li><strong>Liabilities:</strong> What you owe (Credit balance)</li>
+                        <li><strong>Equity:</strong> Owner's investment (Credit balance)</li>
+                        <li><strong>Revenue:</strong> Income earned (Credit balance)</li>
+                        <li><strong>Expenses:</strong> Costs incurred (Debit balance)</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Hierarchy Tips:</h6>
+                    <ul class="list-unstyled small">
+                        <li><i class="bi bi-info-circle text-info"></i> Group accounts can have sub-accounts</li>
+                        <li><i class="bi bi-info-circle text-info"></i> Detail accounts are end accounts</li>
+                        <li><i class="bi bi-info-circle text-info"></i> Parent accounts automatically become groups</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'chart_of_accounts:account_type_list' %}" class="coa-btn coa-btn-secondary">
+                            <i class="bi bi-tags"></i>
+                            Manage Account Types
+                        </a>
+                        <a href="{% url 'chart_of_accounts:account_hierarchy' %}" class="coa-btn coa-btn-secondary">
+                            <i class="bi bi-diagram-2"></i>
+                            View Hierarchy
+                        </a>
+                        <a href="{% url 'chart_of_accounts:bulk_import' %}" class="coa-btn coa-btn-warning">
+                            <i class="bi bi-upload"></i>
+                            Bulk Import
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parent Account Selection Modal -->
+<div class="modal fade" id="parentAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-tags"></i> Select Account Type as Parent
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Account Type Selection:</strong> Choose from main account type categories to create a better structured chart of accounts.
+                </div>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="parentSearch" placeholder="Search account types (Assets, Liabilities, etc.)...">
+                    <button class="btn btn-outline-secondary" type="button" id="searchParentBtn">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                <div id="parentAccountList" class="list-group">
+                    <!-- Account types will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart_of_accounts/chart_of_accounts.js' %}"></script>
+
+<!-- Account type categories data -->
+<script type="application/json" id="account-type-categories">
+{{ account_type_categories|safe }}
+</script>
+
+<script>
+// Parse account type categories from the JSON script tag
+const accountTypeCategories = JSON.parse(document.getElementById('account-type-categories').textContent);
+
+// Additional form-specific JavaScript
+$(document).ready(function() {
+    const accountTypeSelect = $('#{{ form.account_type.id_for_label }}');
+    const accountCodeInput = $('#{{ form.account_code.id_for_label }}');
+    const autoGenerateCheckbox = $('#auto_generate_code');
+    const accountNatureSelect = $('#{{ form.account_nature.id_for_label }}');
+    
+    // Function to generate account code
+    function generateAccountCode() {
+        const accountTypeId = accountTypeSelect.val();
+        const isAutoGenerate = autoGenerateCheckbox.is(':checked');
+        
+        if (accountTypeId && isAutoGenerate) {
+            $.ajax({
+                url: '{% url "chart_of_accounts:ajax_generate_account_code" %}',
+                method: 'POST',
+                data: {
+                    account_type_id: accountTypeId,
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        accountCodeInput.val(response.account_code);
+                    } else {
+                        console.error('Error generating account code:', response.error);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', error);
+                }
+            });
+        }
+    }
+    
+    // Function to auto-set account nature based on account type
+    function autoSetAccountNature() {
+        const accountTypeId = accountTypeSelect.val();
+        const category = accountTypeCategories[accountTypeId];
+        
+        // Only auto-set if account nature is empty or set to auto-determine
+        if (accountNatureSelect.val() === '' && category) {
+            let defaultNature = '';
+            
+            switch(category) {
+                case 'ASSET':
+                case 'EXPENSE':
+                    defaultNature = 'DEBIT';
+                    break;
+                case 'LIABILITY':
+                case 'EQUITY':
+                case 'REVENUE':
+                    defaultNature = 'CREDIT';
+                    break;
+                default:
+                    defaultNature = 'BOTH';
+            }
+            
+            accountNatureSelect.val(defaultNature);
+        }
+    }
+    
+    // Handle account type change
+    accountTypeSelect.on('change', function() {
+        if (autoGenerateCheckbox.is(':checked')) {
+            generateAccountCode();
+        }
+        autoSetAccountNature();
+    });
+    
+    // Handle auto-generate checkbox change
+    autoGenerateCheckbox.on('change', function() {
+        if (this.checked) {
+            accountCodeInput.prop('readonly', true);
+            if (accountTypeSelect.val()) {
+                generateAccountCode();
+            }
+        } else {
+            accountCodeInput.prop('readonly', false);
+            accountCodeInput.val(''); // Clear the field when auto-generation is disabled
+        }
+    });
+    
+    // Initialize on page load
+    if (autoGenerateCheckbox.is(':checked')) {
+        accountCodeInput.prop('readonly', true);
+        if (accountTypeSelect.val()) {
+            generateAccountCode();
+        }
+    } else {
+        accountCodeInput.prop('readonly', false);
+    }
+    
+    // Auto-set account nature on page load if empty
+    if (accountTypeSelect.val() && accountNatureSelect.val() === '') {
+        autoSetAccountNature();
+    }
+    
+    // Show/hide parent account field based on is_group checkbox
+    $('#{{ form.is_group.id_for_label }}').on('change', function() {
+        const isGroup = $(this).is(':checked');
+        if (isGroup) {
+            $('#parent-account-field').hide();
+            $('#parent-account-code').val('');
+        } else {
+            $('#parent-account-field').show();
+        }
+    });
+    
+    // Trigger on page load
+    $('#{{ form.is_group.id_for_label }}').trigger('change');
+    
+    // Parent account code button
+    $('#parent-account-code').after(`
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="selectParentBtn">
+            <i class="bi bi-search"></i> Select Account Type
+        </button>
+    `);
+    
+    // Open parent selection modal
+    $('#selectParentBtn').on('click', function() {
+        $('#parentAccountModal').modal('show');
+        loadParentAccounts();
+    });
+    
+    // Search parent accounts
+    $('#searchParentBtn').on('click', function() {
+        loadParentAccounts();
+    });
+    
+    // Parent account search on enter
+    $('#parentSearch').on('keypress', function(e) {
+        if (e.which === 13) {
+            loadParentAccounts();
+        }
+    });
+});
+
+function loadParentAccounts() {
+    const searchTerm = $('#parentSearch').val();
+    
+    // Show loading state
+    $('#parentAccountList').html('<div class="text-center text-muted py-3"><i class="bi bi-hourglass-split"></i> Loading account types...</div>');
+    
+    $.ajax({
+        url: '{% url "chart_of_accounts:ajax_parent_accounts" %}',
+        method: 'GET',
+        data: { q: searchTerm },
+        success: function(response) {
+            const list = $('#parentAccountList');
+            list.empty();
+            
+            if (response.results.length === 0) {
+                list.append('<div class="text-center text-muted py-3"><i class="bi bi-exclamation-circle"></i> No account types found. Try a different search term.</div>');
+            } else {
+                response.results.forEach(function(item) {
+                    const textParts = item.text.split(' - ');
+                    const categoryText = textParts.length > 1 ? textParts[1] : '';
+                    list.append(`
+                        <button type="button" class="list-group-item list-group-item-action parent-account-item" 
+                                data-code="${item.id}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${item.id}</strong><br>
+                                    <small class="text-muted">${categoryText}</small>
+                                </div>
+                                <i class="bi bi-chevron-right"></i>
+                            </div>
+                        </button>
+                    `);
+                });
+            }
+        },
+        error: function() {
+            $('#parentAccountList').html('<div class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle"></i> Failed to load account types. Please try again.</div>');
+        }
+    });
+}
+
+// Select parent account
+$(document).on('click', '.parent-account-item', function() {
+    const code = $(this).data('code');
+    $('#parent-account-code').val(code);
+    $('#parentAccountModal').modal('hide');
+});
+</script>
+{% endblock %}

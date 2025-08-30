@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Storage Invoices - Storage Invoice Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/storage_invoice/storage_invoice.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="page-title">
+                    <i class="bi bi-receipt me-2"></i>Storage Invoices
+                </h1>
+                <p class="text-muted">Manage and view storage invoices month-wise</p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'storage_invoice:generate_invoice' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Generate Invoice
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Month Selection -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-calendar me-2"></i>Select Month
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    {{ month_form.month }}
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>View Month
+                    </button>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="text-muted">
+                        Currently viewing: <strong>{{ selected_month|date:"F Y" }}</strong>
+                    </span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-primary">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">{{ total_invoices }}</h3>
+                            <p class="stat-label">Total Invoices</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-success">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">${{ total_amount|floatformat:2 }}</h3>
+                            <p class="stat-label">Total Amount</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-warning">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">{{ draft_invoices }}</h3>
+                            <p class="stat-label">Draft Invoices</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-info">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">{{ finalized_invoices }}</h3>
+                            <p class="stat-label">Finalized</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-search me-2"></i>Search & Filter
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    {{ search_form.invoice_number }}
+                </div>
+                <div class="col-md-3">
+                    {{ search_form.customer }}
+                </div>
+                <div class="col-md-3">
+                    {{ search_form.status }}
+                </div>
+                <div class="col-md-3">
+                    {{ search_form.date_from }}
+                </div>
+                <div class="col-md-3">
+                    {{ search_form.date_to }}
+                </div>
+                <div class="col-md-3">
+                    {{ search_form.amount_min }}
+                </div>
+                <div class="col-md-3">
+                    {{ search_form.amount_max }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                    <a href="{% url 'storage_invoice:storage_invoice_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list me-2"></i>Storage Invoices
+                    </h5>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportData('csv')">
+                            <i class="bi bi-download me-1"></i>Export CSV
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportData('excel')">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="invoices-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Customer</th>
+                                <th>Invoice Date</th>
+                                <th>Storage Period</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Generated By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in page_obj %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'storage_invoice:storage_invoice_detail' invoice.pk %}" class="text-decoration-none">
+                                        <strong>{{ invoice.invoice_number }}</strong>
+                                    </a>
+                                </td>
+                                <td>{{ invoice.customer.customer_name }}</td>
+                                <td>{{ invoice.invoice_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {{ invoice.storage_period_from|date:"M d" }} - {{ invoice.storage_period_to|date:"M d, Y" }}
+                                </td>
+                                <td>
+                                    <strong>${{ invoice.total_amount|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    {% if invoice.status == 'draft' %}
+                                        <span class="badge bg-warning">Draft</span>
+                                    {% elif invoice.status == 'finalized' %}
+                                        <span class="badge bg-success">Finalized</span>
+                                    {% elif invoice.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% elif invoice.status == 'paid' %}
+                                        <span class="badge bg-info">Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ invoice.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ invoice.generated_by.get_full_name|default:"System" }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'storage_invoice:storage_invoice_detail' invoice.pk %}" class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if invoice.is_editable %}
+                                            <a href="{% url 'storage_invoice:storage_invoice_edit' invoice.pk %}" class="btn btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if invoice.can_be_finalized %}
+                                            <button type="button" class="btn btn-outline-success" title="Finalize" onclick="finalizeInvoice({{ invoice.pk }})">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        {% endif %}
+                                        {% if invoice.can_be_cancelled %}
+                                            <button type="button" class="btn btn-outline-danger" title="Cancel" onclick="cancelInvoice({{ invoice.pk }})">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Invoice pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.invoice_number %}&invoice_number={{ request.GET.invoice_number }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.invoice_number %}&invoice_number={{ request.GET.invoice_number }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.invoice_number %}&invoice_number={{ request.GET.invoice_number }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.invoice_number %}&invoice_number={{ request.GET.invoice_number }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.invoice_number %}&invoice_number={{ request.GET.invoice_number }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- Results Summary -->
+                <div class="text-center mt-3">
+                    <p class="text-muted">
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} invoices
+                    </p>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-4 text-muted"></i>
+                    <h5 class="mt-3">No invoices found</h5>
+                    <p class="text-muted">
+                        {% if request.GET %}
+                            Try adjusting your search criteria or select a different month.
+                        {% else %}
+                            No storage invoices have been generated yet.
+                        {% endif %}
+                    </p>
+                    {% if not request.GET %}
+                        <a href="{% url 'storage_invoice:generate_invoice' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Generate First Invoice
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modals -->
+<div class="modal fade" id="finalizeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Finalize Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to finalize this invoice? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="finalizeForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Finalize</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this invoice? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="cancelForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Cancel Invoice</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/storage_invoice/storage_invoice.js' %}"></script>
+<script>
+function finalizeInvoice(invoiceId) {
+    const modal = new bootstrap.Modal(document.getElementById('finalizeModal'));
+    const form = document.getElementById('finalizeForm');
+    form.action = `/storage-invoice/${invoiceId}/finalize/`;
+    modal.show();
+}
+
+function cancelInvoice(invoiceId) {
+    const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    const form = document.getElementById('cancelForm');
+    form.action = `/storage-invoice/${invoiceId}/cancel/`;
+    modal.show();
+}
+
+function exportData(format) {
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.append('export', format);
+    
+    const downloadUrl = `${window.location.pathname}?${searchParams.toString()}`;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `storage_invoices_export.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %} 

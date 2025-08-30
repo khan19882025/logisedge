@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transaction Detail - {{ transaction.document_number }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'all_transactions/css/all_transactions.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+.transaction-detail-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.transaction-detail-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 0;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.transaction-detail-content {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.detail-section {
+    padding: 25px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.detail-section:last-child {
+    border-bottom: none;
+}
+
+.detail-section h4 {
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+    font-weight: 600;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #555;
+    min-width: 150px;
+    margin-right: 20px;
+}
+
+.detail-value {
+    color: #333;
+    flex: 1;
+}
+
+.detail-actions {
+    padding: 25px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-source-document {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+}
+
+.btn-source-document:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.transaction-badge {
+    padding: 8px 16px;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.amount-display {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #28a745;
+}
+
+.narration-box {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.account-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.account-code {
+    font-family: 'Courier New', monospace;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .detail-label {
+        min-width: auto;
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="transaction-detail-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="transaction-detail-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-file-alt"></i> Transaction Detail</h1>
+                    <p class="subtitle">
+                        {{ transaction.document_number }} - {{ transaction.transaction_type_display }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{% url 'all_transactions:transaction_list' %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="transaction-detail-content">
+            <!-- Basic Information -->
+            <div class="detail-section">
+                <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Transaction Date:</div>
+                    <div class="detail-value">{{ transaction.transaction_date|date:"F d, Y" }}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Transaction Type:</div>
+                    <div class="detail-value">
+                        <span class="transaction-badge badge-{{ transaction.transaction_type }}">
+                            {{ transaction.transaction_type_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Document Number:</div>
+                    <div class="detail-value">
+                        <strong>{{ transaction.document_number }}</strong>
+                    </div>
+                </div>
+                
+                {% if transaction.reference_number %}
+                <div class="detail-row">
+                    <div class="detail-label">Reference Number:</div>
+                    <div class="detail-value">{{ transaction.reference_number }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="detail-row">
+                    <div class="detail-label">Status:</div>
+                    <div class="detail-value">
+                        <span class="status-badge badge-{{ transaction.status }}">
+                            {{ transaction.status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Information -->
+            <div class="detail-section">
+                <h4><i class="fas fa-university"></i> Account Information</h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-row">
+                            <div class="detail-label">Debit Account:</div>
+                            <div class="detail-value">
+                                {% if transaction.debit_account %}
+                                    <div class="account-info">
+                                        <div class="account-name">{{ transaction.debit_account.account_name }}</div>
+                                        <div class="account-code">{{ transaction.debit_account.account_code }}</div>
+                                        <small class="text-muted">{{ transaction.debit_account.account_type }}</small>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="detail-row">
+                            <div class="detail-label">Credit Account:</div>
+                            <div class="detail-value">
+                                {% if transaction.credit_account %}
+                                    <div class="account-info">
+                                        <div class="account-name">{{ transaction.credit_account.account_name }}</div>
+                                        <div class="account-code">{{ transaction.credit_account.account_code }}</div>
+                                        <small class="text-muted">{{ transaction.credit_account.account_type }}</small>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Amount and Narration -->
+            <div class="detail-section">
+                <h4><i class="fas fa-money-bill-wave"></i> Amount & Details</h4>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Amount:</div>
+                    <div class="detail-value">
+                        <span class="amount-display">{{ transaction.amount|floatformat:2 }} AED</span>
+                    </div>
+                </div>
+                
+                {% if transaction.narration %}
+                <div class="detail-row">
+                    <div class="detail-label">Narration:</div>
+                    <div class="detail-value">
+                        <div class="narration-box">
+                            {{ transaction.narration|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- User Information -->
+            <div class="detail-section">
+                <h4><i class="fas fa-user"></i> User Information</h4>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Posted By:</div>
+                    <div class="detail-value">{{ transaction.posted_by.get_full_name|default:transaction.posted_by.username }}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Created At:</div>
+                    <div class="detail-value">{{ transaction.created_at|date:"F d, Y H:i" }}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Last Updated:</div>
+                    <div class="detail-value">{{ transaction.updated_at|date:"F d, Y H:i" }}</div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="detail-actions">
+                <h4><i class="fas fa-cogs"></i> Actions</h4>
+                
+                <div class="action-buttons">
+                    <a href="{{ transaction.source_url }}" 
+                       class="btn btn-source-document" 
+                       target="_blank">
+                        <i class="fas fa-external-link-alt"></i> View Source Document
+                    </a>
+                    
+                    <a href="{% url 'all_transactions:transaction_list' %}" 
+                       class="btn btn-secondary">
+                        <i class="fas fa-list"></i> Back to List
+                    </a>
+                    
+                    <button type="button" 
+                            class="btn btn-outline-info" 
+                            onclick="window.print()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    
+                    <button type="button" 
+                            class="btn btn-outline-success" 
+                            onclick="exportTransaction()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportTransaction() {
+    // Create a simple export of the transaction data
+    const transactionData = {
+        date: '{{ transaction.transaction_date|date:"Y-m-d" }}',
+        type: '{{ transaction.transaction_type_display }}',
+        document: '{{ transaction.document_number }}',
+        reference: '{{ transaction.reference_number|default:"" }}',
+        debit_account: '{{ transaction.debit_account.account_name|default:"" }}',
+        credit_account: '{{ transaction.credit_account.account_name|default:"" }}',
+        amount: '{{ transaction.amount }}',
+        narration: '{{ transaction.narration|default:"" }}',
+        posted_by: '{{ transaction.posted_by.username }}',
+        status: '{{ transaction.status_display }}'
+    };
+    
+    const dataStr = JSON.stringify(transactionData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = 'transaction-{{ transaction.document_number }}.json';
+    link.click();
+}
+
+// Initialize tooltips
+$(document).ready(function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %} 

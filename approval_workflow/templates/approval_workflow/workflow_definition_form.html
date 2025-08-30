@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if object %}Edit Workflow Definition{% else %}Create Workflow Definition{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'approval_workflow/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    {% if object %}
+                        <i class="bx bx-edit"></i> Edit Workflow Definition
+                    {% else %}
+                        <i class="bx bx-plus"></i> Create New Workflow Definition
+                    {% endif %}
+                </h4>
+                <div class="page-title-right">
+                    <a href="{% url 'approval_workflow:workflow_definition_list' %}" class="btn btn-secondary">
+                        <i class="bx bx-arrow-back"></i> Back to Workflow Definitions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        {% if object %}Edit{% else %}New{% endif %} Workflow Definition
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="workflow-definition-form">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <h5><i class="bx bx-error"></i> Please correct the following errors:</h5>
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <!-- Name -->
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        Name <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Unique name for this workflow definition
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Is Active -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Active
+                                        </label>
+                                    </div>
+                                    {% if form.is_active.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.is_active.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Workflow Type -->
+                        <div class="mb-3">
+                            <label for="{{ form.workflow_type.id_for_label }}" class="form-label">
+                                Workflow Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.workflow_type }}
+                            {% if form.workflow_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.workflow_type.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Select the workflow type for this definition
+                            </small>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                Description
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Detailed description of this workflow definition
+                            </small>
+                        </div>
+
+                        <div class="row">
+                            <!-- Approval Type -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.approval_type.id_for_label }}" class="form-label">
+                                        Approval Type <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.approval_type }}
+                                    {% if form.approval_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.approval_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Type of approval process
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Approval Levels -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.approval_levels.id_for_label }}" class="form-label">
+                                        Approval Levels <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.approval_levels }}
+                                    {% if form.approval_levels.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.approval_levels.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Number of approval levels required
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conditions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Conditions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Condition Type -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.condition_type.id_for_label }}" class="form-label">
+                                                Condition Type
+                                            </label>
+                                            {{ form.condition_type }}
+                                            {% if form.condition_type.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.condition_type.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Condition Value -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.condition_value.id_for_label }}" class="form-label">
+                                                Condition Value
+                                            </label>
+                                            {{ form.condition_value }}
+                                            {% if form.condition_value.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.condition_value.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <!-- Min Amount -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.min_amount.id_for_label }}" class="form-label">
+                                                Minimum Amount
+                                            </label>
+                                            {{ form.min_amount }}
+                                            {% if form.min_amount.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.min_amount.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Max Amount -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.max_amount.id_for_label }}" class="form-label">
+                                                Maximum Amount
+                                            </label>
+                                            {{ form.max_amount }}
+                                            {% if form.max_amount.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.max_amount.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Auto Approve if No Approvers -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.auto_approve_if_no_approvers }}
+                                <label class="form-check-label" for="{{ form.auto_approve_if_no_approvers.id_for_label }}">
+                                    Auto Approve if No Approvers
+                                </label>
+                            </div>
+                            {% if form.auto_approve_if_no_approvers.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.auto_approve_if_no_approvers.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Automatically approve if no approvers are assigned
+                            </small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'approval_workflow:workflow_definition_list' %}" class="btn btn-secondary">
+                                        <i class="bx bx-arrow-back"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bx bx-save"></i>
+                                        {% if object %}Update Workflow Definition{% else %}Create Workflow Definition{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'approval_workflow/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form validation
+    initFormValidation();
+    
+    // Initialize conditional field visibility
+    initConditionalFields();
+});
+
+function initFormValidation() {
+    const form = document.getElementById('workflow-definition-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(function(field) {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+            }
+        });
+    }
+}
+
+function initConditionalFields() {
+    const conditionTypeSelect = document.getElementById('id_condition_type');
+    const conditionValueField = document.getElementById('id_condition_value');
+    
+    if (conditionTypeSelect) {
+        conditionTypeSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            if (selectedValue) {
+                conditionValueField.closest('.mb-3').style.display = 'block';
+            } else {
+                conditionValueField.closest('.mb-3').style.display = 'none';
+            }
+        });
+        
+        // Trigger on page load
+        conditionTypeSelect.dispatchEvent(new Event('change'));
+    }
+}
+</script>
+{% endblock %}

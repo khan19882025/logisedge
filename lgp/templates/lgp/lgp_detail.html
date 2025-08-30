@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}LGP {{ lgp.lgp_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'lgp/css/lgp.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-box-seam text-primary me-2"></i>
+                        LGP {{ lgp.lgp_number }}
+                        {% if lgp.status == 'draft' %}
+                            <span class="badge bg-secondary ms-2">{{ lgp.get_status_display }}</span>
+                        {% elif lgp.status == 'dispatched' %}
+                            <span class="badge bg-success ms-2">{{ lgp.get_status_display }}</span>
+                        {% elif lgp.status == 'cancelled' %}
+                            <span class="badge bg-danger ms-2">{{ lgp.get_status_display }}</span>
+                        {% endif %}
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'lgp:lgp_list' %}">LGP Management</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">{{ lgp.lgp_number }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'lgp:lgp_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to List
+                    </a>
+                    {% if lgp.status == 'draft' %}
+                        <a href="{% url 'lgp:lgp_update' lgp.pk %}" class="btn btn-warning me-2">
+                            <i class="bi bi-pencil me-1"></i>
+                            Edit
+                        </a>
+                        <a href="{% url 'lgp:lgp_dispatch' lgp.pk %}" class="btn btn-success me-2">
+                            <i class="bi bi-send me-1"></i>
+                            Dispatch
+                        </a>
+                        <form method="post" action="{% url 'lgp:lgp_cancel' lgp.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this LGP?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger me-2">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Cancel
+                            </button>
+                        </form>
+                    {% endif %}
+                    <a href="{% url 'lgp:lgp_print' lgp.pk %}" class="btn btn-info" target="_blank">
+                        <i class="bi bi-printer me-1"></i>
+                        Print
+                    </a>
+                </div>
+            </div>
+
+            <!-- LGP Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Basic Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Customer:</strong></div>
+                                <div class="col-sm-8">{{ lgp.customer.customer_name }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>DPW Ref No:</strong></div>
+                                <div class="col-sm-8">{{ lgp.dpw_ref_no|default:"-" }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Document Date:</strong></div>
+                                <div class="col-sm-8">{{ lgp.document_date|date:"M d, Y" }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Validity Date:</strong></div>
+                                <div class="col-sm-8">{{ lgp.document_validity_date|date:"M d, Y" }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Warehouse:</strong></div>
+                                <div class="col-sm-8">{{ lgp.warehouse.name }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Status:</strong></div>
+                                <div class="col-sm-8">
+                                    {% if lgp.status == 'draft' %}
+                                        <span class="badge bg-secondary">{{ lgp.get_status_display }}</span>
+                                    {% elif lgp.status == 'dispatched' %}
+                                        <span class="badge bg-success">{{ lgp.get_status_display }}</span>
+                                    {% elif lgp.status == 'cancelled' %}
+                                        <span class="badge bg-danger">{{ lgp.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-building me-2"></i>
+                                Company & Origin Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Free Zone Company:</strong></div>
+                                <div class="col-sm-7">{{ lgp.free_zone_company_name }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Local Company:</strong></div>
+                                <div class="col-sm-7">{{ lgp.local_company_name }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Goods Coming From:</strong></div>
+                                <div class="col-sm-7">{{ lgp.goods_coming_from }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Purpose of Entry:</strong></div>
+                                <div class="col-sm-7">{{ lgp.purpose_of_entry }}</div>
+                            </div>
+                            {% if lgp.notes %}
+                                <div class="row mb-3">
+                                    <div class="col-sm-5"><strong>Notes:</strong></div>
+                                    <div class="col-sm-7">{{ lgp.notes|linebreaks }}</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Workflow Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Workflow Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="bi bi-plus-circle display-6 text-primary"></i>
+                                <h6 class="mt-2">Created</h6>
+                                <p class="text-muted mb-0">{{ lgp.created_at|date:"M d, Y H:i" }}</p>
+                                <small class="text-muted">by {{ lgp.created_by.get_full_name|default:lgp.created_by.username }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            {% if lgp.updated_at %}
+                                <div class="text-center">
+                                    <i class="bi bi-pencil-square display-6 text-warning"></i>
+                                    <h6 class="mt-2">Last Updated</h6>
+                                    <p class="text-muted mb-0">{{ lgp.updated_at|date:"M d, Y H:i" }}</p>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted">
+                                    <i class="bi bi-pencil-square display-6"></i>
+                                    <h6 class="mt-2">Not Updated</h6>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            {% if lgp.dispatched_at %}
+                                <div class="text-center">
+                                    <i class="bi bi-send-check display-6 text-success"></i>
+                                    <h6 class="mt-2">Dispatched</h6>
+                                    <p class="text-muted mb-0">{{ lgp.dispatched_at|date:"M d, Y H:i" }}</p>
+                                    <small class="text-muted">by {{ lgp.dispatched_by.get_full_name|default:lgp.dispatched_by.username }}</small>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted">
+                                    <i class="bi bi-send display-6"></i>
+                                    <h6 class="mt-2">Not Dispatched</h6>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <i class="bi bi-bar-chart display-6 text-info"></i>
+                                <h6 class="mt-2">Summary</h6>
+                                <p class="text-muted mb-1">{{ lgp.total_items }} items</p>
+                                <p class="text-muted mb-1">{% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ lgp.total_value|floatformat:2 }}</p>
+                                <small class="text-muted">{{ lgp.total_weight|floatformat:3 }} KG</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LGP Items -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>
+                        LGP Items ({{ items.count }})
+                    </h5>
+                    <div>
+                        <span class="badge bg-info me-2">Total: {% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ lgp.total_value|floatformat:2 }}</span>
+                        <span class="badge bg-secondary me-2">Weight: {{ lgp.total_weight|floatformat:3 }} KG</span>
+                        <span class="badge bg-secondary">Volume: {{ lgp.total_volume|floatformat:3 }} CBM</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if items %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Line</th>
+                                        <th>HS Code</th>
+                                        <th>Good Description</th>
+                                        <th>Marks & Nos</th>
+                                        <th>Package Type</th>
+                                        <th>Quantity</th>
+                                        <th>Weight (KG)</th>
+                                        <th>Volume (CBM)</th>
+                                        <th>Value ({% if default_currency %}{{ default_currency.code }}{% else %}USD{% endif %})</th>
+                                        <th>Customs Declaration</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                        <tr>
+                                            <td class="text-center">{{ item.line_number }}</td>
+                                            <td>{{ item.hs_code|default:"-" }}</td>
+                                            <td>{{ item.good_description|default:"-" }}</td>
+                                            <td>{{ item.marks_and_nos|default:"-" }}</td>
+                                            <td>
+                                                {% if item.package_type %}
+                                                    <span class="badge bg-light text-dark">{{ item.get_package_type_display }}</span>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">{{ item.quantity|floatformat:2|default:"-" }}</td>
+                                            <td class="text-end">{{ item.weight|floatformat:3|default:"-" }}</td>
+                                            <td class="text-end">{{ item.volume|floatformat:3|default:"-" }}</td>
+                                            <td class="text-end">{% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ item.value|floatformat:2|default:"0.00" }}</td>
+                                            <td>{{ item.customs_declaration|default:"-" }}</td>
+                                            <td>{{ item.remarks|default:"-" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="5" class="text-end">Totals:</th>
+                                        <th class="text-end">{{ lgp.total_quantity|floatformat:2 }}</th>
+                                        <th class="text-end">{{ lgp.total_weight|floatformat:3 }}</th>
+                                        <th class="text-end">{{ lgp.total_volume|floatformat:3 }}</th>
+                                        <th class="text-end">{% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ lgp.total_value|floatformat:2 }}</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <h4 class="mt-3 text-muted">No Items</h4>
+                            <p class="text-muted">This LGP has no items yet.</p>
+                            {% if lgp.status == 'draft' %}
+                                <a href="{% url 'lgp:lgp_update' lgp.pk %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Add Items
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'lgp/js/lgp.js' %}"></script>
+{% endblock %}

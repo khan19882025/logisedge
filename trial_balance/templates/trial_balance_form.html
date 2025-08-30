@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'trial_balance/css/trial_balance.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="trial-balance-container">
+    <!-- Header Section -->
+    <div class="trial-balance-header">
+        <div class="container">
+            <h1>
+                <i class="bi bi-pencil-square me-3"></i>
+                {{ title }}
+            </h1>
+            <p>Configure trial balance report settings</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-gear me-2"></i>
+                            Report Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.report_title.id_for_label }}" class="form-label">
+                                            Report Title <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.report_title }}
+                                        {% if form.report_title.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.report_title.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.status.id_for_label }}" class="form-label">
+                                            Status
+                                        </label>
+                                        {{ form.status }}
+                                        {% if form.status.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.status.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.from_date.id_for_label }}" class="form-label">
+                                            From Date <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.from_date }}
+                                        {% if form.from_date.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.from_date.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.to_date.id_for_label }}" class="form-label">
+                                            To Date <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.to_date }}
+                                        {% if form.to_date.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.to_date.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.company.id_for_label }}" class="form-label">
+                                            Company <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.company }}
+                                        {% if form.company.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.company.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                    Notes
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.notes.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Optional notes about this report</div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'trial_balance:trial_balance_list' %}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    {% if report %}Update Report{% else %}Create Report{% endif %}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set default dates if not provided
+document.addEventListener('DOMContentLoaded', function() {
+    const fromDateInput = document.getElementById('{{ form.from_date.id_for_label }}');
+    const toDateInput = document.getElementById('{{ form.to_date.id_for_label }}');
+    
+    if (fromDateInput && !fromDateInput.value) {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        fromDateInput.value = firstDay.toISOString().split('T')[0];
+    }
+    
+    if (toDateInput && !toDateInput.value) {
+        const today = new Date();
+        toDateInput.value = today.toISOString().split('T')[0];
+    }
+});
+
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %} 

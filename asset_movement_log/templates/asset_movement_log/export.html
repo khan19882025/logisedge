@@ -1,0 +1,188 @@
+{% extends 'asset_movement_log/base.html' %}
+{% load static %}
+
+{% block title %}Export Asset Movements{% endblock %}
+
+{% block asset_movement_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-download"></i>
+                Export Asset Movements
+            </h1>
+            <a href="{% url 'asset_movement_log:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-edit"></i>
+                    Export Options
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="export-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.export_format.id_for_label }}">{{ form.export_format.label }}</label>
+                                {{ form.export_format }}
+                                {% if form.export_format.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.export_format.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.date_range.id_for_label }}">{{ form.date_range.label }}</label>
+                                {{ form.date_range }}
+                                {% if form.date_range.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.date_range.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.custom_date_from.id_for_label }}">{{ form.custom_date_from.label }}</label>
+                                {{ form.custom_date_from }}
+                                {% if form.custom_date_from.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.custom_date_from.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.custom_date_to.id_for_label }}">{{ form.custom_date_to.label }}</label>
+                                {{ form.custom_date_to }}
+                                {% if form.custom_date_to.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.custom_date_to.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            {{ form.include_details }}
+                            <label class="custom-control-label" for="{{ form.include_details.id_for_label }}">
+                                {{ form.include_details.label }}
+                            </label>
+                        </div>
+                        {% if form.include_details.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.include_details.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary" id="export-btn">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <a href="{% url 'asset_movement_log:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Export Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Export your asset movement data in various formats for reporting and analysis.
+                </p>
+                
+                <h6>Export Formats:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>PDF:</strong> Portable Document Format for printing and sharing</li>
+                    <li><strong>Excel:</strong> Spreadsheet format for data analysis</li>
+                    <li><strong>CSV:</strong> Comma-separated values for data import</li>
+                </ul>
+
+                <h6>Date Ranges:</h6>
+                <ul class="list-unstyled">
+                    <li><strong>All Time:</strong> Export all movement data</li>
+                    <li><strong>Today:</strong> Export today's movements only</li>
+                    <li><strong>This Week:</strong> Export movements from the last 7 days</li>
+                    <li><strong>This Month:</strong> Export movements from the last 30 days</li>
+                    <li><strong>This Quarter:</strong> Export movements from the last 90 days</li>
+                    <li><strong>This Year:</strong> Export movements from the last 365 days</li>
+                    <li><strong>Custom Range:</strong> Specify your own date range</li>
+                </ul>
+
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb"></i> Tips:</h6>
+                    <ul class="mb-0">
+                        <li>Use custom date ranges for specific reporting periods</li>
+                        <li>Include details for comprehensive reports</li>
+                        <li>CSV format is best for data analysis</li>
+                        <li>PDF format is ideal for sharing and printing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Show/hide custom date fields based on date range selection
+    $('#id_date_range').on('change', function() {
+        var dateRange = $(this).val();
+        if (dateRange === 'custom') {
+            $('.custom-date-fields').show();
+        } else {
+            $('.custom-date-fields').hide();
+        }
+    });
+    
+    // Initialize date pickers
+    $('input[type="date"]').datepicker({
+        format: 'yyyy-mm-dd',
+        autoclose: true,
+        todayHighlight: true
+    });
+});
+</script>
+{% endblock %}

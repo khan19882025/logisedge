@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRN Putaways - {{ grn.grn_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .company-info {
+            flex: 1;
+        }
+        
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .company-address {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .document-title {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .grn-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .info-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        
+        .info-value {
+            font-size: 12px;
+            color: #000;
+        }
+        
+        .putaways-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .putaways-table th {
+            background-color: #333;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid #333;
+        }
+        
+        .putaways-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            font-size: 11px;
+        }
+        
+        .putaways-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        @media print {
+            body {
+                font-size: 11px;
+            }
+            
+            .header {
+                margin-bottom: 15px;
+            }
+            
+            .grn-info {
+                margin-bottom: 15px;
+            }
+            
+            .putaways-table th,
+            .putaways-table td {
+                padding: 6px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            {% if company %}
+                <div class="company-name">{{ company.company_name }}</div>
+                <div class="company-address">
+                    {% if company.address %}{{ company.address }}{% endif %}
+                    {% if company.city %}{% if company.address %}, {% endif %}{{ company.city }}{% endif %}
+                    {% if company.state %}{% if company.city %}, {% endif %}{{ company.state }}{% endif %}
+                    {% if company.country %}{% if company.state %}, {% endif %}{{ company.country }}{% endif %}
+                </div>
+                {% if company.phone %}
+                    <div class="company-address">Phone: {{ company.phone }}</div>
+                {% endif %}
+                {% if company.email %}
+                    <div class="company-address">Email: {{ company.email }}</div>
+                {% endif %}
+            {% else %}
+                <div class="company-name">Company Name</div>
+                <div class="company-address">Company Address</div>
+            {% endif %}
+        </div>
+        
+        <div class="document-title">
+            <div class="title">PUTAWAYS</div>
+            <div class="subtitle">Goods Received Note</div>
+        </div>
+    </div>
+
+    <div class="grn-info">
+        <div class="info-group">
+            <div class="info-label">GRN No:</div>
+            <div class="info-value">{{ grn.grn_number }}</div>
+        </div>
+        
+        <div class="info-group">
+            <div class="info-label">Customer Name:</div>
+            <div class="info-value">{{ grn.customer.customer_name }}</div>
+        </div>
+        
+        <div class="info-group">
+            <div class="info-label">CNTR:</div>
+            <div class="info-value">
+                {% if grn.container_number %}
+                    {{ grn.container_number }}
+                {% elif grn.items.exists %}
+                    {{ grn.items.first.ctnr|default:"Not specified" }}
+                {% else %}
+                    Not specified
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="info-group">
+            <div class="info-label">ED:</div>
+            <div class="info-value">
+                {% if grn.job_ref and grn.job_ref.containers.exists %}
+                    {{ grn.job_ref.containers.first.ed_number|default:"Not specified" }}
+                {% elif grn.items.exists %}
+                    {{ grn.items.first.ed|default:"Not specified" }}
+                {% else %}
+                    Not specified
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if grn_pallets %}
+        <table class="putaways-table">
+            <thead>
+                <tr>
+                    <th>Pallet ID</th>
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Weight (KGS)</th>
+                    <th>Volume (CBM)</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pallet in grn_pallets %}
+                <tr>
+                    <td>{{ pallet.pallet_no }}</td>
+                    <td>{{ pallet.description|default:"-" }}</td>
+                    <td>{{ pallet.quantity|default:"-" }}</td>
+                    <td>{{ pallet.weight|default:"-" }}</td>
+                    <td>{{ pallet.volume|default:"-" }}</td>
+                    <td>{{ pallet.location|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="no-data">
+            <h3>No Putaway Data Available</h3>
+            <p>No pallets have been assigned for putaway for this GRN.</p>
+        </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Generated on {{ grn.created_at|date:"F d, Y H:i" }} | GRN: {{ grn.grn_number }}</p>
+    </div>
+</body>
+</html> 

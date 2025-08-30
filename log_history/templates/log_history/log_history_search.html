@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Log History Search{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'log_history/css/log_history.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-search me-2"></i>Log History Search
+                </h1>
+                <div>
+                    <a href="{% url 'log_history:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <a href="{% url 'log_history:log_history_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>View All Logs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-filter me-2"></i>Advanced Search & Filtering
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="log-search-form">
+                        <div class="row">
+                            <!-- Basic Search -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="search_query">Search Query</label>
+                                    <input type="text" class="form-control" id="search_query" name="search_query" 
+                                           value="{{ form.search_query.value|default:'' }}" 
+                                           placeholder="Search in description, object name, etc.">
+                                </div>
+                            </div>
+                            
+                            <!-- Action Type -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="action_type">Action Type</label>
+                                    <select class="form-control" id="action_type" name="action_type">
+                                        <option value="">All Actions</option>
+                                        {% for value, label in form.action_type.field.choices %}
+                                            <option value="{{ value }}" {% if form.action_type.value == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Severity -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="severity">Severity Level</label>
+                                    <select class="form-control" id="severity" name="severity">
+                                        <option value="">All Severities</option>
+                                        {% for value, label in form.severity.field.choices %}
+                                            <option value="{{ value }}" {% if form.severity.value == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Module -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="module">Module</label>
+                                    <select class="form-control" id="module" name="module">
+                                        <option value="">All Modules</option>
+                                        {% for value, label in form.module.field.choices %}
+                                            <option value="{{ value }}" {% if form.module.value == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Status -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select class="form-control" id="status" name="status">
+                                        <option value="">All Statuses</option>
+                                        {% for value, label in form.status.field.choices %}
+                                            <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Date Range -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="date_from">Date From</label>
+                                    <input type="date" class="form-control" id="date_from" name="date_from" 
+                                           value="{{ form.date_from.value|default:'' }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="date_to">Date To</label>
+                                    <input type="date" class="form-control" id="date_to" name="date_to" 
+                                           value="{{ form.date_to.value|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- User -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="user">User</label>
+                                    <select class="form-control" id="user" name="user">
+                                        <option value="">All Users</option>
+                                        {% for user in form.user.field.queryset %}
+                                            <option value="{{ user.id }}" {% if form.user.value == user.id %}selected{% endif %}>
+                                                {{ user.username }} ({{ user.get_full_name|default:user.email }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Object Type -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="object_type">Object Type</label>
+                                    <select class="form-control" id="object_type" name="object_type">
+                                        <option value="">All Object Types</option>
+                                        {% for value, label in form.object_type.field.choices %}
+                                            <option value="{{ value }}" {% if form.object_type.value == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="include_archived" name="include_archived" 
+                                           {% if form.include_archived.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="include_archived">
+                                        Include Archived Logs
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="include_deleted" name="include_deleted" 
+                                           {% if form.include_deleted.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="include_deleted">
+                                        Include Deleted Logs
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-2"></i>Search Logs
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="clear-filters">
+                                    <i class="fas fa-times me-2"></i>Clear Filters
+                                </button>
+                                <button type="button" class="btn btn-outline-success" id="save-filter">
+                                    <i class="fas fa-save me-2"></i>Save Filter
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            {% if logs %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list me-2"></i>Search Results ({{ logs.count }} logs found)
+                    </h6>
+                    <div>
+                        <a href="{% url 'log_history:log_history_export' %}?{{ request.GET.urlencode }}" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download me-2"></i>Export Results
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Action</th>
+                                    <th>User</th>
+                                    <th>Object</th>
+                                    <th>Module</th>
+                                    <th>Severity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr class="{% if log.severity == 'CRITICAL' %}table-danger{% elif log.severity == 'HIGH' %}table-warning{% endif %}">
+                                    <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if log.action_type == 'CREATE' %}success{% elif log.action_type == 'UPDATE' %}info{% elif log.action_type == 'DELETE' %}danger{% else %}secondary{% endif %}">
+                                            {{ log.get_action_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.user.username|default:"System" }}</td>
+                                    <td>{{ log.object_name|truncatechars:30 }}</td>
+                                    <td>{{ log.module|default:"-" }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                                            {{ log.get_severity_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'log_history:log_history_detail' log.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% elif request.GET %}
+            <div class="card shadow mb-4">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No logs found matching your search criteria</h5>
+                    <p class="text-muted">Try adjusting your search parameters or <a href="{% url 'log_history:log_history_search' %}">clear all filters</a></p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'log_history/js/log_history.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Clear filters functionality
+    document.getElementById('clear-filters').addEventListener('click', function() {
+        document.getElementById('log-search-form').reset();
+        window.location.href = "{% url 'log_history:log_history_search' %}";
+    });
+    
+    // Save filter functionality
+    document.getElementById('save-filter').addEventListener('click', function() {
+        // TODO: Implement save filter functionality
+        alert('Save filter functionality will be implemented soon.');
+    });
+});
+</script>
+{% endblock %}

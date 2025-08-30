@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Documents - PDF Preview Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-file-pdf text-primary"></i>
+                    Documents
+                </h1>
+                <p class="page-subtitle">Browse and manage your ERP documents</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            {{ search_form.query }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.search_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.document_type }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.status }}
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <a href="{% url 'pdf_preview_tool:document_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_upload' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-upload"></i> Upload Document
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_create' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-plus"></i> Create Document
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_type_create' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-tags"></i> New Document Type
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:dashboard' %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i> Documents ({{ total_documents }})
+                    </h6>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="?status=approved">Approved Only</a></li>
+                            <li><a class="dropdown-item" href="?status=pending">Pending Only</a></li>
+                            <li><a class="dropdown-item" href="?status=draft">Draft Only</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="?is_public=true">Public Documents</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>ERP Reference</th>
+                                        <th>Pages</th>
+                                        <th>Size</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="document-icon me-3">
+                                                    <i class="fas fa-file-pdf text-danger"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ document.title }}</strong>
+                                                    {% if document.description %}
+                                                        <br><small class="text-muted">{{ document.description|truncatechars:50 }}</small>
+                                                    {% endif %}
+                                                    {% if document.tags %}
+                                                        <div class="mt-1">
+                                                            {% for tag in document.tags %}
+                                                                <span class="badge badge-sm badge-secondary">{{ tag }}</span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ document.document_type.get_category_display }}</span>
+                                            <br><small>{{ document.document_type.name }}</small>
+                                        </td>
+                                        <td>
+                                            {% if document.status == 'approved' %}
+                                                <span class="badge badge-success">Approved</span>
+                                            {% elif document.status == 'pending' %}
+                                                <span class="badge badge-warning">Pending</span>
+                                            {% elif document.status == 'draft' %}
+                                                <span class="badge badge-secondary">Draft</span>
+                                            {% else %}
+                                                <span class="badge badge-dark">{{ document.get_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if document.erp_reference %}
+                                                <code>{{ document.erp_reference }}</code>
+                                                {% if document.erp_module %}
+                                                    <br><small class="text-muted">{{ document.erp_module }}</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-primary">{{ document.page_count }}</span> pages
+                                        </td>
+                                        <td>
+                                            {% if document.file_size %}
+                                                {{ document.file_size|filesizeformat }}
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ document.created_at|date:"M d, Y" }}
+                                            <br><small class="text-muted">by {{ document.created_by.username }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'pdf_preview_tool:document_detail' document.id %}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'pdf_preview_tool:document_preview' document.id %}" 
+                                                   class="btn btn-outline-success" title="Preview">
+                                                    <i class="fas fa-search"></i>
+                                                </a>
+                                                <a href="{% url 'pdf_preview_tool:document_update' document.id %}" 
+                                                   class="btn btn-outline-warning" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li>
+                                                            <a class="dropdown-item" href="{% url 'pdf_preview_tool:email_document' document.id %}">
+                                                                <i class="fas fa-envelope"></i> Email
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item" href="{% url 'pdf_preview_tool:print_document' document.id %}">
+                                                                <i class="fas fa-print"></i> Print
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger" href="#" onclick="deleteDocument('{{ document.id }}', '{{ document.title }}')">
+                                                                <i class="fas fa-trash"></i> Delete
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Document pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.document_type %}&document_type={{ request.GET.document_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.document_type %}&document_type={{ request.GET.document_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.document_type %}&document_type={{ request.GET.document_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.document_type %}&document_type={{ request.GET.document_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.search_field %}&search_field={{ request.GET.search_field }}{% endif %}{% if request.GET.document_type %}&document_type={{ request.GET.document_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-pdf fa-5x text-muted mb-4"></i>
+                            <h4 class="text-muted">No documents found</h4>
+                            <p class="text-muted">
+                                {% if search_form.query.value or search_form.document_type.value or search_form.status.value %}
+                                    Try adjusting your search criteria or
+                                {% endif %}
+                                Get started by uploading your first document.
+                            </p>
+                            <div class="mt-4">
+                                <a href="{% url 'pdf_preview_tool:document_upload' %}" class="btn btn-primary me-3">
+                                    <i class="fas fa-upload"></i> Upload Document
+                                </a>
+                                <a href="{% url 'pdf_preview_tool:document_create' %}" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> Create Document
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the document "<strong id="deleteDocumentTitle"></strong>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteDocument(documentId, documentTitle) {
+    document.getElementById('deleteDocumentTitle').textContent = documentTitle;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+    
+    document.getElementById('confirmDelete').onclick = function() {
+        // Here you would implement the actual delete functionality
+        // For now, we'll just show a message
+        alert('Delete functionality will be implemented here');
+        modal.hide();
+    };
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

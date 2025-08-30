@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Template Details - {{ template.name }} - Master Data Import{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'master_data_import/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Template: {{ template.name }}</h1>
+        <div>
+            <a href="{% url 'master_data_import_utilities:template_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-sm"></i> Back to Templates
+            </a>
+            <a href="{% url 'master_data_import_utilities:template_update' template.id %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit fa-sm"></i> Edit Template
+            </a>
+            <a href="{% url 'master_data_import_utilities:download_template' template.id %}" class="btn btn-success btn-sm">
+                <i class="fas fa-download fa-sm"></i> Download Template
+            </a>
+        </div>
+    </div>
+
+    <!-- Template Overview -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <!-- Basic Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Template Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ template.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Data Type:</strong></td>
+                                    <td><span class="badge badge-info">{{ template.data_type }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created By:</strong></td>
+                                    <td>{{ template.created_by.get_full_name|default:template.created_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created At:</strong></td>
+                                    <td>{{ template.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Description:</strong></td>
+                                    <td>{{ template.description|default:"No description provided" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Fields:</strong></td>
+                                    <td>{{ template.fields|length }} fields</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Validation Rules:</strong></td>
+                                    <td>{{ validation_rules|length }} rules</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Modified:</strong></td>
+                                    <td>{{ template.updated_at|date:"M d, Y H:i"|default:"Never" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fields Configuration -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Fields Configuration</h6>
+                </div>
+                <div class="card-body">
+                    {% if template.fields %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="fieldsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Field Name</th>
+                                        <th>Field Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                        <th>Validation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field in template.fields %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ field.name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-secondary">{{ field.type }}</span>
+                                        </td>
+                                        <td>
+                                            {% if field.required %}
+                                                <span class="badge badge-danger">Required</span>
+                                            {% else %}
+                                                <span class="badge badge-light">Optional</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ field.description|default:"No description" }}</td>
+                                        <td>
+                                            {% for rule in validation_rules %}
+                                                {% if rule.field_name == field.name %}
+                                                    <small class="text-muted">
+                                                        {{ rule.rule_type }}: {{ rule.rule_value }}
+                                                    </small><br>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                            <h5 class="text-warning">No Fields Configured</h5>
+                            <p class="text-muted">This template doesn't have any fields defined.</p>
+                            <a href="{% url 'master_data_import_utilities:template_update' template.id %}" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Add Fields
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Validation Rules -->
+            {% if validation_rules %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Validation Rules</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Rule Type</th>
+                                    <th>Value</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rule in validation_rules %}
+                                <tr>
+                                    <td><strong>{{ rule.field_name }}</strong></td>
+                                    <td>
+                                        <span class="badge badge-info">{{ rule.rule_type }}</span>
+                                    </td>
+                                    <td><code>{{ rule.rule_value }}</code></td>
+                                    <td>{{ rule.description|default:"No description" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Template Statistics -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Usage Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h5 text-primary">{{ total_jobs }}</div>
+                            <small class="text-muted">Total Jobs</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 text-success">{{ completed_jobs }}</div>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row text-center mt-3">
+                        <div class="col-6">
+                            <div class="h5 text-warning">{{ failed_jobs }}</div>
+                            <small class="text-muted">Failed</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 text-info">{{ template.fields|length }}</div>
+                            <small class="text-muted">Fields</small>
+                        </div>
+                    </div>
+
+                    {% if total_jobs > 0 %}
+                    <div class="mt-3">
+                        <div class="progress progress-bar-stat">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 data-completed="{{ completed_jobs }}"
+                                 data-total="{{ total_jobs }}">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ completed_jobs }} of {{ total_jobs }} jobs completed successfully
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'master_data_import_utilities:upload_file' %}" class="btn btn-primary btn-block">
+                            <i class="fas fa-upload"></i> Start Import
+                        </a>
+                        <a href="{% url 'master_data_import_utilities:template_update' template.id %}" class="btn btn-warning btn-block">
+                            <i class="fas fa-edit"></i> Edit Template
+                        </a>
+                        <a href="{% url 'master_data_import_utilities:download_template' template.id %}" class="btn btn-success btn-block">
+                            <i class="fas fa-download"></i> Download Template
+                        </a>
+                        <a href="{% url 'master_data_import_utilities:template_delete' template.id %}" class="btn btn-danger btn-block">
+                            <i class="fas fa-trash"></i> Delete Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Import Jobs -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Import Jobs</h6>
+                </div>
+                <div class="card-body">
+                    {% if related_jobs %}
+                        <div class="timeline">
+                            {% for job in related_jobs %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <div class="small text-muted">{{ job.created_at|date:"M d, H:i" }}</div>
+                                    <div class="font-weight-bold">
+                                        <a href="{% url 'master_data_import_utilities:job_detail' job.id %}">
+                                            {{ job.job_name }}
+                                        </a>
+                                    </div>
+                                    <div class="small">
+                                        <span class="badge badge-status-{{ job.status }}">
+                                            {{ job.status|title }}
+                                        </span>
+                                        {% if job.status == 'completed' %}
+                                            - {{ job.records_imported|default:0 }} records
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'master_data_import_utilities:job_list' %}" class="btn btn-outline-primary btn-sm">
+                                View All Jobs
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No import jobs found</p>
+                        <div class="text-center">
+                            <a href="{% url 'master_data_import_utilities:upload_file' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-upload"></i> Start First Import
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'master_data_import/js/dashboard.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize progress bars
+    initializeProgressBars();
+
+    // Initialize DataTable for fields if available
+    if ($.fn.DataTable) {
+        $('#fieldsTable').DataTable({
+            "pageLength": 10,
+            "order": [[0, "asc"]], // Sort by field name
+            "language": {
+                "search": "Search fields:",
+                "lengthMenu": "Show _MENU_ fields per page"
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'tax_settings/base.html' %}
+{% load static %}
+
+{% block title %}Tax Rates{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Tax Rates</li>
+{% endblock %}
+
+{% block tax_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title">
+                    <i class="bi bi-percent me-2"></i>Tax Rates
+                </h4>
+                <a href="{% url 'tax_settings:tax_rate_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Tax Rate
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- Search and Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <form method="get" class="d-flex">
+                            <input type="text" name="search" class="form-control me-2" 
+                                   placeholder="Search tax rates..." 
+                                   value="{{ request.GET.search }}">
+                            <button type="submit" class="btn btn-outline-secondary">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-funnel me-2"></i>Filter
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="?status=active">Active Only</a></li>
+                                <li><a class="dropdown-item" href="?status=inactive">Inactive Only</a></li>
+                                <li><a class="dropdown-item" href="?">All</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tax Rates Table -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Name</th>
+                                <th>Rate (%)</th>
+                                <th>Tax Type</th>
+                                <th>Jurisdiction</th>
+                                <th>Effective Start</th>
+                                <th>Effective End</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tax_rate in object_list %}
+                            <tr>
+                                <td>
+                                    <strong>{{ tax_rate.name }}</strong>
+                                    {% if tax_rate.description %}
+                                        <br><small class="text-muted">{{ tax_rate.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ tax_rate.rate_percentage }}%</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ tax_rate.tax_type.name }}</span>
+                                </td>
+                                <td>{{ tax_rate.jurisdiction.name }}</td>
+                                <td>{{ tax_rate.effective_from|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if tax_rate.effective_to %}
+                                        {{ tax_rate.effective_to|date:"M d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tax_rate.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'tax_settings:tax_rate_detail' tax_rate.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'tax_settings:tax_rate_update' tax_rate.pk %}" 
+                                           class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'tax_settings:tax_rate_delete' tax_rate.pk %}" 
+                                           class="btn btn-sm btn-outline-danger" title="Delete"
+                                           onclick="return confirm('Are you sure you want to delete this tax rate?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox display-4"></i>
+                                    <p class="mt-2">No tax rates found.</p>
+                                    <a href="{% url 'tax_settings:tax_rate_create' %}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle me-2"></i>Create First Tax Rate
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Tax rates pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

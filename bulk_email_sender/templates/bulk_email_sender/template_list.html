@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Templates{% endblock %}
+
+{% block extra_css %}
+<style>
+    .template-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .template-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .template-type-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .type-newsletter { background: #d4edda; color: #155724; }
+    .type-promotional { background: #cce5ff; color: #004085; }
+    .type-transactional { background: #fff3cd; color: #856404; }
+    .type-notification { background: #d1ecf1; color: #0c5460; }
+    .type-custom { background: #e2e3e5; color: #383d41; }
+    
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-active { background: #d4edda; color: #155724; }
+    .status-inactive { background: #f8d7da; color: #721c24; }
+    
+    .search-filters {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .template-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .template-actions .btn {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt fa-fw"></i> Email Templates
+        </h1>
+        <a href="{% url 'bulk_email_sender:template_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus fa-fw"></i> New Template
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filters">
+        <form method="get" class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search templates...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="type" class="form-label">Template Type</label>
+                    <select class="form-control" id="type" name="type">
+                        <option value="">All Types</option>
+                        {% for type_code, type_name in template_types %}
+                        <option value="{{ type_code }}" {% if template_type == type_code %}selected{% endif %}>
+                            {{ type_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="active" class="form-label">Status</label>
+                    <select class="form-control" id="active" name="active">
+                        <option value="">All Statuses</option>
+                        <option value="true" {% if is_active == 'true' %}selected{% endif %}>Active</option>
+                        <option value="false" {% if is_active == 'false' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-search fa-fw"></i> Search
+                        </button>
+                        <a href="{% url 'bulk_email_sender:template_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-times fa-fw"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Templates Grid -->
+    {% if page_obj %}
+        <div class="row">
+            {% for template in page_obj %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="template-card">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="template-type-badge type-{{ template.template_type }}">
+                                {{ template.get_template_type_display }}
+                            </span>
+                            <span class="status-badge {% if template.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                {% if template.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'bulk_email_sender:template_detail' template.pk %}">
+                                    <i class="fas fa-eye fa-fw"></i> View
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'bulk_email_sender:template_edit' template.pk %}">
+                                    <i class="fas fa-edit fa-fw"></i> Edit
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'bulk_email_sender:template_delete' template.pk %}">
+                                    <i class="fas fa-trash fa-fw"></i> Delete
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h5 class="template-title mb-2">
+                        <a href="{% url 'bulk_email_sender:template_detail' template.pk %}" class="text-decoration-none">
+                            {{ template.name }}
+                        </a>
+                    </h5>
+                    
+                    <p class="text-muted mb-2">{{ template.subject }}</p>
+                    
+                    {% if template.description %}
+                    <p class="template-description mb-3">{{ template.description|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <div class="template-meta mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-user fa-fw"></i> {{ template.created_by.get_full_name|default:template.created_by.username }}
+                            <br>
+                            <i class="fas fa-calendar fa-fw"></i> {{ template.created_at|date:"M d, Y" }}
+                            <br>
+                            <i class="fas fa-code-branch fa-fw"></i> v{{ template.version }}
+                        </small>
+                    </div>
+                    
+                    <div class="template-actions">
+                        <a href="{% url 'bulk_email_sender:template_detail' template.pk %}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye fa-fw"></i> View
+                        </a>
+                        <a href="{% url 'bulk_email_sender:template_edit' template.pk %}" 
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-edit fa-fw"></i> Edit
+                        </a>
+                        <a href="{% url 'bulk_email_sender:campaign_create' %}" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-rocket fa-fw"></i> Use
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Template pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if template_type %}&type={{ template_type }}{% endif %}{% if is_active %}&active={{ is_active }}{% endif %}">
+                        <i class="fas fa-chevron-left fa-fw"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if template_type %}&type={{ template_type }}{% endif %}{% if is_active %}&active={{ is_active }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if template_type %}&type={{ template_type }}{% endif %}{% if is_active %}&active={{ is_active }}{% endif %}">
+                        Next <i class="fas fa-chevron-right fa-fw"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+    {% else %}
+        <!-- No Templates Found -->
+        <div class="text-center py-5">
+            <i class="fas fa-file-alt fa-5x text-muted mb-4"></i>
+            <h4 class="text-muted">No templates found</h4>
+            <p class="text-muted mb-4">
+                {% if search_query or template_type or is_active %}
+                    No templates match your current search criteria. Try adjusting your filters.
+                {% else %}
+                    Get started by creating your first email template.
+                {% endif %}
+            </p>
+            <a href="{% url 'bulk_email_sender:template_create' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus fa-fw"></i> Create First Template
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when filters change
+    const filterSelects = document.querySelectorAll('select[name="type"], select[name="active"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+    
+    // Search with debounce
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            this.closest('form').submit();
+        }, 500);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ report.report_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_reports/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt mr-2"></i>{{ report.report_name }}
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_reports:report_export' report.pk %}" class="btn btn-info btn-sm">
+                <i class="fas fa-download mr-1"></i>Export
+            </a>
+            <a href="{% url 'cost_center_reports:report_edit' report.pk %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-edit mr-1"></i>Edit
+            </a>
+            <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Information -->
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Report Information</h6>
+                    <span class="badge badge-{% if report.status == 'draft' %}secondary{% elif report.status == 'generated' %}success{% else %}warning{% endif %}">
+                        {{ report.get_status_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Report Type:</strong></td>
+                                    <td>{{ report.get_report_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date Range:</strong></td>
+                                    <td>{{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Cost Center:</strong></td>
+                                    <td>
+                                        {% if report.cost_center %}
+                                            <a href="{% url 'cost_center_management:cost_center_detail' report.cost_center.pk %}">
+                                                {{ report.cost_center.code }} - {{ report.cost_center.name }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">All Cost Centers</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Department:</strong></td>
+                                    <td>
+                                        {% if report.department %}
+                                            <a href="{% url 'cost_center_management:department_detail' report.department.pk %}">
+                                                {{ report.department.name }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">All Departments</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Include Inactive:</strong></td>
+                                    <td>
+                                        {% if report.include_inactive %}
+                                            <span class="badge badge-warning">Yes</span>
+                                        {% else %}
+                                            <span class="badge badge-success">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Generated:</strong></td>
+                                    <td>
+                                        {{ report.generated_at|date:"M d, Y H:i" }}<br>
+                                        <small class="text-muted">by {{ report.generated_by.get_full_name|default:report.generated_by.username }}</small>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="col-xl-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Summary Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 font-weight-bold text-primary">{{ report.total_budget|floatformat:2 }}</div>
+                                <div class="text-xs text-muted">Total Budget</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 font-weight-bold text-success">{{ report.total_actual|floatformat:2 }}</div>
+                                <div class="text-xs text-muted">Total Actual</div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 font-weight-bold {% if report.total_variance < 0 %}text-danger{% else %}text-info{% endif %}">
+                                    {{ report.total_variance|floatformat:2 }}
+                                </div>
+                                <div class="text-xs text-muted">Variance</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 font-weight-bold {% if report.variance_percentage < 0 %}text-danger{% else %}text-info{% endif %}">
+                                    {{ report.variance_percentage|floatformat:1 }}%
+                                </div>
+                                <div class="text-xs text-muted">Variance %</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Data -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Report Data</h6>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-primary toggle-view-btn active" data-target="summary-view">
+                    Summary View
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary toggle-view-btn" data-target="detailed-view">
+                    Detailed View
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Summary View -->
+            <div id="summary-view" class="view-content">
+                {% if report_data %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Cost Center</th>
+                                    <th>Department</th>
+                                    <th>Budget</th>
+                                    <th>Actual</th>
+                                    <th>Variance</th>
+                                    <th>Variance %</th>
+                                    <th>Transactions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in report_data %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.cost_center.code }}</strong><br>
+                                        <small class="text-muted">{{ item.cost_center.name }}</small>
+                                    </td>
+                                    <td>{{ item.cost_center.department.name }}</td>
+                                    <td>
+                                        <strong>AED {{ item.budget|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <strong>AED {{ item.actual|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="font-weight-bold {% if item.variance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                            AED {{ item.variance|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if item.variance_percentage < 0 %}badge-danger{% else %}badge-success{% endif %}">
+                                            {{ item.variance_percentage|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ item.transaction_count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-bar fa-3x text-gray-300 mb-3"></i>
+                        <h5 class="text-gray-500">No data available</h5>
+                        <p class="text-gray-400">No transactions found for the selected criteria.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Detailed View -->
+            <div id="detailed-view" class="view-content" style="display: none;">
+                {% if report_data %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Cost Center</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in report_data %}
+                                <tr>
+                                    <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <strong>{{ transaction.reference_number }}</strong>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'cost_center_management:cost_center_detail' transaction.cost_center.pk %}">
+                                            {{ transaction.cost_center.code }} - {{ transaction.cost_center.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ transaction.description|truncatechars:50 }}</td>
+                                    <td>
+                                        <strong>AED {{ transaction.amount|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ transaction.get_transaction_type_display }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-list fa-3x text-gray-300 mb-3"></i>
+                        <h5 class="text-gray-500">No detailed data available</h5>
+                        <p class="text-gray-400">No transactions found for the selected criteria.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_reports/script.js' %}"></script>
+{% endblock %}

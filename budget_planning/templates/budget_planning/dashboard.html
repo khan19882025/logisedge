@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Budget Planning Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-pie mr-2"></i>Budget Planning Dashboard
+        </h1>
+        <div>
+            <a href="{% url 'budget_planning:budget_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Create Budget
+            </a>
+            <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-list mr-1"></i>View All Budgets
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <!-- Total Budgets -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Budgets
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_budgets }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Budgets -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Approved Budgets
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_approved_budgets }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Draft Budgets -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Draft Budgets
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_draft_budgets }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-edit fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Budgets -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Pending Approval
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_pending_budgets }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Budget Status Distribution -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Budget Status Distribution</h6>
+                    <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if budget_status_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Count</th>
+                                        <th>Total Amount</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in budget_status_stats %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-{% if stat.status == 'approved' %}success{% elif stat.status == 'draft' %}warning{% elif stat.status == 'submitted' %}info{% elif stat.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                                {{ stat.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-primary">{{ stat.count }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>AED {{ stat.total_amount|floatformat:2 }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" 
+                                                     data-width="{{ stat.percentage|floatformat:0 }}">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ stat.percentage|floatformat:1 }}%
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-pie fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No budget data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Budgets -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Budgets</h6>
+                    <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_budgets %}
+                        <div class="list-group list-group-flush">
+                            {% for budget in recent_budgets %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ budget.budget_name }}</h6>
+                                    <small class="text-muted">
+                                        {{ budget.budget_code }} • {{ budget.get_budget_period_display }} • {{ budget.fiscal_year }}
+                                    </small>
+                                </div>
+                                <div class="text-right">
+                                    <span class="badge badge-{% if budget.status == 'approved' %}success{% elif budget.status == 'draft' %}warning{% elif budget.status == 'submitted' %}info{% elif budget.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                        {{ budget.get_status_display }}
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">AED {{ budget.total_budget_amount|floatformat:2 }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-pie fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No budgets created yet.</p>
+                            <a href="{% url 'budget_planning:budget_create' %}" class="btn btn-primary btn-sm">
+                                Create First Budget
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost Center Budget Statistics -->
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Cost Centers by Budget Amount</h6>
+                    <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if cost_center_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Cost Center</th>
+                                        <th>Department</th>
+                                        <th>Budget Count</th>
+                                        <th>Total Budget</th>
+                                        <th>Total Actual</th>
+                                        <th>Variance</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in cost_center_stats %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ stat.code }}</strong><br>
+                                            <small class="text-muted">{{ stat.name }}</small>
+                                        </td>
+                                        <td>{{ stat.department.name }}</td>
+                                        <td>
+                                            <span class="badge badge-primary">{{ stat.budget_count }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>AED {{ stat.total_budget|floatformat:2 }}</strong>
+                                        </td>
+                                        <td>
+                                            <strong>AED {{ stat.total_actual|floatformat:2 }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if stat.variance < 0 %}danger{% else %}success{% endif %}">
+                                                AED {{ stat.variance|floatformat:2 }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" 
+                                                     data-width="{{ stat.percentage|floatformat:0 }}">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ stat.percentage|floatformat:1 }}%
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-building fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No cost center budget data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'budget_planning:budget_create' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-plus mr-2"></i>Create Budget
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-secondary btn-block">
+                                <i class="fas fa-list mr-2"></i>View Budgets
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'budget_planning:budget_import' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-upload mr-2"></i>Import Budgets
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'budget_planning:budget_variance_report' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-chart-bar mr-2"></i>Variance Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/budget_planning/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize progress bars
+    $('.progress-bar').each(function() {
+        var width = $(this).data('width');
+        $(this).css('width', width + '%');
+    });
+});
+</script>
+{% endblock %}

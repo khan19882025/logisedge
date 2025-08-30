@@ -1,0 +1,361 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HBL - {{ hbl.hbl_number }}</title>
+    <style>
+      .hbl-table { width: 100%; border-collapse: collapse; }
+      .hbl-table td, .hbl-table th { border: 1px solid #888; padding: 4px 6px; vertical-align: top; }
+      .hbl-label { font-size: 10px; color: #666; font-weight: normal; letter-spacing: 0.5px; }
+      .hbl-value { font-size: 13px; font-weight: bold; color: #222; }
+      .hbl-company { font-size: 13px; font-weight: bold; }
+      .hbl-contact { font-size: 12px; }
+      .hbl-logo { width: 100px; }
+      @media print { 
+        .no-print { display: none; }
+        @page {
+          margin: 0.5cm;
+          size: A4;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+        }
+        /* Hide browser's default header and footer */
+        @page :first {
+          margin-top: 0.5cm;
+        }
+        @page :left {
+          margin-left: 0.5cm;
+        }
+        @page :right {
+          margin-right: 0.5cm;
+        }
+      }
+    </style>
+</head>
+<body>
+    <button class="no-print" onclick="window.print()" style="float:right; margin:10px 0;">Print</button>
+
+    <table class="hbl-table">
+      <tr>
+        <td colspan="8" style="padding: 2px 6px; font-size:14px; font-weight:bold; position:relative;">
+          BILL OF LADING FOR COMBINED TRANSPORT SHIPMENT OR FOR PORT SHIPMENT.<br>
+          <span style="font-size:10px; font-weight:normal;">NOT NEGOTIABLE UNLESS CONSIGNED TO ORDER.</span>
+          <span style="position:absolute; right:12px; top:8px; font-size:14px; font-weight:bold; text-transform:uppercase;">{{ hbl.status|upper }}</span>
+        </td>
+      </tr>
+      <tr>
+        <!-- Left block: Shipper, Consignee, Notify stacked -->
+        <td colspan="4" rowspan="4" style="width:48%; vertical-align:top;">
+          <div style="border-bottom:1px solid #888; padding-bottom:4px; margin-bottom:4px;">
+            <div class="hbl-label">1. SHIPPER (NAME AND FULL ADDRESS)</div>
+            <div class="hbl-value">
+              {{ hbl.shipper.customer_name|default:'-' }}<br>
+              {% if hbl.shipper.shipping_address %}
+                {{ hbl.shipper.shipping_address }}
+              {% elif hbl.shipper.billing_address %}
+                {{ hbl.shipper.billing_address }}
+              {% else %}-{% endif %}<br>
+              {% if hbl.shipper.shipping_city or hbl.shipper.shipping_state or hbl.shipper.shipping_country %}
+                {{ hbl.shipper.shipping_city|default:'' }} {{ hbl.shipper.shipping_state|default:'' }}<br>
+                {{ hbl.shipper.shipping_country|default:'' }}
+              {% else %}
+                {{ hbl.shipper.billing_city|default:'' }} {{ hbl.shipper.billing_state|default:'' }}<br>
+                {{ hbl.shipper.billing_country|default:'' }}
+              {% endif %}
+            </div>
+          </div>
+          <div style="border-bottom:1px solid #888; padding-bottom:4px; margin-bottom:4px;">
+            <div class="hbl-label">2. CONSIGNEE (NAME AND FULL ADDRESS)</div>
+            <div class="hbl-value">
+              {{ hbl.consignee.customer_name|default:'-' }}<br>
+              {% if hbl.consignee.shipping_address %}
+                {{ hbl.consignee.shipping_address }}
+              {% elif hbl.consignee.billing_address %}
+                {{ hbl.consignee.billing_address }}
+              {% else %}-{% endif %}<br>
+              {% if hbl.consignee.shipping_city or hbl.consignee.shipping_state or hbl.consignee.shipping_country %}
+                {{ hbl.consignee.shipping_city|default:'' }} {{ hbl.consignee.shipping_state|default:'' }}<br>
+                {{ hbl.consignee.shipping_country|default:'' }}
+              {% else %}
+                {{ hbl.consignee.billing_city|default:'' }} {{ hbl.consignee.billing_state|default:'' }}<br>
+                {{ hbl.consignee.billing_country|default:'' }}
+              {% endif %}
+            </div>
+          </div>
+          <div style="border-bottom:1px solid #888; padding-bottom:4px; margin-bottom:4px;">
+            <div class="hbl-label">3. NOTIFY PARTY INTERMEDIATE CONSIGNEE (NAME AND ADDRESS)</div>
+            <div class="hbl-value">
+              {% if hbl.notify_party %}
+                {{ hbl.notify_party.customer_name|default:'-' }}<br>
+                {% if hbl.notify_party.shipping_address %}
+                  {{ hbl.notify_party.shipping_address }}
+                {% elif hbl.notify_party.billing_address %}
+                  {{ hbl.notify_party.billing_address }}
+                {% else %}-{% endif %}<br>
+                {% if hbl.notify_party.shipping_city or hbl.notify_party.shipping_state or hbl.notify_party.shipping_country %}
+                  {{ hbl.notify_party.shipping_city|default:'' }} {{ hbl.notify_party.shipping_state|default:'' }}<br>
+                  {{ hbl.notify_party.shipping_country|default:'' }}
+                {% else %}
+                  {{ hbl.notify_party.billing_city|default:'' }} {{ hbl.notify_party.billing_state|default:'' }}<br>
+                  {{ hbl.notify_party.billing_country|default:'' }}
+                {% endif %}
+              {% else %}
+                SAME AS CONSIGNEE<br>
+                {% if hbl.consignee.shipping_address %}
+                  {{ hbl.consignee.shipping_address }}<br>
+                  {{ hbl.consignee.shipping_city|default:'' }} {{ hbl.consignee.shipping_state|default:'' }}<br>
+                  {{ hbl.consignee.shipping_country|default:'' }}
+                {% else %}
+                  {{ hbl.consignee.billing_address|default:'' }}<br>
+                  {{ hbl.consignee.billing_city|default:'' }} {{ hbl.consignee.billing_state|default:'' }}<br>
+                  {{ hbl.consignee.billing_country|default:'' }}
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+          <!-- New row for Pre-Carriage and Place of Receipt -->
+          <div>
+            <table style="width:100%; border-collapse:collapse;">
+              <tr>
+                <td style="width:50%; border:1px solid #888; vertical-align:top;">
+                  <div class="hbl-label" style="font-size:9px;">3. PRE-CARRIAGE BY</div>
+                  <div class="hbl-value" style="font-size:12px;">{{ hbl.pre_carriage_by|default:'BY SEA' }}</div>
+                </td>
+                <td style="width:50%; border:1px solid #888; vertical-align:top;">
+                  <div class="hbl-label" style="font-size:9px;">10. PLACE OF RECEIPT BY PRE-CARRIER</div>
+                  <div class="hbl-value" style="font-size:12px;">{{ hbl.place_of_receipt|default:'SOKHNA PORT, EGYPT' }}</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <!-- New row for Ocean Vessel and Port of Loading/Export -->
+          <div>
+            <table style="width:100%; border-collapse:collapse;">
+              <tr>
+                <td style="width:50%; border:1px solid #888; vertical-align:top;">
+                  <div class="hbl-label" style="font-size:9px;">11. OCEAN VESSEL</div>
+                  <div class="hbl-value" style="font-size:12px;">{{ hbl.ocean_vessel|default:'HAIAN WEST/25010E' }}</div>
+                </td>
+                <td style="width:50%; border:1px solid #888; vertical-align:top;">
+                  <div class="hbl-label" style="font-size:9px;">12. PORT OF LOADING/EXPORT</div>
+                  <div class="hbl-value" style="font-size:12px;">{{ hbl.port_of_loading|default:'SOKHNA PORT, EGYPT' }}</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <!-- New row for Port of Discharge and Place of Delivery by O-Carrier -->
+          <div>
+            <table style="width:100%; border-collapse:collapse;">
+              <tr>
+                <td style="width:50%; border:1px solid #888; vertical-align:top;">
+                  <div class="hbl-label" style="font-size:9px;">13. PORT OF DISCHARGE</div>
+                  <div class="hbl-value" style="font-size:12px;">{{ hbl.port_of_discharge|default:'JEBEL ALI, U.A.E.' }}</div>
+                </td>
+                <td style="width:50%; border:1px solid #888; vertical-align:top;">
+                  <div class="hbl-label" style="font-size:9px;">14. PLACE OF DELIVERY BY O-CARRIER</div>
+                  <div class="hbl-value" style="font-size:12px;">{{ hbl.place_of_delivery|default:'JEBEL ALI' }}</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </td>
+        <!-- Right block: B/L, Export Ref, Forwarding Agent, Legal -->
+        <td colspan="4" style="width:52%; vertical-align:top;">
+          <div style="border-bottom:1px solid #888; padding-bottom:2px; margin-bottom:2px;">
+            <div class="hbl-label" style="font-size:9px;">4. B/L NUMBER</div>
+            <div class="hbl-value" style="font-size:12px;">{{ hbl.hbl_number }}</div>
+          </div>
+          <div style="border-bottom:1px solid #888; padding-bottom:2px; margin-bottom:2px;">
+            <div class="hbl-label" style="font-size:9px;">5. EXPORT REFERENCES</div>
+            <div class="hbl-value" style="font-size:12px;">&nbsp;</div>
+          </div>
+          <div style="border-bottom:1px solid #888; padding-bottom:2px; margin-bottom:2px; text-align:center;">
+            <div class="hbl-label" style="font-size:9px;">6. FORWARDING AGENT (NAME AND ADDRESS REFERENCES)</div>
+            <div class="hbl-value" style="display: flex; justify-content: space-between; align-items: flex-start; min-height: 160px;">
+              <div style="text-align:left;">
+                <div class="hbl-company">ADIRAI FREIGHT SERVICE LLC</div>
+                <div class="hbl-contact">
+                  Jebel Ali Free Zone, Dubai,<br>
+                  United Arab Emirates.<br>
+                  Email: doc5@adiraifreight.com.<br>
+                  Landline: +971-04-8808477
+                </div>
+              </div>
+              <div>
+                {% if encoded_logo %}
+                <img src="data:{{ logo_mime|default:'image/png' }};base64,{{ encoded_logo }}" class="hbl-logo" alt="Company Logo" style="width:140px;">
+                {% else %}
+                <img src="{% static 'img/logo.jpeg' %}" class="hbl-logo" alt="Company Logo" style="width:140px;">
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="hbl-label" style="font-size:9px;">8. DOMESTIC ROUTING/EXPORT INSTRUCTIONS</div>
+            <div class="hbl-value" style="font-size:9px; font-weight:normal;">
+              "Carriage" means the whole or any part of the operations and services undertaken or performed by the Carrier in respect of the goods covered by this Bill of Lading. "Carrier" means the company stated on the front of this Bill of Lading as being the Carrier and on whose behalf this Bill of Lading has been issued. "Charges" includes freight and all expenses and obligations payable to the Carrier in accordance with the applicable Bill of Lading terms.
+            </div>
+          </div>
+        </td>
+      </tr>
+      <!-- Middle section: Pre-carriage, Place of Receipt, etc. -->
+      <tr>
+        <td colspan="8" style="padding:0; border:none;">
+          <table class="hbl-table" style="margin:0; width:100%; border:none;">
+            <tr>
+              <td colspan="8">
+                <div class="hbl-label">15. LOADING PIER/TERMINAL</div>
+                <div class="hbl-value">{{ hbl.loading_pier_terminal|default:'' }}</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="hbl-label">16. NO OF ORIGINAL(S) B/L SIGNED</div>
+                <div class="hbl-value">{{ hbl.no_of_originals|default:'' }}</div>
+              </td>
+              <td>
+                <div class="hbl-label">17. TYPE OF MOVE</div>
+                <div class="hbl-value">{{ hbl.type_of_move|default:'' }}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <br>
+    <table class="hbl-table" style="width:100%; table-layout:fixed;">
+      <tr>
+        <td style="width:20%;"><div class="hbl-label">18. MARKS AND<br>NUMBERS</div></td>
+        <td style="width:20%;"><div class="hbl-label">19. NUMBER OF<br>PACKAGES</div></td>
+        <td style="width:20%;"><div class="hbl-label">20. DESCRIPTION OF<br>COMMODITIES IN<br>SCHEDULE & DETAIL</div></td>
+        <td style="width:20%;"><div class="hbl-label">21. GROSS WEIGHT</div></td>
+        <td style="width:20%;"><div class="hbl-label">22. MEASUREMENT</div></td>
+      </tr>
+      <tr style="height:200px; min-height:200px;">
+        <td style="vertical-align:top;">
+          <div class="hbl-value">01 TO {{ total_packages }}</div>
+          <div class="hbl-label">CONTAINER NO.</div>
+          {% for cargo in cargo_items %}
+            <div class="hbl-value">{{ cargo.container_no }}</div>
+            <div class="hbl-label">SEAL NO</div>
+            <div class="hbl-value">{{ cargo.seal_no }}</div>
+          {% endfor %}
+        </td>
+        <td style="vertical-align:top;">
+          <div class="hbl-value">{{ total_packages }}</div>
+          <div class="hbl-label">{{ first_type_label }}{% if first_type_qty %} - {{ first_type_qty }}{% endif %}</div>
+        </td>
+        <td style="vertical-align:top;">
+          <div class="hbl-value" style="font-weight:bold; text-align:center;">SAID TO CONTAIN</div>
+          {% for cargo in cargo_items %}
+            {% if forloop.first %}
+            <div class="hbl-value" style="font-weight:bold; text-align:center;">
+              {% with container_count=cargo_items|length %}
+              {% with container_size=cargo.container_size %}
+              {{ container_count }}x{{ container_size }}
+              {% endwith %}
+              {% endwith %}
+            </div>
+            {% endif %}
+            <div class="hbl-value">{{ cargo.description }}</div>
+            <div class="hbl-label" style="font-weight:bold;">G.W.: {{ cargo.gross_weight }} KGS</div>
+            <div class="hbl-label" style="font-weight:bold;">N.W.: {{ cargo.net_weight }} KGS</div>
+            <div class="hbl-label" style="font-weight:bold;">SHIPPED ON BOARD: {% if hbl.shipped_on_board %}{{ hbl.shipped_on_board|date:"d/m/Y" }}{% else %}-{% endif %}</div>
+            <div class="hbl-label" style="font-weight:bold;">Shipping Agencies AFS agent for the Carrier</div>
+          {% endfor %}
+        </td>
+        <td style="vertical-align:top;">
+          <div class="hbl-label">GR.WEIGHT</div>
+          {% for cargo in cargo_items %}
+            <div class="hbl-value">{{ cargo.gross_weight }} KGS</div>
+          {% endfor %}
+        </td>
+        <td style="vertical-align:top;">
+          {% for cargo in cargo_items %}
+            <div class="hbl-label">CBM</div>
+            <div class="hbl-value">{{ cargo.measurement }}</div>
+          {% endfor %}
+        </td>
+      </tr>
+      <tr style="height:60px;">
+        <td colspan="2" style="vertical-align:top; border-right:1px solid #888;">
+          <div style="font-size:11px; font-weight:bold;">23. FREIGHT RATES WEIGHTS AND/OR<br>MEASUREMENTS</div>
+          <div style="font-size:10px;">SUBJECT TO CORRECTION</div>
+          <div style="margin-top:2px;">
+            <span style="font-size:10px; font-weight:bold;">FREIGHT: PREPAID</span>
+          </div>
+        </td>
+        <td style="vertical-align:top; border-right:1px solid #888;">
+          <div style="font-size:11px;">
+            <div>CY/CFS</div>
+            <div>{{ hbl.terms }}</div>
+            <div>SHIPPER LOAD & COUNT</div>
+            <div>FREIGHT PREPAID*</div>
+          </div>
+        </td>
+        <td colspan="2" style="vertical-align:top;">
+          <div style="font-size:11px; font-weight:bold;">DATED AT 24.</div>
+          <div style="font-size:12px; font-weight:bold;">{% if hbl.issue_date %}{{ hbl.issue_date|date:"d/m/Y" }}{% else %}-{% endif %}</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="5" style="vertical-align:top;">
+          <div class="hbl-label">BY 25.</div>
+          <div class="hbl-label">AGENT FOR THE CARRIER</div>
+          <div class="hbl-value" style="font-family:serif; font-weight:bold; color:#2a4d7a;">ADIRAI FREIGHT SERVICE LLC</div>
+          <div class="hbl-label" style="font-size:10px; text-align:left;">
+            RECEIVED IN APPARENT GOOD ORDER AND CONDITION FOR TRANSPORTATION FROM THE PLACE OF RECEIPT TO THE PLACE OF DELIVERY SUBJECT TO THE TERMS AND CONDITIONS OF GP LINES (SEE REVERSE) AS WELL AS THE TERMS AND CONDITIONS AND EXCEPTIONS OF THE STEAMSHIP COMPANIES, CARRIERS, ORGANIZATIONS OR FIRMS WHOSE SERVICES ARE USED FOR PRECEDING, SHIPPING, CARRYING, FORWARDING, STORING, HANDLING AND/OR DELIVERING THE GOODS. THE MENTIONED PACKAGES SAID TO BE MARKED AND NUMBERED AS IN THE MARGIN. WEIGHT, MEASURE, CONTENT AND VALUE UNKNOWN SUBJECT TO THE CONDITIONS CONTAINED IN BILL OF LADING. GOODS TO BE EFFECTED AT THE ABOVE DESIGNATED PLACE OF DESTINATION THERE TO WHARF CARRIERS DESIGNATED BY THE FORWARDING AGENTS. ONE ORIGINAL BILL OF LADING DULY DISCHARGED TO THE SURRENDERING AGENT IN EXCHANGE FOR THE GOODS OR THE DELIVERY ORDER IN WITNESS WHEREOF THE NUMBER OF ORIGINAL BILLS OF LADING STATED ABOVE HAS BEEN SIGNED ALL OF THIS TENOR AND ONE OF WHICH BEING ACCOMPLISHED THE OTHERS TO STAND VOID.
+          </div>
+          <div class="hbl-value" style="font-family:serif; font-weight:bold; color:#2a4d7a; text-align:center;">A.F.S</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="5" style="padding: 8px 0;">
+          <!-- Header Row -->
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; letter-spacing: 1px;">
+            <span style="flex:1; text-align:center;">Container No</span>
+            <span style="flex:1; text-align:center;">Seal No</span>
+            <span style="flex:1; text-align:center;">ISO</span>
+            <span style="flex:1; text-align:center;">QTY</span>
+            <span style="flex:1; text-align:center;">TYPE</span>
+            <span style="flex:1; text-align:center;">NT.WEIGHT</span>
+            <span style="flex:1; text-align:center;">GR.WEIGHT</span>
+            <span style="flex:1; text-align:center;">FREIGHT</span>
+            <span style="flex:1; text-align:center;">CARGO CODE</span>
+          </div>
+          <!-- Data Rows -->
+          {% for cargo in cargo_items %}
+          <div style="display: flex; justify-content: space-between; font-size: 13px; margin-top:2px;">
+            <span style="flex:1; text-align:center;">{{ cargo.container_no }}</span>
+            <span style="flex:1; text-align:center;">{{ cargo.seal_no }}</span>
+            <span style="flex:1; text-align:center;">{{ cargo.container_size }}</span>
+            <span style="flex:1; text-align:center;">{{ cargo.number_of_packages }}</span>
+            <span style="flex:1; text-align:center;">
+              {% if cargo.package_type == 'OTHER' %}
+                {{ cargo.custom_package_type|upper }}
+              {% else %}
+                {{ cargo.package_type|upper }}
+              {% endif %}
+            </span>
+            <span style="flex:1; text-align:center;">{{ cargo.net_weight }}</span>
+            <span style="flex:1; text-align:center;">{{ cargo.gross_weight }}</span>
+            <span style="flex:1; text-align:center;">PREPAID</span>
+            <span style="flex:1; text-align:center;">{{ hbl.terms }}</span>
+          </div>
+          {% endfor %}
+        </td>
+      </tr>
+    </table>
+
+    <script>
+    function printHBL() {
+        window.print();
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Templates - Master Data Import{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'master_data_import/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Import Templates</h1>
+        <a href="{% url 'master_data_import_utilities:template_create' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus fa-sm"></i> Create Template
+        </a>
+    </div>
+
+    <!-- Templates List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Available Templates</h6>
+        </div>
+        <div class="card-body">
+            {% if templates %}
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="templatesTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Template Name</th>
+                                <th>Data Type</th>
+                                <th>Description</th>
+                                <th>Fields</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                            <tr>
+                                <td>
+                                    <strong>{{ template.name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">{{ template.data_type }}</span>
+                                </td>
+                                <td>{{ template.description|default:"No description" }}</td>
+                                <td>
+                                    <small class="text-muted">{{ template.fields|length }} fields</small>
+                                </td>
+                                <td>{{ template.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'master_data_import_utilities:template_detail' template.id %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'master_data_import_utilities:template_update' template.id %}" 
+                                           class="btn btn-sm btn-outline-warning" title="Edit Template">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'master_data_import_utilities:template_delete' template.id %}" 
+                                           class="btn btn-sm btn-outline-danger" title="Delete Template">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <a href="{% url 'master_data_import_utilities:download_template' template.id %}" 
+                                           class="btn btn-sm btn-outline-success" title="Download Template">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Template pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">&laquo; First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-500">No Import Templates Found</h5>
+                    <p class="text-gray-400">Get started by creating your first import template.</p>
+                    <a href="{% url 'master_data_import_utilities:template_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Template
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Templates
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ templates|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Templates
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ templates|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Data Types
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ templates|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-database fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Recent Activity
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">View</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'master_data_import/js/dashboard.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize DataTable if available
+    if ($.fn.DataTable) {
+        $('#templatesTable').DataTable({
+            "order": [[4, "desc"]], // Sort by created date descending
+            "pageLength": 25,
+            "language": {
+                "search": "Search templates:",
+                "lengthMenu": "Show _MENU_ templates per page",
+                "info": "Showing _START_ to _END_ of _TOTAL_ templates"
+            }
+        });
+    }
+
+    // Add confirmation for delete actions
+    $('.btn-outline-danger').click(function(e) {
+        if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

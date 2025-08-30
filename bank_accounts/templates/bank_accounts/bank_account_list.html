@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bank Accounts - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_accounts/css/bank_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="bank-accounts-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-university"></i> Bank Accounts</h2>
+                <p class="subtitle">Manage your company's bank accounts</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'bank_accounts:bank_account_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Bank Account
+                </a>
+                <a href="{% url 'bank_accounts:export_bank_accounts' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-download"></i> Export
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filters-section">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="search-filters-form">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="{{ search_form.search_term.id_for_label }}" class="form-label">Search</label>
+                            {{ search_form.search_term }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ search_form.search_by.id_for_label }}" class="form-label">Search By</label>
+                            {{ search_form.search_by }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ search_form.account_type.id_for_label }}" class="form-label">Account Type</label>
+                            {{ search_form.account_type }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ search_form.currency.id_for_label }}" class="form-label">Currency</label>
+                            {{ search_form.currency }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ search_form.status.id_for_label }}" class="form-label">Status</label>
+                            {{ search_form.status }}
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-3">
+                            <label for="{{ search_form.is_default.id_for_label }}" class="form-label">Default Account</label>
+                            {{ search_form.is_default }}
+                        </div>
+                        <div class="col-md-9 d-flex align-items-end">
+                            <a href="{% url 'bank_accounts:bank_account_list' %}" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="summary-stats">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ total_accounts }}</div>
+                        <div class="summary-label">Total Accounts</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon active">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ active_accounts }}</div>
+                        <div class="summary-label">Active Accounts</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon balance">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ total_balance|floatformat:2 }}</div>
+                        <div class="summary-label">Total Balance</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-icon default">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-number">{{ page_obj.paginator.count }}</div>
+                        <div class="summary-label">Filtered Results</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Accounts Table -->
+    <div class="bank-accounts-table-section">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Bank Accounts List</h5>
+            </div>
+            <div class="card-body">
+                {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover bank-accounts-table">
+                            <thead>
+                                <tr>
+                                    <th>Bank Name</th>
+                                    <th>Account Number</th>
+                                    <th>Type</th>
+                                    <th>Currency</th>
+                                    <th>Current Balance</th>
+                                    <th>Status</th>
+                                    <th>Default</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for account in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="bank-info">
+                                                <div class="bank-name">{{ account.bank_name }}</div>
+                                                {% if account.branch_name %}
+                                                    <div class="bank-branch">{{ account.branch_name }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="account-number">
+                                                <span class="masked-number">{{ account.masked_account_number }}</span>
+                                                {% if account.ifsc_code %}
+                                                    <div class="ifsc-code">{{ account.ifsc_code }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="account-type-badge account-type-{{ account.account_type }}">
+                                                {{ account.get_account_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="currency-info">
+                                                <span class="currency-code">{{ account.currency.code }}</span>
+                                                <div class="currency-name">{{ account.currency.name }}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="balance-info">
+                                                <div class="balance-amount">{{ account.balance_formatted }}</div>
+                                                {% if account.opening_balance != account.current_balance %}
+                                                    <div class="balance-change">
+                                                        {% if account.current_balance > account.opening_balance %}
+                                                            <i class="fas fa-arrow-up text-success"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-arrow-down text-danger"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge status-{{ account.status }}">
+                                                {{ account.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="default-indicators">
+                                                {% if account.is_default_for_payments %}
+                                                    <span class="default-badge payments">Payments</span>
+                                                {% endif %}
+                                                {% if account.is_default_for_receipts %}
+                                                    <span class="default-badge receipts">Receipts</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a href="{% url 'bank_accounts:bank_account_detail' account.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'bank_accounts:bank_account_edit' account.pk %}" 
+                                                   class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'bank_accounts:bank_account_transactions' account.pk %}" 
+                                                   class="btn btn-sm btn-outline-info" title="Transactions">
+                                                    <i class="fas fa-exchange-alt"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-account-btn" 
+                                                        title="Delete" 
+                                                        data-account-id="{{ account.pk }}" 
+                                                        data-account-name="{{ account.bank_name }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                        <nav aria-label="Bank accounts pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-university"></i>
+                        <h5>No Bank Accounts Found</h5>
+                        <p>No bank accounts match your current filters.</p>
+                        <a href="{% url 'bank_accounts:bank_account_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Your First Bank Account
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the bank account "<span id="accountName"></span>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_accounts/js/bank_accounts.js' %}"></script>
+<script>
+// Add event listeners for delete buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.delete-account-btn');
+    
+    deleteButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            const accountId = this.getAttribute('data-account-id');
+            const accountName = this.getAttribute('data-account-name');
+            
+            // Set the account name in the modal
+            document.getElementById('accountName').textContent = accountName;
+            
+            // Set the form action
+            document.getElementById('deleteForm').action = `/accounting/bank-accounts/${accountId}/delete/`;
+            
+            // Show the modal
+            var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+        });
+    });
+});
+</script>
+{% endblock %} 

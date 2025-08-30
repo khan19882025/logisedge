@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking {{ booking.booking_number }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-calendar-check me-2"></i>Booking {{ booking.booking_number }}
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:booking_update' booking.pk %}" class="btn btn-warning btn-sm me-2">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <a href="{% url 'container_management:tracking_create' %}?booking={{ booking.pk }}" class="btn btn-info btn-sm me-2">
+                <i class="bi bi-geo-alt me-1"></i>Add Tracking
+            </a>
+            <a href="{% url 'container_management:booking_list' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Booking Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Booking Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Booking Number:</strong></td>
+                                    <td>{{ booking.booking_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Container:</strong></td>
+                                    <td>
+                                        <a href="{% url 'container_management:container_detail' booking.container.pk %}">
+                                            {{ booking.container.container_number }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ booking.container.get_container_type_display }}</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer:</strong></td>
+                                    <td>
+                                        <strong>{{ booking.customer.name }}</strong>
+                                        {% if booking.customer.email %}
+                                            <br>
+                                            <small class="text-muted">{{ booking.customer.email }}</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ booking.get_status_display_class }}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Container Type:</strong></td>
+                                    <td>{{ booking.container_type|title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Container Size:</strong></td>
+                                    <td>{{ booking.container_size }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Pickup Date:</strong></td>
+                                    <td>{{ booking.pickup_date|date:"M d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Pickup Location:</strong></td>
+                                    <td>{{ booking.pickup_location }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Drop Off Date:</strong></td>
+                                    <td>{{ booking.drop_off_date|date:"M d, Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Drop Off Port:</strong></td>
+                                    <td>{{ booking.drop_off_port }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rate:</strong></td>
+                                    <td><strong>AED {{ booking.rate|floatformat:2 }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Booking Date:</strong></td>
+                                    <td>{{ booking.booking_date|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cargo Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-box me-2"></i>Cargo Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Cargo Description:</strong></td>
+                                    <td>{{ booking.cargo_description }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Weight:</strong></td>
+                                    <td>{{ booking.weight }} kg</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Volume:</strong></td>
+                                    <td>{{ booking.volume }} cbm</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            {% if booking.special_instructions %}
+                                <div class="mb-3">
+                                    <strong>Special Instructions:</strong>
+                                    <p class="mb-0">{{ booking.special_instructions }}</p>
+                                </div>
+                            {% endif %}
+                            
+                            {% if booking.soc_coc_details %}
+                                <div class="mb-3">
+                                    <strong>SOC/COC Details:</strong>
+                                    <p class="mb-0">{{ booking.soc_coc_details }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Events -->
+            {% if tracking_events %}
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-geo-alt me-2"></i>Tracking Events
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Milestone</th>
+                                        <th>Location</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>ETA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tracking in tracking_events %}
+                                        <tr>
+                                            <td>{{ tracking.get_milestone_display }}</td>
+                                            <td>{{ tracking.location }}</td>
+                                            <td>{{ tracking.event_date|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                {% if tracking.is_completed %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">In Progress</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if tracking.eta %}
+                                                    {{ tracking.eta|date:"M d, Y H:i" }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Container Movements -->
+            {% if movements %}
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-arrow-left-right me-2"></i>Container Movements
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Movement Type</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Date</th>
+                                        <th>Vessel</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for movement in movements %}
+                                        <tr>
+                                            <td>{{ movement.get_movement_type_display }}</td>
+                                            <td>{{ movement.from_location }}</td>
+                                            <td>{{ movement.to_location }}</td>
+                                            <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                {% if movement.vessel_name %}
+                                                    {{ movement.vessel_name }}
+                                                    {% if movement.voyage_number %}
+                                                        <br>
+                                                        <small class="text-muted">{{ movement.voyage_number }}</small>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Booking Status -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Status Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Current Status:</strong>
+                        <span class="badge bg-{{ booking.get_status_display_class }} fs-6">
+                            {{ booking.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    {% if booking.confirmed_date %}
+                        <div class="mb-3">
+                            <strong>Confirmed Date:</strong>
+                            <div>{{ booking.confirmed_date|date:"M d, Y H:i" }}</div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Duration:</strong>
+                        <div>{{ booking.get_duration_days }} days</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'container_management:tracking_create' %}?booking={{ booking.pk }}" 
+                           class="btn btn-info btn-sm">
+                            <i class="bi bi-geo-alt me-1"></i>Add Tracking Event
+                        </a>
+                        <a href="{% url 'container_management:booking_update' booking.pk %}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Edit Booking
+                        </a>
+                        <a href="{% url 'container_management:booking_delete' booking.pk %}" 
+                           class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i>Delete Booking
+                        </a>
+                        <a href="{% url 'container_management:container_detail' booking.container.pk %}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-container me-1"></i>View Container
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Statistics -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-graph-up me-2"></i>Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-primary">{{ tracking_events.count }}</div>
+                            <small class="text-muted">Tracking Events</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-success">{{ movements.count }}</div>
+                            <small class="text-muted">Movements</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-info">{{ booking.get_duration_days }}</div>
+                            <small class="text-muted">Duration (Days)</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-warning">{{ booking.rate|floatformat:0 }}</div>
+                            <small class="text-muted">Rate (AED)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+{% endblock %}

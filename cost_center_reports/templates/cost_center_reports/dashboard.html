@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cost Center Reports Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_reports/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line mr-2"></i>Cost Center Reports Dashboard
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_reports:report_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Create Report
+            </a>
+            <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-list mr-1"></i>View All Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <!-- Total Reports -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Reports
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_reports }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Cost Centers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Cost Centers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_cost_centers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Departments -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Active Departments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_departments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-sitemap fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Recent Reports
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ recent_reports.count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Cost Center Statistics -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Cost Centers by Transaction Amount</h6>
+                    <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if cost_center_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Cost Center</th>
+                                        <th>Department</th>
+                                        <th>Transactions</th>
+                                        <th>Total Amount</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in cost_center_stats %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ stat.code }}</strong><br>
+                                            <small class="text-muted">{{ stat.name }}</small>
+                                        </td>
+                                        <td>{{ stat.department.name }}</td>
+                                        <td>
+                                            <span class="badge badge-primary">{{ stat.transaction_count }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>AED {{ stat.total_amount|floatformat:2 }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" 
+                                                     data-width="{{ stat.percentage|floatformat:0 }}">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">{{ stat.percentage|floatformat:1 }}%</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-bar fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No cost center data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Reports</h6>
+                    <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                        <div class="list-group list-group-flush">
+                            {% for report in recent_reports %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ report.report_name }}</h6>
+                                    <small class="text-muted">
+                                        {{ report.report_type|title }} • {{ report.start_date|date:"M d" }} - {{ report.end_date|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                                <a href="{% url 'cost_center_reports:report_detail' report.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    View
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No reports generated yet.</p>
+                            <a href="{% url 'cost_center_reports:report_create' %}" class="btn btn-primary btn-sm">
+                                Create First Report
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Type Distribution -->
+    <div class="row">
+        <div class="col-xl-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Report Type Distribution</h6>
+                </div>
+                <div class="card-body">
+                    {% if report_type_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Report Type</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in report_type_stats %}
+                                    <tr>
+                                        <td>{{ stat.report_type|title }}</td>
+                                        <td>
+                                            <span class="badge badge-info">{{ stat.count }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-info" role="progressbar" 
+                                                     data-width="{{ stat.percentage|floatformat:0 }}">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ stat.percentage|floatformat:1 }}%
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-pie fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No report type data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-xl-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'cost_center_reports:report_create' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-plus mr-2"></i>Create Report
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-secondary btn-block">
+                                <i class="fas fa-list mr-2"></i>View Reports
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'cost_center_reports:schedule_list' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-calendar mr-2"></i>Report Schedules
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'cost_center_management:dashboard' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-cog mr-2"></i>Cost Centers
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_reports/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize progress bars
+    $('.progress-bar').each(function() {
+        var width = $(this).data('width');
+        $(this).css('width', width + '%');
+    });
+});
+</script>
+{% endblock %}

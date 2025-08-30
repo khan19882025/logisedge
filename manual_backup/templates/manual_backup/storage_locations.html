@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Storage Locations - Manual Backup{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Storage Locations</h1>
+                <a href="{% url 'manual_backup:create_storage_location' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Storage Location
+                </a>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" id="storageSearchForm">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="search">Search</label>
+                                    <input type="text" class="form-control" id="search" name="search" 
+                                           value="{{ request.GET.search }}" placeholder="Search locations...">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="storage_type">Storage Type</label>
+                                    <select class="form-control" id="storage_type" name="storage_type">
+                                        <option value="">All Types</option>
+                                        <option value="local" {% if request.GET.storage_type == 'local' %}selected{% endif %}>Local</option>
+                                        <option value="network" {% if request.GET.storage_type == 'network' %}selected{% endif %}>Network</option>
+                                        <option value="cloud" {% if request.GET.storage_type == 'cloud' %}selected{% endif %}>Cloud</option>
+                                        <option value="tape" {% if request.GET.storage_type == 'tape' %}selected{% endif %}>Tape</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select class="form-control" id="status" name="status">
+                                        <option value="">All Statuses</option>
+                                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">Filter</button>
+                                        <a href="{% url 'manual_backup:storage_locations' %}" class="btn btn-secondary">Clear</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Storage Locations List -->
+            {% if storage_locations %}
+                <div class="row">
+                    {% for location in storage_locations %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">{{ location.name }}</h5>
+                                    <span class="badge {% if location.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                                        {% if location.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <strong>Type:</strong> {{ location.get_storage_type_display }}<br>
+                                        <strong>Path:</strong> {{ location.path }}<br>
+                                        {% if location.host %}
+                                            <strong>Host:</strong> {{ location.host }}<br>
+                                        {% endif %}
+                                        {% if location.port %}
+                                            <strong>Port:</strong> {{ location.port }}<br>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <strong>Capacity:</strong> {{ location.total_capacity_formatted }}<br>
+                                        <strong>Available:</strong> {{ location.available_capacity_formatted }}<br>
+                                        <strong>Usage:</strong> 
+                                        <div class="progress mt-1" style="height: 8px;">
+                                            <div class="progress-bar {% if location.usage_percentage > 90 %}bg-danger{% elif location.usage_percentage > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 style="width: {{ location.usage_percentage }}%"></div>
+                                        </div>
+                                        <small class="text-muted">{{ location.usage_percentage|floatformat:1 }}% used</small>
+                                    </div>
+                                    
+                                    {% if location.description %}
+                                        <p class="card-text">{{ location.description }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-3">
+                                        {% if location.is_primary %}
+                                            <span class="badge badge-primary mb-2">Primary Storage</span>
+                                        {% endif %}
+                                        {% if location.encryption_required %}
+                                            <span class="badge badge-info mb-2">Encryption Required</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{% url 'manual_backup:edit_storage_location' location.id %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <button class="btn btn-outline-info btn-sm" onclick="testConnection({{ location.id }})">
+                                            <i class="fas fa-plug"></i> Test
+                                        </button>
+                                        {% if location.is_active %}
+                                            <button class="btn btn-outline-warning btn-sm" onclick="deactivateLocation({{ location.id }})">
+                                                <i class="fas fa-pause"></i> Deactivate
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-outline-success btn-sm" onclick="activateLocation({{ location.id }})">
+                                                <i class="fas fa-play"></i> Activate
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                    <nav aria-label="Storage locations pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.storage_type %}&storage_type={{ request.GET.storage_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.storage_type %}&storage_type={{ request.GET.storage_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.storage_type %}&storage_type={{ request.GET.storage_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.storage_type %}&storage_type={{ request.GET.storage_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <h3>No storage locations found</h3>
+                    <p class="text-muted">Get started by creating your first storage location.</p>
+                    <a href="{% url 'manual_backup:create_storage_location' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Storage Location
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function testConnection(locationId) {
+        if (confirm('Test the connection to this storage location?')) {
+            fetch(`/manual-backup/api/storage/${locationId}/test/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Connection test successful!');
+                } else {
+                    alert('Connection test failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error testing connection');
+            });
+        }
+    }
+
+    function activateLocation(locationId) {
+        if (confirm('Activate this storage location?')) {
+            fetch(`/manual-backup/api/storage/${locationId}/activate/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error activating location: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error activating location');
+            });
+        }
+    }
+
+    function deactivateLocation(locationId) {
+        if (confirm('Deactivate this storage location?')) {
+            fetch(`/manual-backup/api/storage/${locationId}/deactivate/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error deactivating location: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deactivating location');
+            });
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Auto-submit form on filter change
+    document.getElementById('storage_type').addEventListener('change', function() {
+        document.getElementById('storageSearchForm').submit();
+    });
+
+    document.getElementById('status').addEventListener('change', function() {
+        document.getElementById('storageSearchForm').submit();
+    });
+</script>
+{% endblock %}

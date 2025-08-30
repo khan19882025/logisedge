@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Log History - Log Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">
+                            <i class="fas fa-info-circle"></i> Log Entry Details
+                        </h1>
+                        <p class="page-subtitle">Comprehensive information about this log entry</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'log_history:log_history_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                        <a href="{% url 'log_history:dashboard' %}" class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Details -->
+    <div class="row">
+        <!-- Main Log Information -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Log Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Log ID</label>
+                                <p class="form-control-plaintext">{{ log.id }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Timestamp</label>
+                                <p class="form-control-plaintext">
+                                    {{ log.timestamp|date:"F d, Y H:i:s" }}
+                                    <small class="text-muted">({{ log.timestamp|timesince }} ago)</small>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Action Type</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{% if log.action_type == 'CREATE' %}success{% elif log.action_type == 'UPDATE' %}info{% elif log.action_type == 'DELETE' %}danger{% elif log.action_type == 'LOGIN' %}primary{% elif log.action_type == 'LOGOUT' %}secondary{% else %}warning{% endif %} fs-6">
+                                        {{ log.get_action_type_display }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Severity</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}success{% endif %} fs-6">
+                                        {{ log.get_severity_display }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Status</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-{% if log.status == 'ACTIVE' %}success{% elif log.status == 'ARCHIVED' %}warning{% else %}secondary{% endif %} fs-6">
+                                        {{ log.get_status_display }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Module</label>
+                                <p class="form-control-plaintext">{{ log.module|default:"Not specified" }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Function</label>
+                                <p class="form-control-plaintext">{{ log.function|default:"Not specified" }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">User IP</label>
+                                <p class="form-control-plaintext">{{ log.user_ip|default:"Not recorded" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <p class="form-control-plaintext">{{ log.description }}</p>
+                    </div>
+
+                    {% if log.tags %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tags</label>
+                        <div>
+                            {% for tag in log.tags %}
+                                <span class="badge bg-light text-dark me-1">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if log.details %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Additional Details</label>
+                        <div class="bg-light p-3 rounded">
+                            <pre class="mb-0"><code>{{ log.details|pprint }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Object Information -->
+            {% if log.content_type or log.object_id %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cube"></i> Related Object Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Object Type</label>
+                                <p class="form-control-plaintext">{{ log.object_type|default:"Not specified" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Object ID</label>
+                                <p class="form-control-plaintext">{{ log.object_id|default:"Not specified" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if log.object_name %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Object Name</label>
+                        <p class="form-control-plaintext">{{ log.object_name }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if log.before_values or log.after_values %}
+                    <div class="row">
+                        {% if log.before_values %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Before Values</label>
+                                <div class="bg-light p-3 rounded">
+                                    <pre class="mb-0"><code>{{ log.before_values|pprint }}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if log.after_values %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">After Values</label>
+                                <div class="bg-light p-3 rounded">
+                                    <pre class="mb-0"><code>{{ log.after_values|pprint }}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if log.changed_fields %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Changed Fields</label>
+                        <div>
+                            {% for field in log.changed_fields %}
+                                <span class="badge bg-info me-1">{{ field }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Performance Metrics -->
+            {% if log.execution_time or log.memory_usage %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt"></i> Performance Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if log.execution_time %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Execution Time</label>
+                                <p class="form-control-plaintext">{{ log.execution_time|floatformat:3 }} seconds</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if log.memory_usage %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Memory Usage</label>
+                                <p class="form-control-plaintext">{{ log.memory_usage|default:"Not recorded" }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- User Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i> User Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if log.user %}
+                        <div class="text-center mb-3">
+                            <i class="fas fa-user-circle fa-3x text-primary"></i>
+                            <h6 class="mt-2">{{ log.user.username }}</h6>
+                            <p class="text-muted small">{{ log.user.email|default:"No email" }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">User ID</label>
+                            <p class="form-control-plaintext">{{ log.user.id }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Full Name</label>
+                            <p class="form-control-plaintext">
+                                {{ log.user.first_name|default:"" }} {{ log.user.last_name|default:""|default:"Not specified" }}
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Active Status</label>
+                            <p class="form-control-plaintext">
+                                <span class="badge bg-{% if log.user.is_active %}success{% else %}danger{% endif %}">
+                                    {% if log.user.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="text-center">
+                            <i class="fas fa-server fa-3x text-muted"></i>
+                            <h6 class="mt-2 text-muted">System Action</h6>
+                            <p class="text-muted small">This action was performed by the system</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Logs -->
+            {% if user_logs or object_logs or module_logs %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-link"></i> Related Logs
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user_logs %}
+                    <div class="mb-3">
+                        <h6 class="text-primary">Same User (Last 24h)</h6>
+                        <div class="list-group list-group-flush">
+                            {% for related_log in user_logs %}
+                            <a href="{% url 'log_history:log_history_detail' related_log.pk %}" 
+                               class="list-group-item list-group-item-action py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-{{ related_log.action_type|lower }} me-2">
+                                        {{ related_log.get_action_type_display }}
+                                    </span>
+                                    <small class="text-muted">{{ related_log.timestamp|timesince }} ago</small>
+                                </div>
+                                <small class="text-truncate d-block">{{ related_log.description|truncatechars:40 }}</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if object_logs %}
+                    <div class="mb-3">
+                        <h6 class="text-info">Same Object</h6>
+                        <div class="list-group list-group-flush">
+                            {% for related_log in object_logs %}
+                            <a href="{% url 'log_history:log_history_detail' related_log.pk %}" 
+                               class="list-group-item list-group-item-action py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-{{ related_log.action_type|lower }} me-2">
+                                        {{ related_log.get_action_type_display }}
+                                    </span>
+                                    <small class="text-muted">{{ related_log.timestamp|timesince }} ago</small>
+                                </div>
+                                <small class="text-truncate d-block">{{ related_log.description|truncatechars:40 }}</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if module_logs %}
+                    <div class="mb-3">
+                        <h6 class="text-warning">Same Module (Last 7 days)</h6>
+                        <div class="list-group list-group-flush">
+                            {% for related_log in module_logs %}
+                            <a href="{% url 'log_history:log_history_detail' related_log.pk %}" 
+                               class="list-group-item list-group-item-action py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-{{ related_log.action_type|lower }} me-2">
+                                        {{ related_log.get_action_type_display }}
+                                    </span>
+                                    <small class="text-muted">{{ related_log.timestamp|timesince }} ago</small>
+                                </div>
+                                <small class="text-truncate d-block">{{ related_log.description|truncatechars:40 }}</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'log_history:log_history_export' %}?selected_ids=[{{ log.id }}]" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download"></i> Export This Log
+                        </a>
+                        <button type="button" class="btn btn-outline-info btn-sm" 
+                                onclick="copyLogInfo()">
+                            <i class="fas fa-copy"></i> Copy Log Info
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" 
+                                onclick="shareLog()">
+                            <i class="fas fa-share"></i> Share Log
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+    
+    .page-subtitle {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .form-label.fw-bold {
+        color: #495057;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .form-control-plaintext {
+        color: #212529;
+        font-weight: 500;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-radius: 0 !important;
+    }
+    
+    .list-group-item:first-child {
+        border-top: none;
+    }
+    
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    pre {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    
+    code {
+        color: #e83e8c;
+        background-color: transparent;
+        padding: 0;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyLogInfo() {
+    const logInfo = `Log ID: {{ log.id }}
+Timestamp: {{ log.timestamp|date:"F d, Y H:i:s" }}
+Action: {{ log.get_action_type_display }}
+Severity: {{ log.get_severity_display }}
+Description: {{ log.description }}
+User: {% if log.user %}{{ log.user.username }}{% else %}System{% endif %}
+Module: {{ log.module|default:"Not specified" }}`;
+    
+    navigator.clipboard.writeText(logInfo).then(function() {
+        // Show success message
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        btn.classList.remove('btn-outline-info');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-info');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Could not copy text: ', err);
+        alert('Failed to copy log information');
+    });
+}
+
+function shareLog() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Log Entry Details',
+            text: 'Check out this log entry from the system',
+            url: window.location.href
+        }).catch(console.error);
+    } else {
+        // Fallback for browsers that don't support Web Share API
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(function() {
+            alert('Log URL copied to clipboard!');
+        }).catch(function(err) {
+            console.error('Could not copy URL: ', err);
+            alert('Failed to copy URL');
+        });
+    }
+}
+</script>
+{% endblock %}

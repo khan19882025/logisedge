@@ -1,0 +1,102 @@
+{% extends 'depreciation_schedule/base.html' %}
+{% load static %}
+
+{% block title %}Delete {{ schedule.name }} - Depreciation Schedule{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_list' %}">Schedules</a></li>
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}">{{ schedule.name }}</a></li>
+<li class="breadcrumb-item active">Delete</li>
+{% endblock %}
+
+{% block depreciation_schedule_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Warning!</h4>
+                    <p>You are about to delete the depreciation schedule <strong>"{{ schedule.name }}"</strong>.</p>
+                    <hr>
+                    <p class="mb-0">This action cannot be undone. All associated depreciation entries will also be deleted.</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Schedule Details</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Schedule Number:</dt>
+                            <dd class="col-sm-8">{{ schedule.schedule_number }}</dd>
+                            
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">{{ schedule.name }}</dd>
+                            
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-{{ schedule.status }} rounded-pill">
+                                    {{ schedule.get_status_display }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Start Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.start_date|date:"M d, Y" }}</dd>
+                            
+                            <dt class="col-sm-4">End Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.end_date|date:"M d, Y" }}</dd>
+                            
+                            <dt class="col-sm-4">Total Depreciation:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_depreciation|floatformat:2 }}</dd>
+                            
+                            <dt class="col-sm-4">Total Assets:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_assets }}</dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Impact Analysis</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Depreciation Entries
+                                <span class="badge bg-primary rounded-pill">{{ schedule.depreciation_entries.count }}</span>
+                            </li>
+                            {% if schedule.journal_entry %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Journal Entry
+                                <span class="badge bg-warning rounded-pill">1</span>
+                            </li>
+                            {% endif %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Created By
+                                <span class="text-muted">{{ schedule.created_by.get_full_name|default:schedule.created_by.username }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Created At
+                                <span class="text-muted">{{ schedule.created_at|date:"M d, Y H:i" }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <hr>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Delete Schedule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

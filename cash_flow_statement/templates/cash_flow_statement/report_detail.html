@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cash_flow_statement/css/report.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-cash-stack me-2"></i>
+                        Cash Flow Statement
+                    </h4>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-1"></i>Export
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'cash_flow_statement:report_export' report.pk %}?format=PDF">
+                                <i class="bi bi-file-pdf me-2"></i>PDF
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'cash_flow_statement:report_export' report.pk %}?format=EXCEL">
+                                <i class="bi bi-file-excel me-2"></i>Excel
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'cash_flow_statement:report_export' report.pk %}?format=CSV">
+                                <i class="bi bi-file-text me-2"></i>CSV
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">{{ report.name }}</h5>
+                            <p class="text-muted mb-2">{{ report.description|default:"Cash Flow Statement" }}</p>
+                            <div class="d-flex gap-3">
+                                <span class="badge bg-info">
+                                    <i class="bi bi-calendar me-1"></i>
+                                    {{ report.from_date|date:"M d, Y" }} - {{ report.to_date|date:"M d, Y" }}
+                                </span>
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-currency-exchange me-1"></i>
+                                    {{ report.currency.code }}
+                                </span>
+                                <span class="badge bg-success">
+                                    <i class="bi bi-file-text me-1"></i>
+                                    {{ report.get_report_type_display }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="btn-group">
+                                {% if not report.is_saved %}
+                                <form method="post" action="{% url 'cash_flow_statement:report_save' report.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="bi bi-save me-1"></i>Save Report
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <a href="{% url 'cash_flow_statement:report_create' %}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-plus-circle me-1"></i>New Report
+                                </a>
+                                <a href="{% url 'cash_flow_statement:report_quick' %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-lightning me-1"></i>Quick Report
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cash Flow Statement Content -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Operating Activities -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-arrow-up-circle me-2"></i>
+                        Operating Activities
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless cash-flow-table">
+                            <tbody>
+                                <tr class="table-light">
+                                    <td class="fw-bold">Net Income</td>
+                                    <td class="text-end fw-bold {% if report_data.operating_activities.net_income >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ report_data.operating_activities.net_income|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                
+                                <!-- Adjustments -->
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold text-primary">Adjustments to Net Income</td>
+                                </tr>
+                                {% for adjustment in report_data.operating_activities.adjustments %}
+                                <tr>
+                                    <td class="ps-4">{{ adjustment.name }}</td>
+                                    <td class="text-end {% if adjustment.amount >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ adjustment.amount|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                
+                                <!-- Working Capital Changes -->
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold text-primary">Changes in Working Capital</td>
+                                </tr>
+                                {% for change in report_data.operating_activities.working_capital_changes %}
+                                <tr>
+                                    <td class="ps-4">{{ change.name }}</td>
+                                    <td class="text-end {% if change.amount >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ change.amount|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                
+                                <tr class="table-primary">
+                                    <td class="fw-bold">Cash from Operations</td>
+                                    <td class="text-end fw-bold {% if report_data.operating_activities.cash_from_operations >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ report_data.operating_activities.cash_from_operations|floatformat:2 }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investing Activities -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-building me-2"></i>
+                        Investing Activities
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless cash-flow-table">
+                            <tbody>
+                                <!-- Asset Purchases -->
+                                {% if report_data.investing_activities.asset_purchases %}
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold text-primary">Asset Purchases</td>
+                                </tr>
+                                {% for purchase in report_data.investing_activities.asset_purchases %}
+                                <tr>
+                                    <td class="ps-4">{{ purchase.name }}</td>
+                                    <td class="text-end text-danger">({{ purchase.amount|floatformat:2 }})</td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                                
+                                <!-- Asset Sales -->
+                                {% if report_data.investing_activities.asset_sales %}
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold text-primary">Asset Sales</td>
+                                </tr>
+                                {% for sale in report_data.investing_activities.asset_sales %}
+                                <tr>
+                                    <td class="ps-4">{{ sale.name }}</td>
+                                    <td class="text-end text-success">{{ sale.amount|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                                
+                                <tr class="table-warning">
+                                    <td class="fw-bold">Cash used in Investing</td>
+                                    <td class="text-end fw-bold {% if report_data.investing_activities.cash_used_in_investing >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if report_data.investing_activities.cash_used_in_investing < 0 %}
+                                        ({{ report_data.investing_activities.cash_used_in_investing|floatformat:2|slice:"1:" }})
+                                        {% else %}
+                                        {{ report_data.investing_activities.cash_used_in_investing|floatformat:2 }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financing Activities -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bank me-2"></i>
+                        Financing Activities
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless cash-flow-table">
+                            <tbody>
+                                <!-- Loan Inflows -->
+                                {% if report_data.financing_activities.loan_inflows %}
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold text-primary">Loan Inflows</td>
+                                </tr>
+                                {% for inflow in report_data.financing_activities.loan_inflows %}
+                                <tr>
+                                    <td class="ps-4">{{ inflow.name }}</td>
+                                    <td class="text-end text-success">{{ inflow.amount|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                                
+                                <!-- Loan Outflows -->
+                                {% if report_data.financing_activities.loan_outflows %}
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold text-primary">Loan Repayments</td>
+                                </tr>
+                                {% for outflow in report_data.financing_activities.loan_outflows %}
+                                <tr>
+                                    <td class="ps-4">{{ outflow.name }}</td>
+                                    <td class="text-end text-danger">({{ outflow.amount|floatformat:2 }})</td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                                
+                                <!-- Equity Transactions -->
+                                {% if report_data.financing_activities.equity_transactions %}
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold text-primary">Equity Transactions</td>
+                                </tr>
+                                {% for transaction in report_data.financing_activities.equity_transactions %}
+                                <tr>
+                                    <td class="ps-4">{{ transaction.name }}</td>
+                                    <td class="text-end {% if transaction.type == 'CR' %}text-success{% else %}text-danger{% endif %}">
+                                        {% if transaction.type == 'DR' %}({{ transaction.amount|floatformat:2 }}){% else %}{{ transaction.amount|floatformat:2 }}{% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
+                                
+                                <tr class="table-info">
+                                    <td class="fw-bold">Cash from Financing</td>
+                                    <td class="text-end fw-bold {% if report_data.financing_activities.cash_from_financing >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ report_data.financing_activities.cash_from_financing|floatformat:2 }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calculator me-2"></i>
+                        Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless cash-flow-table">
+                            <tbody>
+                                <tr class="table-light">
+                                    <td class="fw-bold">Net Change in Cash</td>
+                                    <td class="text-end fw-bold {% if report_data.summary.net_change_in_cash >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ report_data.summary.net_change_in_cash|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td class="fw-bold">Opening Cash Balance</td>
+                                    <td class="text-end fw-bold">{{ report_data.summary.opening_cash_balance|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="table-dark">
+                                    <td class="fw-bold text-white">Closing Cash Balance</td>
+                                    <td class="text-end fw-bold text-white">{{ report_data.summary.closing_cash_balance|floatformat:2 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Section -->
+    {% if report.include_notes %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Notes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-2">
+                        <strong>Report Period:</strong> {{ report.from_date|date:"F d, Y" }} to {{ report.to_date|date:"F d, Y" }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <strong>Currency:</strong> {{ report.currency.code }} ({{ report.currency.name }})
+                    </p>
+                    <p class="text-muted mb-0">
+                        <strong>Generated:</strong> {{ report.created_at|date:"F d, Y at H:i" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cash_flow_statement/js/report.js' %}"></script>
+{% endblock %} 

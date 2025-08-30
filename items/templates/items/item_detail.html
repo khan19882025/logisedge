@@ -1,0 +1,415 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ item.item_name }} - Item Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/items/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-box-seam me-2"></i>Item Details
+            </h1>
+            <p class="text-muted">{{ item.item_code }} - {{ item.item_name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'items:item_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </a>
+            <a href="{% url 'items:item_update' item.id %}" class="btn btn-warning">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <button type="button" class="btn btn-danger" onclick="deleteItem({{ item.id }}, '{{ item.item_name }}')">
+                <i class="bi bi-trash me-1"></i>Delete
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Information -->
+        <div class="col-lg-8">
+            <!-- Basic Information Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-1"></i>Basic Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Item Code:</td>
+                                    <td><span class="badge bg-primary fs-6">{{ item.item_code }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Item Name:</td>
+                                    <td>{{ item.item_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Category:</td>
+                                    <td><span class="badge bg-secondary">{{ item.get_item_category_display }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Status:</td>
+                                    <td>
+                                        {% if item.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% elif item.status == 'inactive' %}
+                                        <span class="badge bg-warning">Inactive</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Discontinued</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Unit of Measure:</td>
+                                    <td>{{ item.unit_of_measure }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Barcode:</td>
+                                    <td>{{ item.barcode|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Serial Number:</td>
+                                    <td>{{ item.serial_number|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Warranty:</td>
+                                    <td>
+                                        {% if item.warranty_period %}
+                                        {{ item.warranty_period }} months
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if item.short_description %}
+                    <div class="mt-3">
+                        <h6 class="text-muted">Short Description</h6>
+                        <p>{{ item.short_description }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if item.description %}
+                    <div class="mt-3">
+                        <h6 class="text-muted">Detailed Description</h6>
+                        <p>{{ item.description|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Specifications Card -->
+            {% if specifications %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-gear me-1"></i>Specifications
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, value in specifications.items %}
+                        <div class="col-md-6 mb-2">
+                            <strong class="text-muted">{{ key }}:</strong> {{ value }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Pricing Information Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-currency-dollar me-1"></i>Pricing Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Cost Price</h6>
+                                <h4 class="text-primary">
+                                    {% if item.cost_price %}
+                                    {{ item.cost_price }} {{ item.currency }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Selling Price</h6>
+                                <h4 class="text-success">
+                                    {% if item.selling_price %}
+                                    {{ item.selling_price }} {{ item.currency }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Profit Margin</h6>
+                                <h4 class="{% if item.profit_margin > 0 %}text-success{% elif item.profit_margin < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                    {% if item.profit_margin != 0 %}
+                                    {{ item.profit_margin|floatformat:1 }}%
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supplier Information Card -->
+            {% if item.supplier or item.supplier_code or item.lead_time %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-truck me-1"></i>Supplier Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Supplier:</td>
+                                    <td>{{ item.supplier|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Supplier Code:</td>
+                                    <td>{{ item.supplier_code|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Lead Time:</td>
+                                    <td>
+                                        {% if item.lead_time %}
+                                        {{ item.lead_time }} days
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Location Information Card -->
+            {% if item.warehouse_location or item.shelf_number or item.bin_number %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-geo-alt me-1"></i>Location Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Warehouse Location:</td>
+                                    <td>{{ item.warehouse_location|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Shelf Number:</td>
+                                    <td>{{ item.shelf_number|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Bin Number:</td>
+                                    <td>{{ item.bin_number|default:"-" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes Card -->
+            {% if item.notes or item.internal_notes %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-sticky me-1"></i>Notes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if item.notes %}
+                    <div class="mb-3">
+                        <h6 class="text-muted">General Notes</h6>
+                        <p>{{ item.notes|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if item.internal_notes %}
+                    <div class="mb-3">
+                        <h6 class="text-muted">Internal Notes</h6>
+                        <p class="text-muted"><em>{{ item.internal_notes|linebreaks }}</em></p>
+                        <small class="text-muted">These notes are not visible to customers</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Inventory Status Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-boxes me-1"></i>Inventory Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <h6 class="text-muted">Min Stock</h6>
+                                <h4 class="text-warning">{{ item.min_stock_level }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <h6 class="text-muted">Max Stock</h6>
+                                <h4 class="text-info">{{ item.max_stock_level }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <div class="border rounded p-3">
+                            <h6 class="text-muted">Reorder Point</h6>
+                            <h4 class="text-danger">{{ item.reorder_point }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-clock me-1"></i>Metadata
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td class="fw-bold text-muted">Created:</td>
+                            <td>{{ item.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-muted">Last Updated:</td>
+                            <td>{{ item.updated_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% if item.created_by %}
+                        <tr>
+                            <td class="fw-bold text-muted">Created By:</td>
+                            <td>{{ item.created_by.get_full_name|default:item.created_by.username }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if item.updated_by %}
+                        <tr>
+                            <td class="fw-bold text-muted">Updated By:</td>
+                            <td>{{ item.updated_by.get_full_name|default:item.updated_by.username }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-1"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'items:item_update' item.id %}" class="btn btn-warning">
+                            <i class="bi bi-pencil me-1"></i>Edit Item
+                        </a>
+                        <button type="button" class="btn btn-outline-info">
+                            <i class="bi bi-printer me-1"></i>Print Details
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary">
+                            <i class="bi bi-share me-1"></i>Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the item "<strong id="deleteItemName"></strong>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/items/items.js' %}"></script>
+{% endblock %} 

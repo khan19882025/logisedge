@@ -1,0 +1,216 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-envelope-exclamation me-2"></i>
+                            {% if is_update %}Edit Dunning Letter{% else %}Create Dunning Letter{% endif %}
+                        </h4>
+                        <a href="{% url 'dunning_letters:list' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="dunningLetterForm">
+                        {% csrf_token %}
+                        
+                        {% if not is_update %}
+                        <!-- Customer Selection (only for new letters) -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.customer.id_for_label }}" class="form-label">Customer</label>
+                                    {{ form.customer }}
+                                    {% if form.customer.errors %}
+                                        <div class="text-danger">{{ form.customer.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Select a customer with unpaid invoices</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Overdue Invoices Section -->
+                        <div class="row mb-4" id="overdueInvoicesSection" style="display: none;">
+                            <div class="col-12">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>Overdue Invoices
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover" id="overdueInvoicesTable">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Invoice Number</th>
+                                                        <th>Due Date</th>
+                                                        <th>Amount</th>
+                                                        <th>Overdue Days</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="overdueInvoicesBody">
+                                                    <!-- Invoices will be loaded here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Letter Details -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.level.id_for_label }}" class="form-label">Level</label>
+                                    {{ form.level }}
+                                    {% if form.level.errors %}
+                                        <div class="text-danger">{{ form.level.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                                    {{ form.status }}
+                                    {% if form.status.errors %}
+                                        <div class="text-danger">{{ form.status.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.subject.id_for_label }}" class="form-label">Subject</label>
+                            {{ form.subject }}
+                            {% if form.subject.errors %}
+                                <div class="text-danger">{{ form.subject.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.content.id_for_label }}" class="form-label">Content</label>
+                            {{ form.content }}
+                            {% if form.content.errors %}
+                                <div class="text-danger">{{ form.content.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Use placeholders: {customer_name}, {invoice_number}, {amount}, {due_date}, {overdue_days}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'dunning_letters:list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>
+                                {% if is_update %}Update Letter{% else %}Create Letter{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+    }
+    
+    .btn {
+        border-radius: 0.375rem;
+        font-weight: 500;
+    }
+    
+    .table th {
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .table td {
+        font-size: 0.875rem;
+        vertical-align: middle;
+    }
+    
+    .overdue-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerSelect = document.getElementById('customer-select');
+    const overdueInvoicesSection = document.getElementById('overdueInvoicesSection');
+    const overdueInvoicesBody = document.getElementById('overdueInvoicesBody');
+    
+    if (customerSelect) {
+        customerSelect.addEventListener('change', function() {
+            const customerId = this.value;
+            if (customerId) {
+                // Fetch overdue invoices for selected customer
+                fetch(`{% url 'dunning_letters:get_overdue_invoices' %}?customer_id=${customerId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.invoices && data.invoices.length > 0) {
+                            overdueInvoicesBody.innerHTML = '';
+                            data.invoices.forEach(invoice => {
+                                const dueDate = new Date(invoice.due_date);
+                                const today = new Date();
+                                const overdueDays = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+                                
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td><strong>${invoice.invoice_number}</strong></td>
+                                    <td>${dueDate.toLocaleDateString()}</td>
+                                    <td><strong>AED ${parseFloat(invoice.total_amount).toFixed(2)}</strong></td>
+                                    <td><span class="badge bg-danger overdue-badge">${overdueDays} days</span></td>
+                                    <td><span class="badge bg-warning text-dark overdue-badge">${invoice.status}</span></td>
+                                `;
+                                overdueInvoicesBody.appendChild(row);
+                            });
+                            overdueInvoicesSection.style.display = 'block';
+                        } else {
+                            overdueInvoicesSection.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching overdue invoices:', error);
+                        overdueInvoicesSection.style.display = 'none';
+                    });
+            } else {
+                overdueInvoicesSection.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

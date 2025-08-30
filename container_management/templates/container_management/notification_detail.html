@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notification Details{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-bell me-2"></i>Notification Details
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:notification_list' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to Notifications
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Notification Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-info-circle me-2"></i>Notification Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ notification.get_notification_type_display_class }}">
+                                            {{ notification.get_notification_type_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Priority:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ notification.get_priority_display_class }}">
+                                            {{ notification.get_priority_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Title:</strong></td>
+                                    <td>{{ notification.title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if notification.is_sent %}
+                                            <span class="badge bg-success">Sent</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Read Status:</strong></td>
+                                    <td>
+                                        {% if notification.is_read %}
+                                            <span class="badge bg-success">Read</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Unread</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Recipient Name:</strong></td>
+                                    <td>{{ notification.recipient_name|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Recipient Email:</strong></td>
+                                    <td>{{ notification.recipient_email|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ notification.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sent:</strong></td>
+                                    <td>
+                                        {% if notification.sent_at %}
+                                            {{ notification.sent_at|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Read:</strong></td>
+                                    <td>
+                                        {% if notification.read_at %}
+                                            {{ notification.read_at|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Content -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-chat-text me-2"></i>Message Content
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">{{ notification.title }}</h6>
+                        <p class="mb-0">{{ notification.message }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Objects -->
+            {% if notification.container or notification.container_booking or notification.container_tracking %}
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-link me-2"></i>Related Objects
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% if notification.container %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0"><i class="bi bi-container me-2"></i>Container</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-1"><strong>{{ notification.container.container_number }}</strong></p>
+                                            <p class="mb-1 text-muted">{{ notification.container.get_container_type_display }}</p>
+                                            <p class="mb-0 text-muted">{{ notification.container.current_location }}</p>
+                                            <a href="{% url 'container_management:container_detail' notification.container.pk %}" 
+                                               class="btn btn-outline-primary btn-sm mt-2">
+                                                <i class="bi bi-eye me-1"></i>View Container
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if notification.container_booking %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Booking</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-1"><strong>{{ notification.container_booking.booking_number }}</strong></p>
+                                            <p class="mb-1 text-muted">{{ notification.container_booking.customer.name }}</p>
+                                            <p class="mb-0 text-muted">{{ notification.container_booking.get_status_display }}</p>
+                                            <a href="{% url 'container_management:booking_detail' notification.container_booking.pk %}" 
+                                               class="btn btn-outline-success btn-sm mt-2">
+                                                <i class="bi bi-eye me-1"></i>View Booking
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if notification.container_tracking %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info text-white">
+                                            <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Tracking</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-1"><strong>{{ notification.container_tracking.tracking_number }}</strong></p>
+                                            <p class="mb-1 text-muted">{{ notification.container_tracking.get_milestone_display }}</p>
+                                            <p class="mb-0 text-muted">{{ notification.container_tracking.location }}</p>
+                                            <a href="{% url 'container_management:tracking_detail' notification.container_tracking.pk %}" 
+                                               class="btn btn-outline-info btn-sm mt-2">
+                                                <i class="bi bi-eye me-1"></i>View Tracking
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-lightning me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'container_management:notification_list' %}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-list me-1"></i>All Notifications
+                        </a>
+                        <a href="{% url 'container_management:send_notification' %}" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-plus me-1"></i>Send New Notification
+                        </a>
+                        {% if notification.container %}
+                            <a href="{% url 'container_management:container_detail' notification.container.pk %}" 
+                               class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-container me-1"></i>View Container
+                            </a>
+                        {% endif %}
+                        {% if notification.container_booking %}
+                            <a href="{% url 'container_management:booking_detail' notification.container_booking.pk %}" 
+                               class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-calendar-check me-1"></i>View Booking
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Statistics -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="bi bi-graph-up me-2"></i>Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-primary">
+                                {% if notification.is_sent %}1{% else %}0{% endif %}
+                            </div>
+                            <small class="text-muted">Sent</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-success">
+                                {% if notification.is_read %}1{% else %}0{% endif %}
+                            </div>
+                            <small class="text-muted">Read</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-info">{{ notification.priority|title }}</div>
+                            <small class="text-muted">Priority</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h4 text-warning">{{ notification.notification_type|title }}</div>
+                            <small class="text-muted">Type</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+{% endblock %}

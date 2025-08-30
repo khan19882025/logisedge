@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petty Cash Register - {{ selected_date|date:"F d, Y" }}</title>
+</head>
+<body>
+    <div class="header">
+        <h1>PETTY CASH REGISTER</h1>
+        <h2>Date: {{ selected_date|date:"F d, Y" }}</h2>
+        <h2>Petty Cash Ledger</h2>
+    </div>
+
+    <div class="ledger-info">
+        <div class="opening-balance">
+            Opening Balance: {% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %} {{ opening_balance|floatformat:2 }}
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Sr. No</th>
+                <th>Job No</th>
+                <th>Description</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>Balance</th>
+                <th>Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in entries_with_balance %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td>{{ item.entry.job_no|default:"-" }}</td>
+                <td>{{ item.entry.description }}</td>
+                <td class="text-right amount">{% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %} {{ item.entry.amount|floatformat:2 }}</td>
+                <td class="text-right">-</td>
+                <td class="text-right amount {% if item.balance < 0 %}negative{% else %}positive{% endif %}">
+                    {% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %} {{ item.balance|floatformat:2 }}
+                </td>
+                <td>{{ item.entry.notes|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center">No entries found for this date.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if petty_cash_day %}
+    <div class="summary">
+        <h3>Summary</h3>
+        <div class="summary-row">
+            <span>Total Expenses:</span>
+            <span class="amount">{% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %} {{ petty_cash_day.total_expenses|floatformat:2 }}</span>
+        </div>
+        <div class="summary-row">
+            <span>Closing Balance:</span>
+            <span class="amount {% if petty_cash_day.closing_balance < 0 %}negative{% else %}positive{% endif %}">
+                {% if default_currency %}{{ default_currency.symbol }}{% else %}AED{% endif %} {{ petty_cash_day.closing_balance|floatformat:2 }}
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Generated on {{ current_date|date:"F d, Y" }} | Petty Cash Management System</p>
+    </div>
+</body>
+</html>

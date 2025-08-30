@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quick Petty Cash Entry - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'petty_cash/css/petty_cash.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="petty-cash-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-lightning text-primary"></i>
+                            Quick Petty Cash Entry
+                        </h2>
+                        <p class="text-muted mb-0">Fast entry for single expenses</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'petty_cash:register' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-calendar"></i> Daily Register
+                        </a>
+                        <a href="{% url 'petty_cash:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> View All
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Entry Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="petty-cash-card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-lightning me-2"></i>Quick Entry Form</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="quickEntryForm">
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                                            <i class="bi bi-chat-text"></i> Description *
+                                        </label>
+                                        {{ form.description }}
+                                        {% if form.description.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                            <i class="bi bi-cash"></i> Amount *
+                                        </label>
+                                        {{ form.amount }}
+                                        {% if form.amount.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.paid_by.id_for_label }}" class="form-label">
+                                            <i class="bi bi-person"></i> Paid By
+                                        </label>
+                                        {{ form.paid_by }}
+                                        {% if form.paid_by.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.paid_by.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                            <i class="bi bi-sticky"></i> Notes
+                                        </label>
+                                        {{ form.notes }}
+                                        {% if form.notes.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Entry Summary -->
+                            <div class="alert alert-info">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Date:</strong> {{ today|date:"F d, Y" }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Amount:</strong> <span id="summaryAmount" class="fw-bold text-danger">AED 0.00</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Status:</strong> <span class="badge bg-secondary">Draft</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                                        <i class="bi bi-arrow-clockwise"></i> Clear Form
+                                    </button>
+                                    <a href="{% url 'petty_cash:register' %}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Cancel
+                                    </a>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle"></i> Save Entry
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Quick Tips -->
+                <div class="petty-cash-card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-lightbulb me-2"></i>Quick Tips</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-keyboard"></i> Keyboard Shortcuts</h6>
+                                <ul class="list-unstyled">
+                                    <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Save entry</li>
+                                    <li><kbd>Escape</kbd> - Clear form</li>
+                                    <li><kbd>Tab</kbd> - Navigate fields</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-info-circle"></i> Best Practices</h6>
+                                <ul class="list-unstyled">
+                                    <li>• Use clear, descriptive names</li>
+                                    <li>• Include who paid for the expense</li>
+                                    <li>• Add notes for context</li>
+                                    <li>• Review entries regularly</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'petty_cash/js/petty_cash.js' %}"></script>
+<script>
+// Quick entry specific functions
+$(document).ready(function() {
+    // Update summary on amount change
+    $('#id_amount').on('input', function() {
+        updateQuickSummary();
+    });
+    
+    // Form validation
+    $('#quickEntryForm').on('submit', function(e) {
+        if (!validateQuickForm()) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Keyboard shortcuts
+    $(document).on('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            $('#quickEntryForm').submit();
+        }
+        
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            clearForm();
+        }
+    });
+});
+
+function updateQuickSummary() {
+    const amount = parseFloat($('#id_amount').val()) || 0;
+    $('#summaryAmount').text(formatCurrency(amount));
+}
+
+function validateQuickForm() {
+    let isValid = true;
+    
+    // Clear previous errors
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+    
+    // Validate description
+    const description = $('#id_description').val().trim();
+    if (!description) {
+        $('#id_description').addClass('is-invalid');
+        $('#id_description').after('<div class="invalid-feedback">Description is required.</div>');
+        isValid = false;
+    }
+    
+    // Validate amount
+    const amount = parseFloat($('#id_amount').val()) || 0;
+    if (amount <= 0) {
+        $('#id_amount').addClass('is-invalid');
+        $('#id_amount').after('<div class="invalid-feedback">Amount must be greater than zero.</div>');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+function clearForm() {
+    if (confirm('Are you sure you want to clear the form? All entered data will be lost.')) {
+        $('#quickEntryForm')[0].reset();
+        updateQuickSummary();
+        $('#id_description').focus();
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Generate Entry - {{ recurring_entry.template_name }} - LogisEdge ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="recurring-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-plus"></i> Generate Journal Entry</h2>
+                <p class="subtitle">Create a journal entry from template: {{ recurring_entry.template_name }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'recurring_journal_entry:recurring_entry_detail' recurring_entry.pk %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Template
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Generate Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog"></i> Generate Entry</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.posting_date.id_for_label }}" class="form-label">Posting Date *</label>
+                            {{ form.posting_date }}
+                            {% if form.posting_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.posting_date.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                The date for the journal entry to be generated
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.auto_post }}
+                                <label class="form-check-label" for="{{ form.auto_post.id_for_label }}">
+                                    Auto Post Entry
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                Automatically post the generated journal entry
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Generate Journal Entry
+                            </button>
+                            <a href="{% url 'recurring_journal_entry:recurring_entry_detail' recurring_entry.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Preview -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-eye"></i> Template Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="template-info">
+                        <h6>{{ recurring_entry.template_name }}</h6>
+                        <p class="text-muted">{{ recurring_entry.narration }}</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label>Type:</label>
+                                    <span>{{ recurring_entry.get_journal_type_display }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Frequency:</label>
+                                    <span>{{ recurring_entry.get_frequency_display }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Currency:</label>
+                                    <span>{{ recurring_entry.currency.code }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label>Status:</label>
+                                    {% if recurring_entry.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif recurring_entry.status == 'PAUSED' %}
+                                        <span class="badge bg-warning">Paused</span>
+                                    {% elif recurring_entry.status == 'COMPLETED' %}
+                                        <span class="badge bg-primary">Completed</span>
+                                    {% elif recurring_entry.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </div>
+                                <div class="info-item">
+                                    <label>Auto Post:</label>
+                                    {% if recurring_entry.auto_post %}
+                                        <i class="fas fa-check text-success"></i> Yes
+                                    {% else %}
+                                        <i class="fas fa-times text-muted"></i> No
+                                    {% endif %}
+                                </div>
+                                <div class="info-item">
+                                    <label>Total Amount:</label>
+                                    <span>{{ recurring_entry.currency.code }} {{ recurring_entry.total_debit|floatformat:2 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6>Journal Line Items:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Account</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Debit</th>
+                                    <th class="text-end">Credit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line in recurring_entry.lines.all %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ line.account.account_code }}</strong><br>
+                                            <small class="text-muted">{{ line.account.name }}</small>
+                                        </td>
+                                        <td>{{ line.description|default:"-" }}</td>
+                                        <td class="text-end">
+                                            {% if line.debit > 0 %}
+                                                {{ recurring_entry.currency.code }} {{ line.debit|floatformat:2 }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if line.credit > 0 %}
+                                                {{ recurring_entry.currency.code }} {{ line.credit|floatformat:2 }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="2">Total</th>
+                                    <th class="text-end">{{ recurring_entry.currency.code }} {{ recurring_entry.total_debit|floatformat:2 }}</th>
+                                    <th class="text-end">{{ recurring_entry.currency.code }} {{ recurring_entry.total_credit|floatformat:2 }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    {% if recurring_entry.is_balanced %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check"></i> Template is balanced and ready for generation.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Template is not balanced. Please fix before generating entries.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Generated Entries -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Recent Generated Entries</h5>
+                </div>
+                <div class="card-body">
+                    {% if recurring_entry.generated_entries.all %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Posting Date</th>
+                                        <th>Voucher Number</th>
+                                        <th>Status</th>
+                                        <th>Generated By</th>
+                                        <th>Generated At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for generated in recurring_entry.generated_entries.all|slice:":10" %}
+                                        <tr>
+                                            <td>{{ generated.posting_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                <a href="{% url 'manual_journal_entry:journal_entry_detail' generated.journal_entry.pk %}" target="_blank">
+                                                    {{ generated.journal_entry.voucher_number }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                {% if generated.journal_entry.status == 'POSTED' %}
+                                                    <span class="badge bg-success">Posted</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Draft</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ generated.generated_by.get_full_name|default:generated.generated_by.username }}</td>
+                                            <td>{{ generated.generated_at|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                <a href="{% url 'manual_journal_entry:journal_entry_detail' generated.journal_entry.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'recurring_journal_entry:generated_entries_list' recurring_entry.pk %}" class="btn btn-outline-info">
+                                <i class="fas fa-history"></i> View All Generated Entries
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h6>No Entries Generated Yet</h6>
+                            <p class="text-muted">This will be the first journal entry generated from this template.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

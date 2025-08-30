@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ petty_cash_day.entry_date|date:"F d, Y" }} - Petty Cash Details - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'petty_cash/css/petty_cash.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="petty-cash-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-calendar-event text-primary"></i>
+                            Petty Cash Details
+                        </h2>
+                        <p class="text-muted mb-0">{{ petty_cash_day.entry_date|date:"F d, Y" }} - {{ petty_cash_day.get_status_display }}</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'petty_cash:register' %}?date={{ petty_cash_day.entry_date|date:'Y-m-d' }}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="{% url 'petty_cash:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> Back to List
+                        </a>
+                        <button class="btn btn-primary print-btn">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card opening-balance">
+                <div class="card-title">
+                    <i class="bi bi-wallet2"></i> Opening Balance
+                </div>
+                <div class="card-value opening">
+                    {{ petty_cash_day.opening_balance|floatformat:2 }} AED
+                </div>
+                <div class="card-subtitle">
+                    Starting balance for the day
+                </div>
+            </div>
+            
+            <div class="summary-card total-expenses">
+                <div class="card-title">
+                    <i class="bi bi-calculator"></i> Total Expenses
+                </div>
+                <div class="card-value expenses">
+                    {{ petty_cash_day.total_expenses|floatformat:2 }} AED
+                </div>
+                <div class="card-subtitle">
+                    {{ petty_cash_day.entries.count }} entries
+                </div>
+            </div>
+            
+            <div class="summary-card closing-balance">
+                <div class="card-title">
+                    <i class="bi bi-bank"></i> Closing Balance
+                </div>
+                <div class="card-value closing {% if petty_cash_day.closing_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ petty_cash_day.closing_balance|floatformat:2 }} AED
+                </div>
+                <div class="card-subtitle">
+                    Available for next day
+                </div>
+            </div>
+        </div>
+
+        <!-- Day Information -->
+        <div class="petty-cash-card">
+            <div class="card-header">
+                <h5><i class="bi bi-info-circle me-2"></i>Day Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Date:</strong></td>
+                                <td>{{ petty_cash_day.entry_date|date:"F d, Y" }} ({{ petty_cash_day.entry_date|date:"l" }})</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="status-badge status-{{ petty_cash_day.status }}">
+                                        {{ petty_cash_day.get_status_display }}
+                                    </span>
+                                    {% if petty_cash_day.is_locked %}
+                                    <span class="badge bg-danger ms-2">
+                                        <i class="bi bi-lock"></i> Locked
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Created By:</strong></td>
+                                <td>{{ petty_cash_day.created_by.get_full_name|default:petty_cash_day.created_by.username }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Created At:</strong></td>
+                                <td>{{ petty_cash_day.created_at|date:"F d, Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            {% if petty_cash_day.updated_by %}
+                            <tr>
+                                <td><strong>Last Updated:</strong></td>
+                                <td>{{ petty_cash_day.updated_at|date:"F d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Updated By:</strong></td>
+                                <td>{{ petty_cash_day.updated_by.get_full_name|default:petty_cash_day.updated_by.username }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if petty_cash_day.approved_by %}
+                            <tr>
+                                <td><strong>Approved By:</strong></td>
+                                <td>{{ petty_cash_day.approved_by.get_full_name|default:petty_cash_day.approved_by.username }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Approved At:</strong></td>
+                                <td>{{ petty_cash_day.approved_at|date:"F d, Y H:i" }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if petty_cash_day.notes %}
+                            <tr>
+                                <td><strong>Notes:</strong></td>
+                                <td>{{ petty_cash_day.notes }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Entries Table -->
+        <div class="petty-cash-card">
+            <div class="card-header">
+                <h5><i class="bi bi-table me-2"></i>Daily Expenses</h5>
+            </div>
+            <div class="card-body">
+                {% if petty_cash_day.entries.all %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Time</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Paid By</th>
+                                <th>Notes</th>
+                                <th>Created By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in petty_cash_day.entries.all %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if entry.entry_time %}
+                                        {{ entry.entry_time|time:"H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ entry.description }}</strong>
+                                    {% if entry.attachment %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-paperclip"></i> Has attachment
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-danger">{{ entry.amount|floatformat:2 }} AED</span>
+                                </td>
+                                <td>
+                                    {% if entry.paid_by %}
+                                        {{ entry.paid_by }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.notes %}
+                                        {{ entry.notes|truncatechars:50 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ entry.created_by.get_full_name|default:entry.created_by.username }}
+                                    <br>
+                                    <small class="text-muted">{{ entry.created_at|date:"H:i" }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                <td><strong>{{ petty_cash_day.total_expenses|floatformat:2 }} AED</strong></td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="mt-3">No entries found</h4>
+                    <p class="text-muted">No expenses were recorded for this day.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Audit Trail -->
+        {% if audit_trail %}
+        <div class="petty-cash-card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock-history me-2"></i>Audit Trail</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for audit in audit_trail %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ audit.get_action_display }}</h6>
+                                    <p class="mb-1">{{ audit.description }}</p>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person"></i> {{ audit.user.get_full_name|default:audit.user.username }}
+                                    </small>
+                                </div>
+                                <small class="text-muted">{{ audit.timestamp|date:"M d, H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <div>
+                {% if petty_cash_day.can_edit %}
+                <a href="{% url 'petty_cash:register' %}?date={{ petty_cash_day.entry_date|date:'Y-m-d' }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Edit Entries
+                </a>
+                {% endif %}
+                
+                {% if petty_cash_day.can_approve %}
+                <button type="button" class="btn btn-success approve-btn">
+                    <i class="bi bi-check-lg"></i> Approve
+                </button>
+                {% endif %}
+                
+                {% if petty_cash_day.can_lock %}
+                <button type="button" class="btn btn-danger lock-btn">
+                    <i class="bi bi-lock"></i> Lock Day
+                </button>
+                {% endif %}
+            </div>
+            
+            <div>
+                <a href="{% url 'petty_cash:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'petty_cash/js/petty_cash.js' %}"></script>
+{% endblock %} 

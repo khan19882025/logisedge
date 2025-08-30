@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tax Settings Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tax_settings/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-calculator text-primary"></i>
+                    Tax Settings Dashboard
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Tax Settings</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Tax Jurisdictions
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_jurisdictions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-globe fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Tax Types
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tax_types }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tags fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Active Tax Rates
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tax_rates }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Product Categories
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_product_categories }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tax_settings:tax_rate_create' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-plus"></i> Add Tax Rate
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tax_settings:tax_calculator' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-calculator"></i> Tax Calculator
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tax_settings:generate_vat_report' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-file-invoice"></i> Generate VAT Report
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'tax_settings:export_tax_data' %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-download"></i> Export Data
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Month VAT Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Current Month VAT Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Sales</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ month_transactions.total_sales|default:"0.00"|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Purchases</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ month_transactions.total_purchases|default:"0.00"|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Sales Tax</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ month_transactions.total_sales_tax|default:"0.00"|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Purchase Tax</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ month_transactions.total_purchase_tax|default:"0.00"|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12 text-center">
+                            <div class="text-lg font-weight-bold text-primary">
+                                Net VAT Payable: AED {{ month_transactions.total_sales_tax|default:0|add:month_transactions.total_purchase_tax|default:0|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Current Tax Rates -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Current Tax Rates</h6>
+                    <a href="{% url 'tax_settings:tax_rate_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if current_tax_rates %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Rate</th>
+                                        <th>Type</th>
+                                        <th>Jurisdiction</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rate in current_tax_rates %}
+                                    <tr>
+                                        <td>{{ rate.name }}</td>
+                                        <td>{{ rate.rate_percentage }}%</td>
+                                        <td>{{ rate.tax_type.name }}</td>
+                                        <td>{{ rate.jurisdiction.name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No active tax rates found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Tax Transactions</h6>
+                    <a href="#" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in recent_transactions %}
+                                    <tr>
+                                        <td>{{ transaction.document_number }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if transaction.transaction_type == 'sale' %}success{% else %}info{% endif %}">
+                                                {{ transaction.get_transaction_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>AED {{ transaction.total_amount|floatformat:2 }}</td>
+                                        <td>{{ transaction.document_date|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent transactions found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Logs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Audit Logs</h6>
+                    <a href="{% url 'tax_settings:audit_log_list' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_audit_logs %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Action</th>
+                                        <th>Model</th>
+                                        <th>Field</th>
+                                        <th>User</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in recent_audit_logs %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-{% if log.action == 'create' %}success{% elif log.action == 'update' %}warning{% else %}danger{% endif %}">
+                                                {{ log.get_action_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ log.model_name }}</td>
+                                        <td>{{ log.field_name|default:"-" }}</td>
+                                        <td>{{ log.user.username|default:"System" }}</td>
+                                        <td>{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent audit logs found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'tax_settings/js/dashboard.js' %}"></script>
+{% endblock %}

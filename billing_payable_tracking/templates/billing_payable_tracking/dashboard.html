@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    .stats-card:hover {
+        transform: translateY(-2px);
+    }
+    .stats-card h3 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .stats-card p {
+        margin: 0;
+        opacity: 0.9;
+    }
+    .overdue-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .today-due-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .upcoming-card {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .bill-item {
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+    .bill-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+    .bill-item.overdue {
+        border-left-color: #dc3545;
+    }
+    .bill-item.due-today {
+        border-left-color: #ffc107;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+    }
+    .loading-spinner {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            {% for item in breadcrumb %}
+                {% if item.url %}
+                    <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+                {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Bill Alerts Section -->
+    {% if alerts %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert-container">
+                {% for alert in alerts %}
+                <div class="alert alert-warning alert-dismissible fade show bill-alert" role="alert" data-alert-id="{{ alert.id }}">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div class="flex-grow-1">
+                            <strong>{{ alert.get_alert_message }}</strong>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2 dismiss-alert-btn" data-alert-id="{{ alert.id }}">
+                            OK
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">{{ page_title }}</h1>
+                    <p class="text-muted">Track and manage billing and payable transactions</p>
+                </div>
+                <div class="text-end">
+                    <div id="currency-info" class="badge bg-primary fs-6 p-2" style="display: none;">
+                        <i class="bi bi-currency-exchange me-1"></i>
+                        <span id="currency-display">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Statistics Cards -->
+    <div id="dashboard-stats" class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="loading-spinner" id="total-bills-loader"></div>
+                <h3 id="total-bills-count">0</h3>
+                <p>Total Bills</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card overdue-card">
+                <div class="loading-spinner" id="overdue-bills-loader"></div>
+                <h3 id="overdue-bills-count">0</h3>
+                <p>Overdue Bills</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card today-due-card">
+                <div class="loading-spinner" id="today-due-loader"></div>
+                <h3 id="today-due-count">0</h3>
+                <p>Due Today</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card upcoming-card">
+                <div class="loading-spinner" id="upcoming-bills-loader"></div>
+                <h3 id="upcoming-bills-count">0</h3>
+                <p>Due in 7 Days</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bills Overview -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Bills</h5>
+                    <a href="{% url 'billing_payable_tracking:bill_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div id="recent-bills-list">
+                        <div class="text-center py-4">
+                            <div class="loading-spinner mx-auto mb-2"></div>
+                            <p class="text-muted">Loading recent bills...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'billing_payable_tracking:bill_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add New Bill
+                        </a>
+                        <a href="{% url 'billing_payable_tracking:vendor_create' %}" class="btn btn-success">
+                            <i class="bi bi-building me-2"></i>Add Vendor
+                        </a>
+                        <a href="{% url 'billing_payable_tracking:bill_list' %}?status=overdue" class="btn btn-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>View Overdue
+                        </a>
+                        <a href="{% url 'billing_payable_tracking:reports' %}" class="btn btn-info">
+                            <i class="bi bi-file-earmark-text me-2"></i>Generate Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Dashboard API Integration
+class BillingDashboard {
+    constructor() {
+        this.apiBaseUrl = '/accounting/billing-payable-tracking';
+        this.csrfToken = getCookie('csrftoken');
+        this.init();
+    }
+
+    async init() {
+        await this.loadDashboardStats();
+        await this.loadRecentBills();
+        this.setupAutoRefresh();
+    }
+
+    async loadDashboardStats() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/ajax/dashboard-stats/`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            
+            // Update stat cards with currency formatting
+            this.updateStatCard('total-bills', data.total_pending_count || 0, data.total_pending_amount, data);
+            this.updateStatCard('overdue-bills', data.overdue_count || 0, data.overdue_amount, data);
+            this.updateStatCard('today-due', data.today_due_count || 0, data.today_due_amount, data);
+            this.updateStatCard('upcoming-bills', data.upcoming_count || 0, data.upcoming_amount, data);
+            
+            // Update currency display
+            this.updateCurrencyDisplay(data);
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+            this.showError('Failed to load dashboard statistics');
+        }
+    }
+
+    async loadRecentBills() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/bills/?limit=5&ordering=-created_at`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            
+            this.renderRecentBills(data.results || data);
+        } catch (error) {
+            console.error('Error loading recent bills:', error);
+            this.showBillsError('Failed to load recent bills');
+        }
+    }
+
+    getCurrencySymbolHtml(currencySymbol) {
+        if (currencySymbol && currencySymbol.includes('/static/img/dirham-symbol.png')) {
+            return `<img src="/static/img/dirham-symbol.png" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;">`;
+        }
+        return currencySymbol || '$';
+    }
+
+    updateStatCard(cardId, count, amount, data) {
+        const loader = document.getElementById(`${cardId}-loader`);
+        const counter = document.getElementById(`${cardId}-count`);
+        
+        if (loader) loader.style.display = 'none';
+        if (counter) {
+            const currencySymbolHtml = this.getCurrencySymbolHtml(data.default_currency_symbol);
+            const formattedAmount = amount ? parseFloat(amount).toFixed(2) : '0.00';
+            counter.innerHTML = `${count}<br><small style="font-size: 0.8rem; opacity: 0.8;">${currencySymbolHtml}${formattedAmount}</small>`;
+        }
+    }
+    
+    updateCurrencyDisplay(data) {
+        const currencyInfo = document.getElementById('currency-info');
+        const currencyDisplay = document.getElementById('currency-display');
+        
+        if (data.default_currency_code && currencyInfo && currencyDisplay) {
+            const currencySymbolHtml = this.getCurrencySymbolHtml(data.default_currency_symbol);
+            const currencyText = `${data.default_currency_code}`;
+            currencyDisplay.innerHTML = `Base Currency: ${currencyText} (${currencySymbolHtml})`;
+            currencyInfo.style.display = 'block';
+        }
+    }
+
+    renderRecentBills(bills) {
+        const container = document.getElementById('recent-bills-list');
+        
+        if (!bills || bills.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mt-2">No bills found</p>
+                </div>
+            `;
+            return;
+        }
+
+        const billsHtml = bills.map(bill => `
+            <div class="bill-item p-3 mb-2 ${this.getBillItemClass(bill)}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${bill.vendor_name}</h6>
+                        <small class="text-muted">Bill #${bill.bill_no}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold">${this.getCurrencySymbolHtml(bill.currency_symbol)}${parseFloat(bill.amount).toFixed(2)}</div>
+                        <span class="status-badge ${this.getStatusBadgeClass(bill.status)}">
+                            ${bill.status.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        Due: ${new Date(bill.due_date).toLocaleDateString()}
+                        ${bill.currency_code ? `<span class="ms-2">${bill.currency_code}</span>` : ''}
+                        ${bill.is_overdue ? '<span class="text-danger ms-2">OVERDUE</span>' : ''}
+                    </small>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = billsHtml;
+    }
+
+    getBillItemClass(bill) {
+        if (bill.is_overdue) return 'overdue';
+        if (this.isDueToday(bill.due_date)) return 'due-today';
+        return '';
+    }
+
+    getStatusBadgeClass(status) {
+        const classes = {
+            'pending': 'bg-warning text-dark',
+            'paid': 'bg-success text-white',
+            'overdue': 'bg-danger text-white'
+        };
+        return classes[status] || 'bg-secondary text-white';
+    }
+
+    isDueToday(dueDate) {
+        const today = new Date().toDateString();
+        const due = new Date(dueDate).toDateString();
+        return today === due;
+    }
+
+    setupAutoRefresh() {
+        // Refresh dashboard every 5 minutes
+        setInterval(() => {
+            this.loadDashboardStats();
+            this.loadRecentBills();
+        }, 300000);
+    }
+
+    showError(message) {
+        console.error(message);
+        // You can add toast notifications here
+    }
+
+    showBillsError(message) {
+        const container = document.getElementById('recent-bills-list');
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                <p class="text-muted mt-2">${message}</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="dashboard.loadRecentBills()">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Initialize dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.dashboard = new BillingDashboard();
+    console.log('Billing/Payable Tracking Dashboard loaded');
+});
+    
+    // Alert dismissal functionality
+    $('.dismiss-alert-btn').on('click', function(e) {
+        e.preventDefault();
+        const alertId = $(this).data('alert-id');
+        const alertElement = $(this).closest('.bill-alert');
+        
+        $.ajax({
+            url: "{% url 'billing_payable_tracking:dismiss_alert' alert_id='00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', alertId),
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    alertElement.fadeOut(300, function() {
+                        $(this).remove();
+                        // Hide alert container if no more alerts
+                        if ($('.bill-alert').length === 0) {
+                            $('.alert-container').parent().fadeOut();
+                        }
+                    });
+                } else {
+                    console.error('Failed to dismiss alert:', response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error dismissing alert:', error);
+            }
+        });
+    });
+</script>
+{% endblock %}

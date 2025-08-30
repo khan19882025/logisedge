@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Log Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-eye"></i> System Log Detail
+                    </h1>
+                    <p class="page-subtitle">Detailed information about system log entry</p>
+                </div>
+                <div>
+                    <a href="{% url 'system_logs:system_log_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <a href="{% url 'system_logs:dashboard' %}" class="btn btn-info">
+                        <i class="fas fa-chart-bar"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Information -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Log Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Log ID:</th>
+                                    <td><code>{{ log.id }}</code></td>
+                                </tr>
+                                <tr>
+                                    <th>Timestamp:</th>
+                                    <td>{{ log.timestamp|date:"F d, Y H:i:s T" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Log Type:</th>
+                                    <td>
+                                        <span class="badge badge-{% if log.log_type == 'ERROR' %}danger{% elif log.log_type == 'WARNING' %}warning{% elif log.log_type == 'INFO' %}info{% else %}secondary{% endif %}">
+                                            {{ log.log_type }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Severity:</th>
+                                    <td>
+                                        <span class="badge badge-{% if log.severity == 'CRITICAL' or log.severity == 'FATAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                                            {{ log.severity }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge badge-{% if log.status == 'RESOLVED' %}success{% elif log.status == 'IN_PROGRESS' %}warning{% elif log.status == 'PENDING' %}info{% else %}secondary{% endif %}">
+                                            {{ log.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="150">Module:</th>
+                                    <td>{{ log.module|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Function:</th>
+                                    <td>{{ log.function|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>User:</th>
+                                    <td>{{ log.user.username|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Environment:</th>
+                                    <td>{{ log.environment|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Execution Time:</th>
+                                    <td>
+                                        {% if log.execution_time %}
+                                            {{ log.execution_time|floatformat:3 }}s
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message -->
+    {% if log.error_message %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Error Message
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-{% if log.severity == 'CRITICAL' or log.severity == 'FATAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                        {{ log.error_message }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Stack Trace -->
+    {% if log.stack_trace %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-code"></i> Stack Trace
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>{{ log.stack_trace }}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Context Data -->
+    {% if log.context_data %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-database"></i> Context Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>{{ log.context_data|pprint }}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Information -->
+    {% if log.error_type or log.error_code or log.request_data %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plus-circle"></i> Additional Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if log.error_type %}
+                        <div class="col-md-6">
+                            <h6>Error Type</h6>
+                            <p><code>{{ log.error_type }}</code></p>
+                        </div>
+                        {% endif %}
+                        {% if log.error_code %}
+                        <div class="col-md-6">
+                            <h6>Error Code</h6>
+                            <p><code>{{ log.error_code }}</code></p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if log.request_data %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Request Data</h6>
+                            <pre class="bg-light p-3 rounded"><code>{{ log.request_data|pprint }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tools"></i> Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        {% if log.status != 'RESOLVED' %}
+                        <button type="button" class="btn btn-success" onclick="markAsResolved('{{ log.id }}')">
+                            <i class="fas fa-check"></i> Mark as Resolved
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-warning" onclick="createErrorPattern('{{ log.id }}')">
+                            <i class="fas fa-chart-line"></i> Create Error Pattern
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="startDebugSession('{{ log.id }}')">
+                            <i class="fas fa-bug"></i> Start Debug Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function markAsResolved(logId) {
+    if (confirm('Are you sure you want to mark this log as resolved?')) {
+        // TODO: Implement AJAX call to mark as resolved
+        alert('Feature not implemented yet');
+    }
+}
+
+function createErrorPattern(logId) {
+    if (confirm('Create an error pattern from this log?')) {
+        // TODO: Implement AJAX call to create error pattern
+        alert('Feature not implemented yet');
+    }
+}
+
+function startDebugSession(logId) {
+    if (confirm('Start a debug session for this log?')) {
+        // TODO: Implement AJAX call to start debug session
+        alert('Feature not implemented yet');
+    }
+}
+</script>
+{% endblock %}

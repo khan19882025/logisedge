@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chart of Accounts Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chart_of_accounts/chart_of_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-diagram-3 text-primary"></i>
+                Chart of Accounts Dashboard
+            </h1>
+            <p class="text-muted">Manage your company's financial accounts and hierarchy</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'chart_of_accounts:account_create' %}" class="coa-btn coa-btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                New Account
+            </a>
+            <a href="{% url 'chart_of_accounts:account_hierarchy' %}" class="coa-btn coa-btn-secondary">
+                <i class="bi bi-diagram-2"></i>
+                View Hierarchy
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="coa-dashboard-card">
+                <div class="card-icon">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <div class="card-title">Total Accounts</div>
+                <div class="card-value">{{ total_accounts }}</div>
+                <div class="card-subtitle">All active accounts</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="coa-dashboard-card">
+                <div class="card-icon">
+                    <i class="bi bi-folder"></i>
+                </div>
+                <div class="card-title">Group Accounts</div>
+                <div class="card-value">{{ group_accounts }}</div>
+                <div class="card-subtitle">Parent accounts</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="coa-dashboard-card">
+                <div class="card-icon">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="card-title">Detail Accounts</div>
+                <div class="card-value">{{ detail_accounts }}</div>
+                <div class="card-subtitle">Child accounts</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="coa-dashboard-card">
+                <div class="card-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="card-title">Zero Balance</div>
+                <div class="card-value">{{ zero_balance_accounts }}</div>
+                <div class="card-subtitle">Accounts with no balance</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Statistics -->
+    <div class="row mb-4">
+        <!-- Accounts by Category Chart -->
+        <div class="col-lg-8 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart"></i>
+                        Accounts by Category
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="accountsByCategoryChart" width="400" height="200" 
+                            data-labels="{% for category_name, count in accounts_by_category.items %}{{ category_name }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                            data-values="{% for category_name, count in accounts_by_category.items %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                    </canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="col-lg-4 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'chart_of_accounts:account_list' %}" class="coa-btn coa-btn-primary">
+                            <i class="bi bi-list-ul"></i>
+                            View All Accounts
+                        </a>
+                        <a href="{% url 'chart_of_accounts:account_type_list' %}" class="coa-btn coa-btn-secondary">
+                            <i class="bi bi-tags"></i>
+                            Manage Account Types
+                        </a>
+                        <a href="{% url 'chart_of_accounts:bulk_import' %}" class="coa-btn coa-btn-warning">
+                            <i class="bi bi-upload"></i>
+                            Bulk Import
+                        </a>
+                        <a href="{% url 'chart_of_accounts:export_csv' %}" class="coa-btn coa-btn-success">
+                            <i class="bi bi-download"></i>
+                            Export to CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Accounts and Activity -->
+    <div class="row">
+        <!-- Recent Accounts -->
+        <div class="col-lg-8 mb-3">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history"></i>
+                        Recent Accounts
+                    </h5>
+                    <a href="{% url 'chart_of_accounts:account_list' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_accounts %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Account Code</th>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Balance</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for account in recent_accounts %}
+                                    <tr>
+                                        <td>
+                                            <span class="account-code">{{ account.account_code }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'chart_of_accounts:account_detail' account.pk %}" class="text-decoration-none">
+                                                {{ account.name }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="account-type-badge {{ account.account_type.category|lower }}">
+                                                {{ account.account_type.name }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="account-balance {% if account.current_balance >= 0 %}positive{% else %}negative{% endif %}">
+                                                {{ account.current_balance|floatformat:2 }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="account-status {% if account.is_active %}active{% else %}inactive{% endif %}">
+                                                <i class="bi bi-circle-fill"></i>
+                                                {% if account.is_active %}Active{% else %}Inactive{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ account.created_at|date:"M d, Y" }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="coa-empty-state">
+                            <div class="empty-icon">
+                                <i class="bi bi-inbox"></i>
+                            </div>
+                            <div class="empty-title">No Accounts Yet</div>
+                            <div class="empty-description">Create your first account to get started</div>
+                            <a href="{% url 'chart_of_accounts:account_create' %}" class="coa-btn coa-btn-primary">
+                                <i class="bi bi-plus-circle"></i>
+                                Create Ledger
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Categories Summary -->
+        <div class="col-lg-4 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-collection"></i>
+                        Account Categories
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for category_name, count in accounts_by_category.items %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="account-nature-indicator {% if forloop.counter|divisibleby:2 %}debit{% else %}credit{% endif %}"></div>
+                            <span class="fw-medium">{{ category_name }}</span>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Edit Modal -->
+<div class="modal fade" id="quick-edit-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Edit Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/chart_of_accounts/chart_of_accounts.js' %}"></script>
+<script>
+// Initialize charts when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Accounts by Category Chart
+    const canvas = document.getElementById('accountsByCategoryChart');
+    const ctx = canvas.getContext('2d');
+    
+    // Get data from canvas attributes
+    const labels = canvas.dataset.labels.split(',');
+    const values = canvas.dataset.values.split(',').map(Number);
+    
+    const accountsByCategoryChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    '#2196F3',
+                    '#FF9800',
+                    '#4CAF50',
+                    '#9C27B0',
+                    '#F44336'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends 'asset_movement_log/base.html' %}
+{% load static %}
+
+{% block title %}Asset Movement Templates{% endblock %}
+
+{% block asset_movement_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-layer-group"></i>
+                    Asset Movement Templates
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'asset_movement_log:template_create' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> New Template
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Reason</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                            <tr>
+                                <td>
+                                    <strong>{{ template.name }}</strong>
+                                    {% if template.description %}
+                                        <br><small class="text-muted">{{ template.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ template.movement_type|movement_type_badge }}">
+                                        {{ template.get_movement_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ template.get_movement_reason_display }}</td>
+                                <td>
+                                    {% if template.estimated_duration %}
+                                        {{ template.estimated_duration }} days
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if template.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ template.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'asset_movement_log:template_update' template.pk %}" 
+                                           class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'asset_movement_log:template_delete' template.pk %}" 
+                                           class="btn btn-sm btn-danger" title="Delete"
+                                           onclick="return confirm('Are you sure you want to delete this template?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <p class="text-muted">No templates found.</p>
+                                    <a href="{% url 'asset_movement_log:template_create' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Create First Template
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="Template pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

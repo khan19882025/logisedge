@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payroll Dashboard - Payroll Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/payroll/payroll.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h2><i class="bi bi-cash-stack"></i> Payroll Management Dashboard</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Home</a></li>
+                        <li class="breadcrumb-item active">Payroll Management</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Employees
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_employees }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-people fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Current Month Payroll
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                AED {{ total_payroll.total_net|default:"0"|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cash-coin fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Approvals
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_approvals }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clock-history fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                WPS Status
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ wps_paid }} Paid / {{ wps_pending }} Pending
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-bank fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'payroll:payroll_period_create' %}" class="btn btn-primary btn-block">
+                                <i class="bi bi-calendar-plus me-2"></i>Create Payroll Period
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'payroll:employee_salary_create' %}" class="btn btn-success btn-block">
+                                <i class="bi bi-person-plus me-2"></i>Add Employee Salary
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'payroll:bank_account_create' %}" class="btn btn-info btn-block">
+                                <i class="bi bi-bank me-2"></i>Add Bank Account
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'payroll:wps_export' %}" class="btn btn-warning btn-block">
+                                <i class="bi bi-download me-2"></i>Export WPS
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Current Period Status -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Current Period Status</h6>
+                </div>
+                <div class="card-body">
+                    {% if current_period %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>{{ current_period.period_name }}</h5>
+                                <p class="text-muted">
+                                    {{ current_period.start_date|date:"M d, Y" }} - {{ current_period.end_date|date:"M d, Y" }}
+                                </p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                {% if current_period.is_processed %}
+                                    <span class="badge bg-success">Processed</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if not current_period.is_processed %}
+                            <div class="mt-3">
+                                <a href="{% url 'payroll:payroll_process' current_period.id %}" class="btn btn-primary">
+                                    <i class="bi bi-play-circle me-2"></i>Process Payroll
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="mt-3">
+                                <a href="{% url 'payroll:payroll_record_list' current_period.id %}" class="btn btn-info">
+                                    <i class="bi bi-eye me-2"></i>View Records
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-x fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Current Period</h5>
+                            <p class="text-muted">Create a payroll period for {{ current_month|date:"F" }} {{ current_year }}</p>
+                            <a href="{% url 'payroll:payroll_period_create' %}" class="btn btn-primary">
+                                <i class="bi bi-calendar-plus me-2"></i>Create Period
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Payroll Records -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Payroll Records</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_records %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Period</th>
+                                        <th>Net Salary</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in recent_records %}
+                                    <tr>
+                                        <td>{{ record.employee.get_full_name }}</td>
+                                        <td>{{ record.payroll_period.period_name }}</td>
+                                        <td>AED {{ record.net_salary|floatformat:2 }}</td>
+                                        <td>
+                                            {% if record.is_approved %}
+                                                <span class="badge bg-success">Approved</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'payroll:payroll_record_edit' record.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% if not record.is_approved %}
+                                                <a href="{% url 'payroll:payroll_approve' record.id %}" class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-check"></i>
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-table fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Payroll Records</h5>
+                            <p class="text-muted">Process payroll to see records here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Recent Periods -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Periods</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_periods %}
+                        <div class="list-group list-group-flush">
+                            {% for period in recent_periods %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">{{ period.period_name }}</h6>
+                                    <small class="text-muted">
+                                        {{ period.start_date|date:"M d" }} - {{ period.end_date|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                                <div>
+                                    {% if period.is_processed %}
+                                        <span class="badge bg-success rounded-pill">Done</span>
+                                    {% else %}
+                                        <span class="badge bg-warning rounded-pill">Pending</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <a href="{% url 'payroll:payroll_period_list' %}" class="btn btn-outline-primary btn-sm">
+                                View All Periods
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-calendar fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No payroll periods</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border-end">
+                                <h4 class="text-primary">{{ employees_with_salary }}</h4>
+                                <small class="text-muted">With Salary</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-success">{{ employees_with_bank }}</h4>
+                            <small class="text-muted">With Bank</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-warning">{{ active_loans }}</h4>
+                            <small class="text-muted">Active Loans</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-info">{{ pending_advances }}</h4>
+                            <small class="text-muted">Pending Advances</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Menu -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Payroll Menu</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'payroll:salary_structure_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-diagram-3 me-2"></i>Salary Structures
+                        </a>
+                        <a href="{% url 'payroll:employee_salary_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-badge me-2"></i>Employee Salaries
+                        </a>
+                        <a href="{% url 'payroll:bank_account_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-bank me-2"></i>Bank Accounts
+                        </a>
+                        <a href="{% url 'payroll:loan_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-credit-card me-2"></i>Loans
+                        </a>
+                        <a href="{% url 'payroll:advance_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-cash me-2"></i>Advances
+                        </a>
+                        <a href="{% url 'payroll:wps_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-file-earmark-text me-2"></i>WPS Records
+                        </a>
+                        <a href="{% url 'payroll:eosb_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-calculator me-2"></i>EOSB
+                        </a>
+                        <a href="{% url 'payroll:reports' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-graph-up me-2"></i>Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/payroll/payroll.js' %}"></script>
+{% endblock %} 

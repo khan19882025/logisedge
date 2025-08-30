@@ -1,0 +1,290 @@
+{% extends 'asset_movement_log/base.html' %}
+{% load static %}
+
+{% block title %}Movement Details - {{ movement.asset.asset_code }}{% endblock %}
+
+{% block asset_movement_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-exchange-alt"></i>
+                Movement Details
+            </h1>
+            <div class="btn-group" role="group">
+                <a href="{% url 'asset_movement_log:movement_update' movement.movement_id %}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <a href="{% url 'asset_movement_log:movement_delete' movement.movement_id %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </a>
+                <a href="{% url 'asset_movement_log:movement_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Movement Details -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Movement Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Movement ID:</th>
+                                <td>{{ movement.movement_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Asset:</th>
+                                <td>
+                                    <a href="{% url 'asset_register:asset_detail' movement.asset.pk %}">
+                                        {{ movement.asset.asset_code }} - {{ movement.asset.asset_name }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Movement Type:</th>
+                                <td>
+                                    <span class="badge badge-{{ movement.movement_type|movement_type_badge }}">
+                                        {{ movement.get_movement_type_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Movement Date:</th>
+                                <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Reason:</th>
+                                <td>{{ movement.get_movement_reason_display }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">From Location:</th>
+                                <td>
+                                    {% if movement.from_location %}
+                                        {{ movement.from_location.name }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>To Location:</th>
+                                <td>
+                                    {% if movement.to_location %}
+                                        {{ movement.to_location.name }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>From User:</th>
+                                <td>
+                                    {% if movement.from_user %}
+                                        {{ movement.from_user.get_full_name|default:movement.from_user.username }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>To User:</th>
+                                <td>
+                                    {% if movement.to_user %}
+                                        {{ movement.to_user.get_full_name|default:movement.to_user.username }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Moved By:</th>
+                                <td>{{ movement.moved_by.get_full_name|default:movement.moved_by.username }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                {% if movement.reason_description %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Reason Description:</h6>
+                        <p class="text-muted">{{ movement.reason_description }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if movement.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Notes:</h6>
+                        <p class="text-muted">{{ movement.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Duration Information -->
+        {% if movement.estimated_duration or movement.actual_return_date %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-clock"></i>
+                    Duration Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if movement.estimated_duration %}
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Estimated Duration:</th>
+                                <td>{{ movement.estimated_duration }} days</td>
+                            </tr>
+                            <tr>
+                                <th>Expected Return:</th>
+                                <td>
+                                    {% if movement.estimated_duration %}
+                                        {{ movement.movement_date|add_days:movement.estimated_duration|date:"M d, Y" }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    {% endif %}
+                    {% if movement.actual_return_date %}
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Actual Return Date:</th>
+                                <td>{{ movement.actual_return_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Duration:</th>
+                                <td>
+                                    {% if movement.duration_days %}
+                                        {{ movement.duration_days }} days
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Status and Actions -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-tasks"></i>
+                    Status & Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Status:</h6>
+                    <div class="d-flex gap-2">
+                        {% if movement.is_completed %}
+                            <span class="badge badge-success">Completed</span>
+                        {% else %}
+                            <span class="badge badge-warning">Pending</span>
+                        {% endif %}
+                        
+                        {% if movement.is_approved %}
+                            <span class="badge badge-success">Approved</span>
+                        {% else %}
+                            <span class="badge badge-warning">Pending Approval</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if movement.is_overdue %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Overdue:</strong> This movement is overdue.
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <h6>Quick Actions:</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'asset_movement_log:movement_update' movement.movement_id %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit Movement
+                        </a>
+                        <a href="{% url 'asset_movement_log:movement_list' %}?asset={{ movement.asset.pk }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-history"></i> View Asset History
+                        </a>
+                        <a href="{% url 'asset_register:asset_detail' movement.asset.pk %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-eye"></i> View Asset Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Information -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-history"></i>
+                    Audit Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="40%">Created:</th>
+                        <td>{{ movement.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Created By:</th>
+                        <td>{{ movement.created_by.get_full_name|default:movement.created_by.username }}</td>
+                    </tr>
+                    {% if movement.updated_by %}
+                    <tr>
+                        <th>Updated:</th>
+                        <td>{{ movement.updated_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Updated By:</th>
+                        <td>{{ movement.updated_by.get_full_name|default:movement.updated_by.username }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if movement.approved_by %}
+                    <tr>
+                        <th>Approved:</th>
+                        <td>{{ movement.approved_date|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Approved By:</th>
+                        <td>{{ movement.approved_by.get_full_name|default:movement.approved_by.username }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

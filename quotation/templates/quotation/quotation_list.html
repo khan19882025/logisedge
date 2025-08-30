@@ -1,0 +1,193 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Quotations - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/quotation/quotation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Quotations</h1>
+            <p class="text-muted">Manage and track all quotations</p>
+        </div>
+        <div>
+            <a href="{% url 'quotation:quotation_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>New Quotation
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search quotations...">
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="sort" class="form-label">Sort By</label>
+                    <select class="form-select" id="sort" name="sort">
+                        <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+                        <option value="quotation_number" {% if sort_by == 'quotation_number' %}selected{% endif %}>Quotation Number</option>
+                        <option value="customer__name" {% if sort_by == 'customer__name' %}selected{% endif %}>Customer Name</option>
+                        <option value="total_amount" {% if sort_by == 'total_amount' %}selected{% endif %}>Total Amount</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="{% url 'quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quotations Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Quotation #</th>
+                            <th>Customer</th>
+                            <th>Subject</th>
+                            <th>Salesman</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for quotation in page_obj %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'quotation:quotation_detail' quotation.pk %}" class="fw-bold text-decoration-none">
+                                    {{ quotation.quotation_number }}
+                                </a>
+                            </td>
+                            <td>{{ quotation.customer.name }}</td>
+                            <td>{{ quotation.subject|truncatechars:50 }}</td>
+                            <td>{{ quotation.salesman.name }}</td>
+                            <td>{{ quotation.currency }} {{ quotation.total_amount|floatformat:2 }}</td>
+                            <td>
+                                {% if quotation.status == 'draft' %}
+                                <span class="badge bg-secondary">{{ quotation.get_status_display }}</span>
+                                {% elif quotation.status == 'sent' %}
+                                <span class="badge bg-primary">{{ quotation.get_status_display }}</span>
+                                {% elif quotation.status == 'accepted' %}
+                                <span class="badge bg-success">{{ quotation.get_status_display }}</span>
+                                {% elif quotation.status == 'rejected' %}
+                                <span class="badge bg-danger">{{ quotation.get_status_display }}</span>
+                                {% elif quotation.status == 'expired' %}
+                                <span class="badge bg-warning">{{ quotation.get_status_display }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ quotation.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ quotation.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'quotation:quotation_detail' quotation.pk %}" 
+                                       class="btn btn-outline-primary" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'quotation:quotation_update' quotation.pk %}" 
+                                       class="btn btn-outline-secondary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'quotation:quotation_duplicate' quotation.pk %}" 
+                                       class="btn btn-outline-info" title="Duplicate">
+                                        <i class="bi bi-files"></i>
+                                    </a>
+                                    <a href="{% url 'quotation:quotation_delete' quotation.pk %}" 
+                                       class="btn btn-outline-danger" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Quotation pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+                <h3 class="mt-3">No quotations found</h3>
+                <p class="text-muted">Get started by creating your first quotation.</p>
+                <a href="{% url 'quotation:quotation_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Create Quotation
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/quotation/quotation.js' %}"></script>
+{% endblock %} 

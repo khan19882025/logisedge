@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Quick Bank Transfer{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_transfer/css/bank_transfer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1 class="page-title">
+                        <i class="fas fa-bolt"></i>
+                        Quick Bank Transfer
+                    </h1>
+                    <div class="header-actions">
+                        <a href="{% url 'bank_transfer:create' %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Full Transfer Form
+                        </a>
+                        <a href="{% url 'bank_transfer:list' %}" class="btn btn-secondary">
+                            <i class="fas fa-list"></i> View All Transfers
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Transfer Form -->
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-rocket"></i>
+                                Quick Transfer Details
+                            </h5>
+                            <p class="card-subtitle text-muted">
+                                Create a simple bank transfer with minimal information
+                            </p>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="quickTransferForm">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.from_account.id_for_label }}">
+                                                <i class="fas fa-arrow-down"></i>
+                                                From Bank Account *
+                                            </label>
+                                            {{ form.from_account }}
+                                            {% if form.from_account.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.from_account.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">
+                                                Current Balance: <span id="fromAccountBalance">-</span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.to_account.id_for_label }}">
+                                                <i class="fas fa-arrow-up"></i>
+                                                To Bank Account *
+                                            </label>
+                                            {{ form.to_account }}
+                                            {% if form.to_account.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.to_account.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">
+                                                Current Balance: <span id="toAccountBalance">-</span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.amount.id_for_label }}">
+                                                <i class="fas fa-dollar-sign"></i>
+                                                Transfer Amount *
+                                            </label>
+                                            {{ form.amount }}
+                                            {% if form.amount.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.amount.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.narration.id_for_label }}">
+                                                <i class="fas fa-comment"></i>
+                                                Brief Description
+                                            </label>
+                                            {{ form.narration }}
+                                            {% if form.narration.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.narration.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Summary -->
+                                <div class="transfer-summary">
+                                    <h6><i class="fas fa-info-circle"></i> Transfer Summary</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="summary-item">
+                                                <label>From Account:</label>
+                                                <span id="summaryFromAccount">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="summary-item">
+                                                <label>To Account:</label>
+                                                <span id="summaryToAccount">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="summary-item">
+                                                <label>Amount:</label>
+                                                <span id="summaryAmount">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Form Actions -->
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check"></i>
+                                        Create Transfer
+                                    </button>
+                                    <button type="reset" class="btn btn-secondary">
+                                        <i class="fas fa-undo"></i>
+                                        Reset
+                                    </button>
+                                    <a href="{% url 'bank_transfer:list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i>
+                                        Cancel
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help Sidebar -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-lightbulb"></i>
+                                Quick Transfer Tips
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="help-list">
+                                <li>Use this for simple internal transfers</li>
+                                <li>Transfer date is automatically set to today</li>
+                                <li>Currency is automatically set from the source account</li>
+                                <li>Exchange rate is set to 1.000000 (same currency)</li>
+                                <li>Transfer type is set to "Internal Transfer"</li>
+                                <li>Use the full form for complex transfers</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="fas fa-clock"></i>
+                                Recent Transfers
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="recent-transfers">
+                                <p class="text-muted">No recent transfers to show.</p>
+                                <a href="{% url 'bank_transfer:list' %}" class="btn btn-sm btn-outline-primary">
+                                    View All Transfers
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_transfer/js/bank_transfer.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Update account balances when accounts change
+    $('#id_from_account, #id_to_account').on('change', function() {
+        updateQuickTransferSummary();
+    });
+
+    // Update amount when changed
+    $('#id_amount').on('input', function() {
+        updateQuickTransferSummary();
+    });
+
+    // Initialize summary
+    updateQuickTransferSummary();
+});
+
+function updateQuickTransferSummary() {
+    const fromAccount = $('#id_from_account option:selected');
+    const toAccount = $('#id_to_account option:selected');
+    const amount = $('#id_amount').val();
+
+    // Update summary display
+    $('#summaryFromAccount').text(fromAccount.text() || '-');
+    $('#summaryToAccount').text(toAccount.text() || '-');
+    $('#summaryAmount').text(amount ? formatCurrency(amount) : '-');
+
+    // Update account balances
+    updateAccountBalances();
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'AED',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+</script>
+{% endblock %} 

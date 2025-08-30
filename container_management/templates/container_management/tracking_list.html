@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Container Tracking{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-geo-alt me-2"></i>Container Tracking
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:tracking_create' %}" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-plus me-1"></i>Add Tracking
+            </a>
+            <a href="{% url 'container_management:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-graph-up me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Tracking
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ page_obj.paginator.count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-geo-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                In Transit
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ in_transit_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-truck fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Delayed
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ delayed_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Delivered
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ delivered_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-search me-2"></i>Search & Filter
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" id="searchForm">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="search_by" class="form-label">Search By</label>
+                        <select name="search_by" id="search_by" class="form-select">
+                            <option value="">All Fields</option>
+                            <option value="tracking_number" {% if search_by == 'tracking_number' %}selected{% endif %}>Tracking Number</option>
+                            <option value="container" {% if search_by == 'container' %}selected{% endif %}>Container Number</option>
+                            <option value="location" {% if search_by == 'location' %}selected{% endif %}>Location</option>
+                            <option value="vessel" {% if search_by == 'vessel' %}selected{% endif %}>Vessel</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="search_term" class="form-label">Search Term</label>
+                        <input type="text" class="form-control" id="search_term" name="search_term" 
+                               value="{{ search_term }}" placeholder="Enter search term...">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="milestone" class="form-label">Milestone</label>
+                        <select name="milestone" id="milestone" class="form-select">
+                            <option value="">All Milestones</option>
+                            <option value="booking_confirmed" {% if milestone == 'booking_confirmed' %}selected{% endif %}>Booking Confirmed</option>
+                            <option value="container_picked_up" {% if milestone == 'container_picked_up' %}selected{% endif %}>Container Picked Up</option>
+                            <option value="at_origin_port" {% if milestone == 'at_origin_port' %}selected{% endif %}>At Origin Port</option>
+                            <option value="vessel_departed" {% if milestone == 'vessel_departed' %}selected{% endif %}>Vessel Departed</option>
+                            <option value="in_transit" {% if milestone == 'in_transit' %}selected{% endif %}>In Transit</option>
+                            <option value="at_destination_port" {% if milestone == 'at_destination_port' %}selected{% endif %}>At Destination Port</option>
+                            <option value="container_delivered" {% if milestone == 'container_delivered' %}selected{% endif %}>Container Delivered</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="on_time" {% if status == 'on_time' %}selected{% endif %}>On Time</option>
+                            <option value="delayed" {% if status == 'delayed' %}selected{% endif %}>Delayed</option>
+                            <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-1"></i>Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tracking List -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-list me-2"></i>Tracking Records ({{ page_obj.paginator.count }})
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tracking #</th>
+                                <th>Container</th>
+                                <th>Milestone</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>ETA</th>
+                                <th>Last Update</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tracking in page_obj %}
+                                <tr {% if tracking.status == 'delayed' %}class="table-warning"{% endif %}>
+                                    <td>
+                                        <div>
+                                            <strong>{{ tracking.tracking_number }}</strong>
+                                            {% if tracking.is_active %}
+                                                <span class="badge bg-success ms-2">Active</span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ tracking.container_booking.booking_number|default:"-" }}</small>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ tracking.container.container_number }}</strong>
+                                        </div>
+                                        <small class="text-muted">{{ tracking.container.get_container_type_display }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ tracking.get_milestone_display_class }}">
+                                            {{ tracking.get_milestone_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ tracking.location }}</strong>
+                                        </div>
+                                        {% if tracking.vessel_name %}
+                                            <small class="text-muted">{{ tracking.vessel_name }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if tracking.status == 'on_time' %}
+                                            <span class="badge bg-success">On Time</span>
+                                        {% elif tracking.status == 'delayed' %}
+                                            <span class="badge bg-warning">Delayed</span>
+                                            {% if tracking.delay_reason %}
+                                                <br><small class="text-muted">{{ tracking.delay_reason }}</small>
+                                            {% endif %}
+                                        {% elif tracking.status == 'completed' %}
+                                            <span class="badge bg-info">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if tracking.eta %}
+                                            <div>
+                                                <strong>{{ tracking.eta|date:"M d, Y" }}</strong>
+                                            </div>
+                                            <small class="text-muted">{{ tracking.eta|date:"H:i" }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ tracking.last_updated|date:"M d, Y" }}</strong>
+                                        </div>
+                                        <small class="text-muted">{{ tracking.last_updated|date:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'container_management:tracking_detail' tracking.pk %}" 
+                                               class="btn btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'container_management:tracking_update' tracking.pk %}" 
+                                               class="btn btn-outline-warning" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'container_management:tracking_delete' tracking.pk %}" 
+                                               class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Tracking pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if search_by %}&search_by={{ search_by }}{% endif %}{% if search_term %}&search_term={{ search_term }}{% endif %}{% if milestone %}&milestone={{ milestone }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_by %}&search_by={{ search_by }}{% endif %}{% if search_term %}&search_term={{ search_term }}{% endif %}{% if milestone %}&milestone={{ milestone }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if search_by %}&search_by={{ search_by }}{% endif %}{% if search_term %}&search_term={{ search_term }}{% endif %}{% if milestone %}&milestone={{ milestone }}{% endif %}{% if status %}&status={{ status }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_by %}&search_by={{ search_by }}{% endif %}{% if search_term %}&search_term={{ search_term }}{% endif %}{% if milestone %}&milestone={{ milestone }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_by %}&search_by={{ search_by }}{% endif %}{% if search_term %}&search_term={{ search_term }}{% endif %}{% if milestone %}&milestone={{ milestone }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-geo-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No tracking records found</h5>
+                    <p class="text-muted">You don't have any container tracking records yet.</p>
+                    <a href="{% url 'container_management:tracking_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Add First Tracking Record
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+    <script>
+        // Initialize form enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-submit form when select fields change
+            const selectFields = document.querySelectorAll('select[name="milestone"], select[name="status"]');
+            selectFields.forEach(field => {
+                field.addEventListener('change', function() {
+                    document.getElementById('searchForm').submit();
+                });
+            });
+
+            // Debounce search input
+            const searchInput = document.getElementById('search_term');
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    document.getElementById('searchForm').submit();
+                }, 500);
+            });
+
+            // Highlight delayed tracking records
+            const delayedRows = document.querySelectorAll('tr.table-warning');
+            delayedRows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#fff3cd';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                });
+            });
+        });
+    </script>
+{% endblock %}

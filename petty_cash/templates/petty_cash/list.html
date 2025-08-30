@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Petty Cash Days - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'petty_cash/css/petty_cash.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="petty-cash-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-calendar-week text-primary"></i>
+                            Petty Cash Days
+                        </h2>
+                        <p class="text-muted mb-0">View and manage all petty cash entries</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'petty_cash:register' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> New Day
+                        </a>
+                        <a href="{% url 'petty_cash:quick' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-lightning"></i> Quick Entry
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="card-title">
+                    <i class="bi bi-calendar-check"></i> Total Days
+                </div>
+                <div class="card-value">{{ total_days }}</div>
+                <div class="card-subtitle">Days with entries</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-title">
+                    <i class="bi bi-calculator"></i> Total Expenses
+                </div>
+                <div class="card-value expenses">{{ total_expenses|floatformat:2 }} AED</div>
+                <div class="card-subtitle">All time expenses</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-title">
+                    <i class="bi bi-graph-up"></i> Average Daily
+                </div>
+                <div class="card-value">{{ avg_daily_expense|floatformat:2 }} AED</div>
+                <div class="card-subtitle">Per day average</div>
+            </div>
+        </div>
+
+        <!-- Filter Form -->
+        <div class="petty-cash-card">
+            <div class="card-header">
+                <h5><i class="bi bi-funnel me-2"></i>Filter & Search</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="{{ form.date_from.id_for_label }}" class="form-label">From Date</label>
+                        {{ form.date_from }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.date_to.id_for_label }}" class="form-label">To Date</label>
+                        {{ form.date_to }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                        {{ form.status }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ form.paid_by.id_for_label }}" class="form-label">Paid By</label>
+                        {{ form.paid_by }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ form.search.id_for_label }}" class="form-label">Search</label>
+                        {{ form.search }}
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'petty_cash:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="petty-cash-card">
+            <div class="card-header">
+                <h5><i class="bi bi-table me-2"></i>Petty Cash Days</h5>
+            </div>
+            <div class="card-body">
+                {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Opening Balance</th>
+                                <th>Total Expenses</th>
+                                <th>Closing Balance</th>
+                                <th>Status</th>
+                                <th>Entries</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ day.entry_date|date:"M d, Y" }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ day.entry_date|date:"l" }}</small>
+                                </td>
+                                <td>
+                                    <span class="text-success fw-bold">{{ day.opening_balance|floatformat:2 }} AED</span>
+                                </td>
+                                <td>
+                                    <span class="text-danger fw-bold">{{ day.total_expenses|floatformat:2 }} AED</span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold {% if day.closing_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ day.closing_balance|floatformat:2 }} AED
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ day.status }}">
+                                        {{ day.get_status_display }}
+                                    </span>
+                                    {% if day.is_locked %}
+                                    <br>
+                                    <small class="text-danger">
+                                        <i class="bi bi-lock"></i> Locked
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ day.entries.count }}</span>
+                                    entries
+                                </td>
+                                <td>
+                                    {{ day.created_by.get_full_name|default:day.created_by.username }}
+                                    <br>
+                                    <small class="text-muted">{{ day.created_at|date:"M d, H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'petty_cash:register' %}?date={{ day.entry_date|date:'Y-m-d' }}" 
+                                           class="btn btn-sm btn-outline-primary" title="View/Edit">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'petty_cash:detail' day.pk %}" 
+                                           class="btn btn-sm btn-outline-info" title="Details">
+                                            <i class="bi bi-info-circle"></i>
+                                        </a>
+                                        {% if day.can_edit %}
+                                        <a href="{% url 'petty_cash:edit' day.pk %}" 
+                                           class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Petty cash days pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.paid_by %}&paid_by={{ request.GET.paid_by }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.paid_by %}&paid_by={{ request.GET.paid_by }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.paid_by %}&paid_by={{ request.GET.paid_by }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.paid_by %}&paid_by={{ request.GET.paid_by }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.paid_by %}&paid_by={{ request.GET.paid_by }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- Page Info -->
+                <div class="text-center text-muted">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                </div>
+
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-x display-1 text-muted"></i>
+                    <h4 class="mt-3">No petty cash days found</h4>
+                    <p class="text-muted">No entries match your current filters.</p>
+                    <a href="{% url 'petty_cash:register' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create First Entry
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'petty_cash/js/petty_cash.js' %}"></script>
+{% endblock %} 

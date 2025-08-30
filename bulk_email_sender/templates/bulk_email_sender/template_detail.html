@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template.name }} - Email Template{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt fa-fw"></i> {{ template.name }}
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'bulk_email_sender:template_edit' template.pk %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit fa-fw"></i> Edit
+            </a>
+            <a href="{% url 'bulk_email_sender:campaign_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-rocket fa-fw"></i> Use Template
+            </a>
+            <a href="{% url 'bulk_email_sender:template_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-fw"></i> Back to Templates
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Template Content -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Template Content</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <strong>Subject:</strong> {{ template.subject }}
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <span class="badge badge-{{ template.template_type }}">
+                                {{ template.get_template_type_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if template.description %}
+                    <p class="text-muted">{{ template.description }}</p>
+                    {% endif %}
+                    
+                    <!-- HTML Content -->
+                    <div class="mb-4">
+                        <h6>HTML Content</h6>
+                        <div class="bg-light p-3 rounded">
+                            <pre class="mb-0">{{ template.html_content|default:"No HTML content" }}</pre>
+                        </div>
+                    </div>
+                    
+                    <!-- Plain Text Content -->
+                    <div class="mb-4">
+                        <h6>Plain Text Content</h6>
+                        <div class="bg-light p-3 rounded">
+                            <pre class="mb-0">{{ template.plain_text_content|default:"No plain text content" }}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campaigns Using This Template -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaigns Using This Template</h6>
+                </div>
+                <div class="card-body">
+                    {% if campaigns %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Campaign</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for campaign in campaigns %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ campaign.name }}</strong>
+                                            {% if campaign.description %}
+                                            <br><small class="text-muted">{{ campaign.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ campaign.status }}">
+                                                {{ campaign.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ campaign.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'bulk_email_sender:campaign_detail' campaign.pk %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-bullhorn fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No campaigns using this template</h6>
+                            <p class="text-muted">This template hasn't been used in any campaigns yet.</p>
+                            <a href="{% url 'bulk_email_sender:campaign_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Campaign
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Template Info -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Template Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Type:</strong> {{ template.get_template_type_display }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong> 
+                        <span class="badge {% if template.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                            {% if template.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Version:</strong> {{ template.version }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Created:</strong> {{ template.created_at|date:"M d, Y H:i" }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Created by:</strong> {{ template.created_by.get_full_name|default:template.created_by.username }}
+                    </div>
+                    {% if template.updated_at != template.created_at %}
+                    <div class="mb-3">
+                        <strong>Last updated:</strong> {{ template.updated_at|date:"M d, Y H:i" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Placeholders -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Available Placeholders</h6>
+                </div>
+                <div class="card-body">
+                    {% if placeholders %}
+                        <div class="placeholder-list">
+                            {% for placeholder in placeholders %}
+                            <div class="placeholder-item">{{ placeholder }}</div>
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            Use these placeholders in your template content. They will be replaced with actual data when sending emails.
+                        </small>
+                    {% else %}
+                        <p class="text-muted">No placeholders found in this template.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'bulk_email_sender:template_edit' template.pk %}" class="btn btn-primary">
+                            <i class="fas fa-edit fa-fw"></i> Edit Template
+                        </a>
+                        <a href="{% url 'bulk_email_sender:campaign_create' %}" class="btn btn-success">
+                            <i class="fas fa-rocket fa-fw"></i> Create Campaign
+                        </a>
+                        <a href="{% url 'bulk_email_sender:template_delete' template.pk %}" class="btn btn-danger">
+                            <i class="fas fa-trash fa-fw"></i> Delete Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

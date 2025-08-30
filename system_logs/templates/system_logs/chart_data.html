@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chart Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-chart-bar"></i> Chart Data
+                </h1>
+                <p class="page-subtitle">Analytics and chart data for system logs</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog"></i> Chart Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="chart_type" class="form-label">Chart Type</label>
+                            <select name="chart_type" id="chart_type" class="form-select">
+                                <option value="line">Line Chart</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="pie">Pie Chart</option>
+                                <option value="doughnut">Doughnut Chart</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="time_period" class="form-label">Time Period</label>
+                            <select name="time_period" id="time_period" class="form-select">
+                                <option value="1">Last 24 Hours</option>
+                                <option value="7">Last 7 Days</option>
+                                <option value="30" selected>Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                                <option value="365">Last Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="group_by" class="form-label">Group By</label>
+                            <select name="group_by" id="group_by" class="form-select">
+                                <option value="hour">Hour</option>
+                                <option value="day" selected>Day</option>
+                                <option value="week">Week</option>
+                                <option value="month">Month</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="metric" class="form-label">Metric</label>
+                            <select name="metric" id="metric" class="form-select">
+                                <option value="count">Count</option>
+                                <option value="severity">Severity Distribution</option>
+                                <option value="type">Type Distribution</option>
+                                <option value="module">Module Distribution</option>
+                                <option value="status">Status Distribution</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-primary" onclick="updateChart()">
+                                <i class="fas fa-refresh"></i> Update Chart
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="exportChart()">
+                                <i class="fas fa-download"></i> Export Chart
+                            </button>
+                            <button type="button" class="btn btn-info" onclick="resetChart()">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Display -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-area"></i> System Logs Analytics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:400px;">
+                        <canvas id="systemLogsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mt-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Logs
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalLogs">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Critical Errors
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="criticalErrors">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Issues
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingIssues">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Resolved Issues
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="resolvedIssues">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table"></i> Chart Data Table
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="chartDataTable">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Count</th>
+                                    <th>Percentage</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading data...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let systemLogsChart = null;
+
+// Initialize chart
+function initChart() {
+    const ctx = document.getElementById('systemLogsChart').getContext('2d');
+    
+    systemLogsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'System Logs',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'System Logs Over Time'
+                }
+            }
+        }
+    });
+}
+
+// Update chart with new data
+function updateChart() {
+    const timePeriod = document.getElementById('time_period').value;
+    const groupBy = document.getElementById('group_by').value;
+    const metric = document.getElementById('metric').value;
+    
+    // Show loading state
+    if (systemLogsChart) {
+        systemLogsChart.data.labels = [];
+        systemLogsChart.data.datasets[0].data = [];
+        systemLogsChart.update();
+    }
+    
+    // Make AJAX call to get chart data
+    fetch(`{% url 'system_logs:system_log_chart_data' %}?days=${timePeriod}&group_by=${groupBy}&metric=${metric}`)
+        .then(response => response.json())
+        .then(data => {
+            updateChartData(data);
+            updateStatistics(data);
+            updateDataTable(data);
+        })
+        .catch(error => {
+            console.error('Error fetching chart data:', error);
+            alert('Error loading chart data. Please try again.');
+        });
+}
+
+// Update chart with new data
+function updateChartData(data) {
+    if (!systemLogsChart) return;
+    
+    const chartType = document.getElementById('chart_type').value;
+    systemLogsChart.config.type = chartType;
+    
+    systemLogsChart.data.labels = data.labels || [];
+    systemLogsChart.data.datasets[0].data = data.values || [];
+    systemLogsChart.data.datasets[0].label = data.metric_name || 'System Logs';
+    
+    systemLogsChart.update();
+}
+
+// Update statistics cards
+function updateStatistics(data) {
+    if (data.total_logs !== undefined) {
+        document.getElementById('totalLogs').textContent = data.total_logs;
+    }
+    if (data.critical_errors !== undefined) {
+        document.getElementById('criticalErrors').textContent = data.critical_errors;
+    }
+    if (data.pending_issues !== undefined) {
+        document.getElementById('pendingIssues').textContent = data.pending_issues;
+    }
+    if (data.resolved_issues !== undefined) {
+        document.getElementById('resolvedIssues').textContent = data.resolved_issues;
+    }
+}
+
+// Update data table
+function updateDataTable(data) {
+    const tableBody = document.getElementById('chartDataTable').getElementsByTagName('tbody')[0];
+    
+    if (!data.table_data || data.table_data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
+        return;
+    }
+    
+    let tableHTML = '';
+    data.table_data.forEach(row => {
+        const trendIcon = row.trend > 0 ? 'fa-arrow-up text-success' : 
+                         row.trend < 0 ? 'fa-arrow-down text-danger' : 'fa-minus text-muted';
+        
+        tableHTML += `
+            <tr>
+                <td>${row.period}</td>
+                <td>${row.count}</td>
+                <td>${row.percentage}%</td>
+                <td><i class="fas ${trendIcon}"></i> ${Math.abs(row.trend)}</td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = tableHTML;
+}
+
+// Export chart
+function exportChart() {
+    if (!systemLogsChart) return;
+    
+    const link = document.createElement('a');
+    link.download = 'system_logs_chart.png';
+    link.href = systemLogsChart.toBase64Image();
+    link.click();
+}
+
+// Reset chart
+function resetChart() {
+    document.getElementById('time_period').value = '30';
+    document.getElementById('group_by').value = 'day';
+    document.getElementById('metric').value = 'count';
+    document.getElementById('chart_type').value = 'line';
+    
+    updateChart();
+}
+
+// Initialize chart when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initChart();
+    updateChart();
+});
+
+// Update chart when controls change
+document.getElementById('time_period').addEventListener('change', updateChart);
+document.getElementById('group_by').addEventListener('change', updateChart);
+document.getElementById('metric').addEventListener('change', updateChart);
+document.getElementById('chart_type').addEventListener('change', function() {
+    if (systemLogsChart) {
+        systemLogsChart.config.type = this.value;
+        systemLogsChart.update();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SMS Message Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .detail-section h6 {
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .status-badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .status-pending { background-color: #ffc107; color: #212529; }
+    .status-sent { background-color: #17a2b8; color: white; }
+    .status-delivered { background-color: #28a745; color: white; }
+    .status-failed { background-color: #dc3545; color: white; }
+    .status-expired { background-color: #6c757d; color: white; }
+    .status-rejected { background-color: #fd7e14; color: white; }
+    
+    .priority-badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .priority-low { background-color: #6c757d; color: white; }
+    .priority-normal { background-color: #17a2b8; color: white; }
+    .priority-high { background-color: #ffc107; color: #212529; }
+    .priority-urgent { background-color: #dc3545; color: white; }
+    
+    .message-content {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 15px 0;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .delivery-log {
+        border-left: 4px solid #007bff;
+        padding-left: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .delivery-log.success {
+        border-left-color: #28a745;
+    }
+    
+    .delivery-log.error {
+        border-left-color: #dc3545;
+    }
+    
+    .delivery-log.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .info-item {
+        background: white;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        color: #6c757d;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #007bff;
+        border: 2px solid white;
+    }
+    
+    .timeline-item.success::before {
+        background: #28a745;
+    }
+    
+    .timeline-item.error::before {
+        background: #dc3545;
+    }
+    
+    .timeline-item.warning::before {
+        background: #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-sms fa-fw"></i> SMS Message Details
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'sms_gateway:messages_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-fw"></i> Back to Messages
+            </a>
+            <a href="{% url 'sms_gateway:send_message' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> Send New Message
+            </a>
+        </div>
+    </div>
+
+    <!-- Message Overview -->
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Message Content -->
+            <div class="detail-section">
+                <h6><i class="fas fa-comment"></i> Message Content</h6>
+                <div class="message-content">{{ message.message_content }}</div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>To:</strong> {{ message.recipient_number }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>From:</strong> {{ message.sender_id }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Timeline -->
+            <div class="detail-section">
+                <h6><i class="fas fa-clock"></i> Delivery Timeline</h6>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="delivery-log">
+                            <strong>Message Created</strong>
+                            <br><small class="text-muted">{{ message.created_at|date:"F d, Y at H:i:s" }}</small>
+                            <br><small class="text-muted">by {{ message.created_by.username }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if message.scheduled_at %}
+                    <div class="timeline-item">
+                        <div class="delivery-log">
+                            <strong>Scheduled for</strong>
+                            <br><small class="text-muted">{{ message.scheduled_at|date:"F d, Y at H:i:s" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if message.sent_at %}
+                    <div class="timeline-item success">
+                        <div class="delivery-log success">
+                            <strong>Message Sent</strong>
+                            <br><small class="text-muted">{{ message.sent_at|date:"F d, Y at H:i:s" }}</small>
+                            {% if message.response_code %}
+                            <br><small class="text-muted">Response: {{ message.response_code }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if message.delivered_at %}
+                    <div class="timeline-item success">
+                        <div class="delivery-log success">
+                            <strong>Message Delivered</strong>
+                            <br><small class="text-muted">{{ message.delivered_at|date:"F d, Y at H:i:s" }}</small>
+                            {% if message.delivery_time %}
+                            <br><small class="text-muted">Delivery time: {{ message.delivery_time|floatformat:2 }}s</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if message.delivery_status == 'failed' and message.error_message %}
+                    <div class="timeline-item error">
+                        <div class="delivery-log error">
+                            <strong>Delivery Failed</strong>
+                            <br><small class="text-muted">{{ message.error_message }}</small>
+                            {% if message.error_code %}
+                            <br><small class="text-muted">Error Code: {{ message.error_code }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if message.expires_at %}
+                    <div class="timeline-item warning">
+                        <div class="delivery-log warning">
+                            <strong>Message Expires</strong>
+                            <br><small class="text-muted">{{ message.expires_at|date:"F d, Y at H:i:s" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Delivery Logs -->
+            {% if delivery_logs %}
+            <div class="detail-section">
+                <h6><i class="fas fa-list"></i> Detailed Delivery Logs</h6>
+                {% for log in delivery_logs %}
+                <div class="delivery-log {% if log.status == 'delivered' %}success{% elif log.status == 'failed' %}error{% elif log.status == 'expired' %}warning{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{{ log.get_status_display }}</strong>
+                            <br><small class="text-muted">{{ log.timestamp|date:"F d, Y at H:i:s" }}</small>
+                            {% if log.details %}
+                            <br><small class="text-muted">{{ log.details }}</small>
+                            {% endif %}
+                        </div>
+                        {% if log.response_time %}
+                        <span class="badge badge-info">{{ log.response_time|floatformat:2 }}s</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Message Status -->
+            <div class="detail-section">
+                <h6><i class="fas fa-info-circle"></i> Message Status</h6>
+                <div class="text-center mb-3">
+                    <span class="badge status-{{ message.delivery_status }} status-badge">
+                        {{ message.get_delivery_status_display }}
+                    </span>
+                </div>
+                <div class="text-center mb-3">
+                    <span class="badge priority-{{ message.priority }} priority-badge">
+                        {{ message.get_priority_display }} Priority
+                    </span>
+                </div>
+                {% if message.delivery_attempts > 0 %}
+                <div class="text-center">
+                    <small class="text-muted">
+                        Attempts: {{ message.delivery_attempts }}/{{ message.max_delivery_attempts }}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Message Information -->
+            <div class="detail-section">
+                <h6><i class="fas fa-cog"></i> Message Information</h6>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Message ID</div>
+                        <div class="info-value">{{ message.message_id }}</div>
+                    </div>
+                    
+                    {% if message.external_message_id %}
+                    <div class="info-item">
+                        <div class="info-label">External ID</div>
+                        <div class="info-value">{{ message.external_message_id }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="info-item">
+                        <div class="info-label">Length</div>
+                        <div class="info-value">{{ message.message_length }} characters</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Encoding</div>
+                        <div class="info-value">{{ message.message_encoding }}</div>
+                    </div>
+                    
+                    {% if message.category %}
+                    <div class="info-item">
+                        <div class="info-label">Category</div>
+                        <div class="info-value">{{ message.category }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if message.tags %}
+                    <div class="info-item">
+                        <div class="info-label">Tags</div>
+                        <div class="info-value">
+                            {% for tag in message.tags %}
+                            <span class="badge badge-secondary me-1">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Gateway Information -->
+            <div class="detail-section">
+                <h6><i class="fas fa-server"></i> Gateway Information</h6>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Gateway</div>
+                        <div class="info-value">{{ message.gateway.name }}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Type</div>
+                        <div class="info-value">{{ message.gateway.gateway_type }}</div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-label">Status</div>
+                        <div class="info-value">
+                            <span class="badge badge-{% if message.gateway.is_active %}success{% else %}secondary{% endif %}">
+                                {% if message.gateway.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Information -->
+            {% if message.cost %}
+            <div class="detail-section">
+                <h6><i class="fas fa-dollar-sign"></i> Cost Information</h6>
+                <div class="text-center">
+                    <h4 class="text-primary">{{ message.cost }} {{ message.currency }}</h4>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="detail-section">
+        <h6><i class="fas fa-tools"></i> Actions</h6>
+        <div class="d-flex gap-2">
+            {% if message.delivery_status == 'failed' %}
+            <button class="btn btn-warning" disabled title="Retry functionality not implemented yet">
+                <i class="fas fa-redo"></i> Retry Delivery
+            </button>
+            {% endif %}
+            
+            {% if message.delivery_status == 'pending' %}
+            <button class="btn btn-info" disabled title="Cancel functionality not implemented yet">
+                <i class="fas fa-times"></i> Cancel Message
+            </button>
+            {% endif %}
+            
+            <button class="btn btn-secondary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Details
+            </button>
+            
+            <a href="{% url 'sms_gateway:send_message' %}?recipient={{ message.recipient_number }}" 
+               class="btn btn-primary">
+                <i class="fas fa-reply"></i> Send Reply
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any interactive functionality here
+    console.log('Message detail page loaded');
+});
+</script>
+{% endblock %}

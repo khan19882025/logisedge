@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'general_ledger_report/css/report.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .compact-quick-form {
+        font-size: 0.9rem;
+    }
+    .compact-quick-form .form-group {
+        margin-bottom: 0.75rem;
+    }
+    .compact-quick-form .section-title {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    .compact-quick-form .card-body {
+        padding: 1rem;
+    }
+    .page-header-compact {
+        margin-bottom: 1rem;
+    }
+    .page-header-compact .page-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+    .breadcrumb {
+        font-size: 0.85rem;
+        margin-bottom: 0;
+        padding: 0;
+    }
+    .filter-card {
+        margin-bottom: 1rem;
+    }
+    .btn-sm {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid compact-quick-form">
+    <!-- Page Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header page-header-compact">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="page-title">
+                            <i class="fas fa-bolt text-warning me-2"></i>
+                            Quick General Ledger Report
+                        </h1>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{% url 'general_ledger_report:report_list' %}">Reports</a></li>
+                                <li class="breadcrumb-item active">Quick Report</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="header-actions">
+                        <a href="{% url 'general_ledger_report:report_create' %}" class="btn btn-outline-primary btn-sm me-2">
+                            <i class="fas fa-cog me-1"></i>Advanced Report
+                        </a>
+                        <a href="{% url 'general_ledger_report:template_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-layer-group me-1"></i>Templates
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Filter Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card filter-card">
+                <div class="card-header">
+                    <h6 class="section-title mb-0">
+                        <i class="fas fa-filter me-2"></i>Quick Filters
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="quickReportForm">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group row align-items-center">
+                                    <label for="{{ form.date_preset.id_for_label }}" class="col-sm-5 col-form-label">
+                                        <i class="fas fa-calendar me-1"></i>Date Range
+                                    </label>
+                                    <div class="col-sm-7">
+                                        {{ form.date_preset }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group row align-items-center">
+                                    <label for="{{ form.from_date.id_for_label }}" class="col-sm-5 col-form-label">
+                                        <i class="fas fa-calendar-day me-1"></i>From
+                                    </label>
+                                    <div class="col-sm-7">
+                                        {{ form.from_date }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group row align-items-center">
+                                    <label for="{{ form.to_date.id_for_label }}" class="col-sm-4 col-form-label">
+                                        <i class="fas fa-calendar-day me-1"></i>To
+                                    </label>
+                                    <div class="col-sm-8">
+                                        {{ form.to_date }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group row align-items-center">
+                                    <label for="{{ form.account.id_for_label }}" class="col-sm-4 col-form-label">
+                                        <i class="fas fa-book me-1"></i>Account
+                                    </label>
+                                    <div class="col-sm-8">
+                                        {{ form.account }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-check mb-2">
+                                    {{ form.include_sub_accounts }}
+                                    <label class="form-check-label" for="{{ form.include_sub_accounts.id_for_label }}">
+                                        Sub-Accounts
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="resetForm()">
+                                    <i class="fas fa-undo me-1"></i>Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-search me-1"></i>Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if report_data %}
+    <!-- Report Results -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card report-summary-card">
+                <div class="card-body" style="padding: 0.75rem;">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-label" style="font-size: 0.8rem; font-weight: 600;">Report Period</div>
+                                <div class="summary-value" style="font-size: 0.85rem;">{{ report.from_date|date:"d/m/Y" }} - {{ report.to_date|date:"d/m/Y" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-label" style="font-size: 0.8rem; font-weight: 600;">Account</div>
+                                <div class="summary-value" style="font-size: 0.85rem;">
+                                    {% if report.account %}
+                                        {{ report.account.account_code }} - {{ report.account.name }}
+                                    {% else %}
+                                        All Accounts
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-label" style="font-size: 0.8rem; font-weight: 600;">Total Entries</div>
+                                <div class="summary-value" style="font-size: 0.85rem;">{{ report_data.entry_count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="summary-item">
+                                <div class="summary-label" style="font-size: 0.8rem; font-weight: 600;">Net Movement</div>
+                                <div class="summary-value" style="font-size: 0.85rem;">{{ report_data.net_movement|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary Cards -->
+    <div class="row mt-2">
+        <div class="col-md-3">
+            <div class="card financial-card opening-balance">
+                <div class="card-body" style="padding: 0.75rem;">
+                    <div class="financial-icon" style="font-size: 1rem;">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="financial-content">
+                        <div class="financial-label" style="font-size: 0.8rem;">Opening Balance</div>
+                        <div class="financial-value" style="font-size: 0.9rem;">{{ report_data.opening_balance|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card financial-card total-debit">
+                <div class="card-body" style="padding: 0.75rem;">
+                    <div class="financial-icon" style="font-size: 1rem;">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="financial-content">
+                        <div class="financial-label" style="font-size: 0.8rem;">Total Debit</div>
+                        <div class="financial-value" style="font-size: 0.9rem;">{{ report_data.total_debit|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card financial-card total-credit">
+                <div class="card-body" style="padding: 0.75rem;">
+                    <div class="financial-icon" style="font-size: 1rem;">
+                        <i class="fas fa-minus"></i>
+                    </div>
+                    <div class="financial-content">
+                        <div class="financial-label" style="font-size: 0.8rem;">Total Credit</div>
+                        <div class="financial-value" style="font-size: 0.9rem;">{{ report_data.total_credit|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card financial-card closing-balance">
+                <div class="card-body" style="padding: 0.75rem;">
+                    <div class="financial-icon" style="font-size: 1rem;">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="financial-content">
+                        <div class="financial-label" style="font-size: 0.8rem;">Closing Balance</div>
+                        <div class="financial-value" style="font-size: 0.9rem;">{{ report_data.closing_balance|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Table -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card report-table-card">
+                <div class="card-header" style="padding: 0.5rem 1rem;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="section-title mb-0">
+                            <i class="fas fa-table me-2"></i>General Ledger Entries
+                        </h6>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" style="font-size: 0.75rem; padding: 0.2rem 0.4rem;">
+                                <i class="fas fa-print me-1"></i>Print
+                            </button>
+                            <a href="{% url 'general_ledger_report:report_create' %}" class="btn btn-sm btn-outline-primary ms-2" style="font-size: 0.75rem; padding: 0.2rem 0.4rem;">
+                                <i class="fas fa-save me-1"></i>Save Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover ledger-table">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="text-center" style="width: 100px;">Date</th>
+                                    <th style="width: 150px;">Voucher Number</th>
+                                    <th>Description / Narration</th>
+                                    <th class="text-end" style="width: 120px;">Debit Amount</th>
+                                    <th class="text-end" style="width: 120px;">Credit Amount</th>
+                                    <th class="text-end" style="width: 120px;">Balance</th>
+                                    <th class="text-center" style="width: 80px;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if report.include_opening_balance %}
+                                <tr class="opening-balance-row">
+                                    <td class="text-center">{{ report.from_date|date:"d/m/Y" }}</td>
+                                    <td colspan="2" class="fw-bold text-primary">
+                                        <i class="fas fa-arrow-up me-1"></i>Opening Balance
+                                    </td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end fw-bold">{{ report_data.opening_balance|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">Opening</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+
+                                {% for entry in report_data.entries %}
+                                <tr class="ledger-entry-row">
+                                    <td class="text-center">{{ entry.entry_date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="#" class="voucher-link" data-voucher="{{ entry.ledger_number }}">
+                                            {{ entry.ledger_number }}
+                                        </a>
+                                    </td>
+                                    <td class="description-cell">
+                                        <div class="description-text">{{ entry.description }}</div>
+                                        {% if entry.reference %}
+                                        <small class="text-muted">Ref: {{ entry.reference }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if entry.entry_type == 'DR' %}
+                                            <span class="debit-amount">{{ entry.amount|floatformat:2 }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if entry.entry_type == 'CR' %}
+                                            <span class="credit-amount">{{ entry.amount|floatformat:2 }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="balance-amount {% if entry.calculated_balance < 0 %}text-danger{% endif %}">
+                                            {{ entry.calculated_balance|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if entry.is_reconciled %}
+                                            <span class="badge bg-success" title="Reconciled">
+                                                <i class="fas fa-check"></i>
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning" title="Unreconciled">
+                                                <i class="fas fa-clock"></i>
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="empty-state">
+                                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">No entries found</h5>
+                                            <p class="text-muted">No ledger entries match the selected criteria.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                                {% if report.include_closing_balance and report_data.entries %}
+                                <tr class="closing-balance-row">
+                                    <td class="text-center">{{ report.to_date|date:"d/m/Y" }}</td>
+                                    <td colspan="2" class="fw-bold text-primary">
+                                        <i class="fas fa-arrow-down me-1"></i>Closing Balance
+                                    </td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end"></td>
+                                    <td class="text-end fw-bold">{{ report_data.closing_balance|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">Closing</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Voucher Detail Modal -->
+<div class="modal fade" id="voucherModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Voucher Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="voucherModalBody">
+                <!-- Voucher details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'general_ledger_report/js/report.js' %}"></script>
+<script>
+function resetForm() {
+    document.getElementById('quickReportForm').reset();
+    document.getElementById('date-preset').value = 'this_month';
+    
+    // Set default dates
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    document.getElementById('from-date').value = formatDateForInput(firstDay);
+    document.getElementById('to-date').value = formatDateForInput(today);
+}
+</script>
+{% endblock %}

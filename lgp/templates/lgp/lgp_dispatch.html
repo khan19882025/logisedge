@@ -1,0 +1,562 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'lgp/css/lgp.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="bi bi-send text-success me-2"></i>
+                        {{ title }}
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'lgp:lgp_list' %}">LGP Management</a></li>
+                            {% if lgp %}
+                                <li class="breadcrumb-item"><a href="{% url 'lgp:lgp_detail' lgp.pk %}">{{ lgp.lgp_number }}</a></li>
+                            {% endif %}
+                            <li class="breadcrumb-item active" aria-current="page">Dispatch</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'lgp:lgp_dispatch_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-list me-1"></i>
+                        Dispatch List
+                    </a>
+                    <a href="{% url 'lgp:lgp_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Top Section: Left and Right Fields -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <form method="get" class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Date</label>
+                                    <input type="date" class="form-control" name="dispatch_date"
+                                           value="{% if request.GET.dispatch_date %}{{ request.GET.dispatch_date }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Customer</label>
+                                    <select class="form-select" name="customer" onchange="this.form.submit()">
+                                        <option value="">Select customer</option>
+                                        {% for c in customers %}
+                                            <option value="{{ c.id }}" {% if selected_customer_id == c.id %}selected{% endif %}>{{ c.customer_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Note</label>
+                                    <input type="text" class="form-control" name="note" value="{{ request.GET.note|default:'' }}">
+                                </div>
+
+                                <div class="col-md-4 ms-auto">
+                                    <label class="form-label">Driver Name</label>
+                                    <input type="text" class="form-control" name="driver_name" value="{{ request.GET.driver_name|default:'' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Vehicle No</label>
+                                    <input type="text" class="form-control" name="vehicle_no" value="{{ request.GET.vehicle_no|default:'' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Mobile No</label>
+                                    <input type="text" class="form-control" name="mobile_no" value="{{ request.GET.mobile_no|default:'' }}">
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <!-- Dispatch Form (simplified) -->
+                    {% if lgp %}
+                    <form method="post" class="d-flex justify-content-end gap-2">
+                        {% csrf_token %}
+                        <a href="{% url 'lgp:lgp_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success" onclick="return confirm('Dispatch this LGP? This cannot be undone.');">
+                            <i class="bi bi-send me-1"></i>
+                            Dispatch LGP
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-4">
+                    <!-- LGP Summary -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                LGP Summary
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if lgp %}
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>LGP Number:</strong></div>
+                                <div class="col-sm-7">{{ lgp.lgp_number }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Customer:</strong></div>
+                                <div class="col-sm-7">{{ lgp.customer.customer_name }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>DPW Ref No:</strong></div>
+                                <div class="col-sm-7">{{ lgp.dpw_ref_no|default:"-" }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Warehouse:</strong></div>
+                                <div class="col-sm-7">{{ lgp.warehouse.name }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Document Date:</strong></div>
+                                <div class="col-sm-7">{{ lgp.document_date|date:"M d, Y" }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Validity Date:</strong></div>
+                                <div class="col-sm-7">{{ lgp.document_validity_date|date:"M d, Y" }}</div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="row mb-2">
+                                <div class="col-sm-5"><strong>Total Items:</strong></div>
+                                <div class="col-sm-7">{{ lgp.total_items }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-5"><strong>Total Weight:</strong></div>
+                                <div class="col-sm-7">{{ lgp.total_weight|floatformat:3 }} KG</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-5"><strong>Total Volume:</strong></div>
+                                <div class="col-sm-7">{{ lgp.total_volume|floatformat:3 }} CBM</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-5"><strong>Total Value:</strong></div>
+                                <div class="col-sm-7"><strong>{% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ lgp.total_value|floatformat:2 }}</strong></div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="row mb-2">
+                                <div class="col-sm-5"><strong>Status:</strong></div>
+                                <div class="col-sm-7">
+                                    <span class="badge bg-secondary">{{ lgp.get_status_display }}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-5"><strong>Created:</strong></div>
+                                <div class="col-sm-7">
+                                    <small>{{ lgp.created_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-5"><strong>Created By:</strong></div>
+                                <div class="col-sm-7">
+                                    <small>{{ lgp.created_by.get_full_name|default:lgp.created_by.username }}</small>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">Select a customer to view available LGPs below.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    {% if lgp %}
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-lightning me-2"></i>
+                                Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'lgp:lgp_detail' lgp.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>
+                                    View Details
+                                </a>
+                                <a href="{% url 'lgp:lgp_update' lgp.pk %}" class="btn btn-outline-warning btn-sm">
+                                    <i class="bi bi-pencil me-1"></i>
+                                    Edit LGP
+                                </a>
+                                <a href="{% url 'lgp:lgp_print' lgp.pk %}" class="btn btn-outline-info btn-sm" target="_blank">
+                                    <i class="bi bi-printer me-1"></i>
+                                    Print LGP
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Available LGPs: show when a customer is selected -->
+            {% if available_items %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Available LGPs</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="d-flex justify-content-between align-items-center px-3 pt-3">
+                        <div class="d-flex gap-2">
+                            <button type="button" id="addSelectedBtn" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Add Selected LGP
+                            </button>
+                            <button type="button" id="submitSelectedBtn" class="btn btn-success btn-sm">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                Submit Selected
+                            </button>
+                        </div>
+                        <div id="selectedLgpsContainer" class="text-muted small">
+                            <span>Selected LGPs:</span>
+                            <span id="selected-lgps-list"></span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" id="available-lgps-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Line</th>
+                                    <th>DPW Ref No *</th>
+                                    <th>HS Code</th>
+                                    <th>Good Description</th>
+                                    <th>Package Type</th>
+                                    <th>Quantity</th>
+                                    <th>Weight (KG)</th>
+                                    <th>Value ({% if default_currency %}{{ default_currency.code }}{% else %}USD{% endif %})</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for it in available_items %}
+                                <tr data-lgp-id="{{ it.lgp_id }}" data-lgp-number="{{ it.lgp_number }}">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input select-item" 
+                                               data-item-id="{{ it.item_id }}" 
+                                               data-lgp-id="{{ it.lgp_id }}" 
+                                               data-lgp-number="{{ it.lgp_number }}"
+                                               data-line="{{ it.line_number }}"
+                                               data-hs="{{ it.hs_code }}"
+                                               data-description="{{ it.good_description }}"
+                                               data-package="{{ it.package_type }}">
+                                    </td>
+                                    <td>{{ it.line_number }}</td>
+                                    <td>{{ it.dpw_ref_no|default:'-' }}</td>
+                                    <td>{{ it.hs_code }}</td>
+                                    <td>{{ it.good_description }}</td>
+                                    <td>{{ it.package_type }}</td>
+                                    <td>
+                                        <input 
+                                            type="number" 
+                                            class="form-control form-control-sm dispatch-qty" 
+                                            value="{{ it.remaining_qty|floatformat:2 }}" 
+                                            step="0.01" min="0"
+                                            data-orig-qty="{{ it.remaining_qty }}"
+                                            data-orig-weight="{{ it.default_weight }}"
+                                            data-orig-value="{{ it.default_value }}"
+                                        >
+                                    </td>
+                                    <td class="calc-weight">{{ it.default_weight|floatformat:3 }}</td>
+                                    <td class="calc-value">{% if default_currency %}{{ default_currency.symbol }}{% else %}${% endif %}{{ it.default_value|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Selected Items Table -->
+            <div class="card mt-3" id="selected-items-card" style="display:none;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Selected Items</h5>
+                    <span class="badge bg-primary" id="selected-count">0</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" id="selected-items-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>LGP</th>
+                                    <th>Line</th>
+                                    <th>HS Code</th>
+                                    <th>Good Description</th>
+                                    <th>Package Type</th>
+                                    <th>Quantity</th>
+                                    <th>Weight (KG)</th>
+                                    <th>Value ({% if default_currency %}{{ default_currency.code }}{% else %}USD{% endif %})</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'lgp/js/lgp.js' %}"></script>
+<script>
+// Auto-calc weight and value proportional to quantity edits
+document.addEventListener('input', function(e) {
+    if (!e.target.classList.contains('dispatch-qty')) return;
+    const qtyInput = e.target;
+    const row = qtyInput.closest('tr');
+    const origQty = parseFloat(qtyInput.dataset.origQty || '0');
+    const origWeight = parseFloat(qtyInput.dataset.origWeight || '0');
+    const origValue = parseFloat(qtyInput.dataset.origValue || '0');
+    const newQty = parseFloat(qtyInput.value || '0');
+    const weightCell = row.querySelector('.calc-weight');
+    const valueCell = row.querySelector('.calc-value');
+    if (origQty > 0) {
+        const ratio = newQty / origQty;
+        const newWeight = (origWeight * ratio) || 0;
+        const newValue = (origValue * ratio) || 0;
+        weightCell.textContent = newWeight.toFixed(3);
+        valueCell.textContent = `$${newValue.toFixed(2)}`;
+    } else {
+        weightCell.textContent = '0.000';
+        valueCell.textContent = '$0.00';
+    }
+});
+
+// Track selected items and LGPs
+const selectedItems = new Map(); // key: itemId, value: {lgpId, lgpNumber, qty, weight, value}
+const selectedLgps = new Map(); // key: lgpId, value: lgpNumber
+
+function refreshSelectedLgpsDisplay() {
+    const list = Array.from(selectedLgps.values());
+    document.getElementById('selected-lgps-list').textContent = list.length ? list.join(', ') : 'None';
+}
+
+document.addEventListener('change', function(e) {
+    if (!e.target.classList.contains('select-item')) return;
+    const checkbox = e.target;
+    const row = checkbox.closest('tr');
+    const itemId = checkbox.dataset.itemId;
+    const lgpId = checkbox.dataset.lgpId;
+    const lgpNumber = checkbox.dataset.lgpNumber;
+    const line = checkbox.dataset.line;
+    const hs = checkbox.dataset.hs;
+    const description = checkbox.dataset.description;
+    const pkg = checkbox.dataset.package;
+    const qtyInput = row.querySelector('.dispatch-qty');
+    const weightCell = row.querySelector('.calc-weight');
+    const valueCell = row.querySelector('.calc-value');
+    const qty = parseFloat(qtyInput.value || '0');
+    const weight = parseFloat((weightCell.textContent || '0').replace('$',''));
+    const value = parseFloat((valueCell.textContent || '0').replace('$',''));
+
+    if (checkbox.checked) {
+        selectedItems.set(itemId, { lgpId, lgpNumber, line, hs, description, pkg, qty, weight, value });
+        selectedLgps.set(lgpId, lgpNumber);
+    } else {
+        selectedItems.delete(itemId);
+        // If no other items remain for this LGP, remove it from header list
+        const stillHas = Array.from(selectedItems.values()).some(v => v.lgpId === lgpId);
+        if (!stillHas) selectedLgps.delete(lgpId);
+    }
+    refreshSelectedLgpsDisplay();
+});
+
+document.getElementById('addSelectedBtn')?.addEventListener('click', function() {
+    const checked = Array.from(document.querySelectorAll('.select-item:checked'));
+    if (checked.length === 0) {
+        alert('Please select at least one item.');
+        return;
+    }
+
+    // Rebuild selectedItems map ONLY from currently checked rows to avoid showing all
+    selectedItems.clear();
+    selectedLgps.clear();
+
+    checked.forEach(cb => {
+        const row = cb.closest('tr');
+        const itemId = cb.dataset.itemId;
+        const lgpId = cb.dataset.lgpId;
+        const lgpNumber = cb.dataset.lgpNumber;
+        const line = cb.dataset.line;
+        const hs = cb.dataset.hs;
+        const description = cb.dataset.description;
+        const pkg = cb.dataset.package;
+        const qtyInput = row.querySelector('.dispatch-qty');
+        const weightCell = row.querySelector('.calc-weight');
+        const valueCell = row.querySelector('.calc-value');
+        const qty = parseFloat(qtyInput?.value || '0');
+        const weight = parseFloat((weightCell?.textContent || '0').replace('$',''));
+        const value = parseFloat((valueCell?.textContent || '0').replace('$',''));
+        selectedItems.set(itemId, { lgpId, lgpNumber, line, hs, description, pkg, qty, weight, value });
+        selectedLgps.set(lgpId, lgpNumber);
+    });
+
+    // Render selected items into separate table
+    const card = document.getElementById('selected-items-card');
+    const tbody = document.querySelector('#selected-items-table tbody');
+    tbody.innerHTML = Array.from(selectedItems, ([itemId, v]) => `
+        <tr data-item-id="${itemId}">
+            <td>${v.lgpNumber}</td>
+            <td>${v.line}</td>
+            <td>${v.hs}</td>
+            <td>${v.description}</td>
+            <td>${v.pkg}</td>
+            <td><input type="number" class="form-control form-control-sm sel-qty" value="${(v.qty ?? 0).toFixed(2)}" step="0.01" min="0"></td>
+            <td class="sel-weight">${(v.weight ?? 0).toFixed(3)}</td>
+            <td class="sel-value">$${(v.value ?? 0).toFixed(2)}</td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger remove-selected">Remove</button></td>
+        </tr>
+    `).join('');
+    document.getElementById('selected-count').textContent = String(selectedItems.size);
+    card.style.display = selectedItems.size ? '' : 'none';
+    refreshSelectedLgpsDisplay();
+});
+
+document.getElementById('submitSelectedBtn')?.addEventListener('click', function() {
+    if (selectedItems.size === 0) {
+        alert('No items selected.');
+        return;
+    }
+    // Build payload
+    // Prefer rows from the Selected Items table so we capture any edits made there
+    const selRows = Array.from(document.querySelectorAll('#selected-items-table tbody tr'));
+    const itemsFromTable = selRows.map(row => {
+        const itemId = row.dataset.itemId;
+        const lgpNumber = row.querySelector('td:nth-child(1)')?.textContent?.trim();
+        const line = row.querySelector('td:nth-child(2)')?.textContent?.trim();
+        const hs = row.querySelector('td:nth-child(3)')?.textContent?.trim();
+        const description = row.querySelector('td:nth-child(4)')?.textContent?.trim();
+        const pkg = row.querySelector('td:nth-child(5)')?.textContent?.trim();
+        const qty = parseFloat(row.querySelector('.sel-qty')?.value || '0');
+        const weight = parseFloat((row.querySelector('.sel-weight')?.textContent || '0').replace('$',''));
+        const value = parseFloat((row.querySelector('.sel-value')?.textContent || '0').replace('$',''));
+        // Lookup lgpId from selectedItems map
+        const v = selectedItems.get(itemId) || {};
+        return {
+            item_id: itemId,
+            lgp_id: v.lgpId,
+            line, hs, description, pkg,
+            qty, weight, value,
+        };
+    });
+
+    const payload = {
+        dispatch_date: document.querySelector('input[name="dispatch_date"]').value,
+        note: document.querySelector('input[name="note"]').value,
+        driver_name: document.querySelector('input[name="driver_name"]').value,
+        vehicle_no: document.querySelector('input[name="vehicle_no"]').value,
+        mobile_no: document.querySelector('input[name="mobile_no"]').value,
+        customer: document.querySelector('select[name="customer"]').value || (itemsFromTable[0]?.lgp_id ? undefined : undefined),
+        items: itemsFromTable.length ? itemsFromTable : Array.from(selectedItems, ([itemId, v]) => ({
+            item_id: itemId,
+            lgp_id: v.lgpId,
+            line: v.line,
+            hs: v.hs,
+            description: v.description,
+            pkg: v.pkg,
+            qty: v.qty,
+            weight: v.weight,
+            value: v.value,
+        }))
+    };
+
+    fetch('{% url "lgp:lgp_dispatch_save" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.redirect && data.url) {
+            // Handle dynamic LGP list updates if dispatched LGPs are returned
+            if (data.dispatched_lgp_ids && data.dispatched_lgp_ids.length > 0) {
+                // Call the global LGP function to handle dispatch success
+                if (window.LGP && window.LGP.handleDispatchSuccess) {
+                    window.LGP.handleDispatchSuccess(data.dispatched_lgp_ids);
+                }
+            }
+            
+            // Redirect to dispatch detail page
+            window.location.href = data.url;
+        } else {
+            alert(data.error || 'Failed to save dispatch');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Failed to save dispatch');
+    });
+});
+
+// Keep selected totals in sync when editing in the selected table
+document.addEventListener('input', function(e) {
+    if (!e.target.classList.contains('sel-qty')) return;
+    const row = e.target.closest('tr');
+    const itemId = row.dataset.itemId;
+    const qty = parseFloat(e.target.value || '0');
+    const original = selectedItems.get(itemId);
+    if (!original) return;
+    // Compute proportional weight/value based on original.qty, weight, value captured earlier
+    const baseQty = parseFloat(original.qty || '0');
+    const baseW = parseFloat(original.weight || '0');
+    const baseV = parseFloat(original.value || '0');
+    let newW = 0, newV = 0;
+    if (baseQty > 0) {
+        const ratio = qty / baseQty;
+        newW = baseW * ratio;
+        newV = baseV * ratio;
+    }
+    row.querySelector('.sel-weight').textContent = newW.toFixed(3);
+    row.querySelector('.sel-value').textContent = `$${newV.toFixed(2)}`;
+    // Update map
+    selectedItems.set(itemId, { ...original, qty, weight: newW, value: newV });
+});
+
+// Remove a selected row
+document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('remove-selected')) return;
+    const row = e.target.closest('tr');
+    const itemId = row.dataset.itemId;
+    const original = selectedItems.get(itemId);
+    if (original) {
+        // Uncheck the source row checkbox if visible
+        const srcCheckbox = document.querySelector(`.select-item[data-item-id="${itemId}"]`);
+        if (srcCheckbox) srcCheckbox.checked = false;
+        selectedItems.delete(itemId);
+        // If no more items for this LGP, remove from selectedLgps
+        const stillHas = Array.from(selectedItems.values()).some(v => v.lgpId === original.lgpId);
+        if (!stillHas) selectedLgps.delete(original.lgpId);
+        row.remove();
+        document.getElementById('selected-count').textContent = String(selectedItems.size);
+        refreshSelectedLgpsDisplay();
+        if (selectedItems.size === 0) {
+            document.getElementById('selected-items-card').style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}

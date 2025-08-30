@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ journal_entry.voucher_number }} - Journal Entry Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'manual_journal_entry/css/manual_journal_entry.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="journal-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-book"></i> Journal Entry Details</h2>
+                <p class="subtitle">{{ journal_entry.voucher_number }} - {{ journal_entry.date|date:"M d, Y" }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'manual_journal_entry:journal_entry_list' %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    {% if journal_entry.status == 'DRAFT' %}
+                        <a href="{% url 'manual_journal_entry:journal_entry_edit' journal_entry.pk %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Voucher Number:</dt>
+                                <dd class="col-sm-8"><strong>{{ journal_entry.voucher_number }}</strong></dd>
+                                
+                                <dt class="col-sm-4">Date:</dt>
+                                <dd class="col-sm-8">{{ journal_entry.date|date:"F d, Y" }}</dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    {% if journal_entry.status == 'DRAFT' %}
+                                        <span class="badge bg-warning">Draft</span>
+                                    {% elif journal_entry.status == 'POSTED' %}
+                                        <span class="badge bg-success">Posted</span>
+                                    {% elif journal_entry.status == 'VOID' %}
+                                        <span class="badge bg-danger">Void</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Currency:</dt>
+                                <dd class="col-sm-8">{{ journal_entry.currency.code }} - {{ journal_entry.currency.name }}</dd>
+                                
+                                <dt class="col-sm-4">Fiscal Year:</dt>
+                                <dd class="col-sm-8">{{ journal_entry.fiscal_year.name }}</dd>
+                                
+                                {% if journal_entry.reference_number %}
+                                    <dt class="col-sm-4">Reference:</dt>
+                                    <dd class="col-sm-8">{{ journal_entry.reference_number }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if journal_entry.narration %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <dt>Narration:</dt>
+                                <dd>{{ journal_entry.narration|linebreaks }}</dd>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Journal Line Items -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Journal Line Items</h5>
+                </div>
+                <div class="card-body">
+                    {% if journal_entry.entries.all %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Account</th>
+                                        <th>Description</th>
+                                        <th class="text-end">Debit</th>
+                                        <th class="text-end">Credit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in journal_entry.entries.all %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>
+                                                <strong>{{ entry.account.account_code }}</strong><br>
+                                                <small class="text-muted">{{ entry.account.name }}</small>
+                                            </td>
+                                            <td>{{ entry.description|default:"-" }}</td>
+                                            <td class="text-end">
+                                                {% if entry.debit > 0 %}
+                                                    <span class="text-danger">{{ entry.debit|floatformat:2 }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if entry.credit > 0 %}
+                                                    <span class="text-success">{{ entry.credit|floatformat:2 }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="3" class="text-end">Total:</th>
+                                        <th class="text-end text-danger">{{ journal_entry.total_debit|floatformat:2 }}</th>
+                                        <th class="text-end text-success">{{ journal_entry.total_credit|floatformat:2 }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th colspan="3" class="text-end">Balance:</th>
+                                        <th colspan="2" class="text-center">
+                                            {% if journal_entry.is_balanced %}
+                                                <span class="badge bg-success">Balanced</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ journal_entry.balance_difference|floatformat:2 }}</span>
+                                            {% endif %}
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No line items found for this journal entry.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if journal_entry.status == 'DRAFT' %}
+                        {% if journal_entry.is_balanced %}
+                            <form method="post" action="{% url 'manual_journal_entry:journal_entry_post' journal_entry.pk %}" class="mb-2">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-block w-100">
+                                    <i class="fas fa-check"></i> Post Entry
+                                </button>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Entry must be balanced before posting.
+                            </div>
+                        {% endif %}
+                        
+                        <a href="{% url 'manual_journal_entry:journal_entry_edit' journal_entry.pk %}" class="btn btn-warning btn-block w-100 mb-2">
+                            <i class="fas fa-edit"></i> Edit Entry
+                        </a>
+                        
+                        <a href="{% url 'manual_journal_entry:journal_entry_delete' journal_entry.pk %}" 
+                           class="btn btn-danger btn-block w-100"
+                           onclick="return confirm('Are you sure you want to delete this journal entry?')">
+                            <i class="fas fa-trash"></i> Delete Entry
+                        </a>
+                    {% elif journal_entry.status == 'POSTED' %}
+                        <form method="post" action="{% url 'manual_journal_entry:journal_entry_void' journal_entry.pk %}" class="mb-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-block w-100"
+                                    onclick="return confirm('Are you sure you want to void this journal entry?')">
+                                <i class="fas fa-ban"></i> Void Entry
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Audit Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Audit Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Created:</dt>
+                        <dd class="col-sm-7">
+                            {{ journal_entry.created_at|date:"M d, Y H:i" }}
+                            {% if journal_entry.created_by %}
+                                <br><small class="text-muted">by {{ journal_entry.created_by.get_full_name|default:journal_entry.created_by.username }}</small>
+                            {% endif %}
+                        </dd>
+                        
+                        {% if journal_entry.updated_by %}
+                            <dt class="col-sm-5">Last Updated:</dt>
+                            <dd class="col-sm-7">
+                                {{ journal_entry.updated_at|date:"M d, Y H:i" }}
+                                <br><small class="text-muted">by {{ journal_entry.updated_by.get_full_name|default:journal_entry.updated_by.username }}</small>
+                            </dd>
+                        {% endif %}
+                        
+                        {% if journal_entry.posted_by %}
+                            <dt class="col-sm-5">Posted:</dt>
+                            <dd class="col-sm-7">
+                                {{ journal_entry.posted_at|date:"M d, Y H:i" }}
+                                <br><small class="text-muted">by {{ journal_entry.posted_by.get_full_name|default:journal_entry.posted_by.username }}</small>
+                            </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="summary-item">
+                                <div class="summary-value text-danger">{{ journal_entry.total_debit|floatformat:2 }}</div>
+                                <div class="summary-label">Total Debit</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="summary-item">
+                                <div class="summary-value text-success">{{ journal_entry.total_credit|floatformat:2 }}</div>
+                                <div class="summary-label">Total Credit</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <div class="summary-item">
+                            <div class="summary-value">
+                                {% if journal_entry.is_balanced %}
+                                    <span class="text-success">Balanced</span>
+                                {% else %}
+                                    <span class="text-danger">{{ journal_entry.balance_difference|floatformat:2 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="summary-label">Balance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Confirm actions
+    $('form').on('submit', function() {
+        var action = $(this).find('button[type="submit"]').text().trim();
+        if (action === 'Post Entry' || action === 'Void Entry') {
+            return confirm('Are you sure you want to ' + action.toLowerCase() + '?');
+        }
+    });
+});
+</script>
+{% endblock %} 

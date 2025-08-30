@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accounts Receivable Aging Report{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts_receivable_aging/css/aging_report.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="aging-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <h1 class="mb-0"><i class="fas fa-chart-line me-3"></i>Accounts Receivable Aging Report</h1>
+                    <p class="mb-0 mt-2">Track outstanding customer balances by aging periods</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <h5 class="mb-0">As of: {{ as_of_date|date:"F d, Y" }}</h5>
+                    <small>Generated: {% now "F d, Y g:i A" %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Filters</h5>
+            <form method="get" id="aging-form">
+                <div class="row">
+                    <div class="col-md-3">
+                        {{ form.as_of_date.label_tag }}
+                        {{ form.as_of_date }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.customer.label_tag }}
+                        {{ form.customer }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.salesman.label_tag }}
+                        {{ form.salesman }}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        {{ form.customer_code.label_tag }}
+                        {{ form.customer_code }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.min_amount.label_tag }}
+                        {{ form.min_amount }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.aging_bucket.label_tag }}
+                        {{ form.aging_bucket }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.report_type.label_tag }}
+                        {{ form.report_type }}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            {{ form.show_zero_balances }}
+                            {{ form.show_zero_balances.label_tag }}
+                        </div>
+                    </div>
+                    <div class="col-md-9 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Generate Report
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clear-filters">
+                            <i class="fas fa-times me-2"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Summary Cards -->
+        {% if aging_data %}
+        <div class="row mb-4 summary-cards">
+            <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <div class="card summary-card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Current</h6>
+                        <h4 class="text-success"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 16px; height: 16px; margin-right: 3px;"> {{ summary_data.total_current|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <div class="card summary-card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">1-30 Days</h6>
+                        <h4 class="text-warning"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 16px; height: 16px; margin-right: 3px;"> {{ summary_data.total_1_30|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <div class="card summary-card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">31-60 Days</h6>
+                        <h4 class="text-warning"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 16px; height: 16px; margin-right: 3px;"> {{ summary_data.total_31_60|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <div class="card summary-card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">61-90 Days</h6>
+                        <h4 class="text-danger"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 16px; height: 16px; margin-right: 3px;"> {{ summary_data.total_61_90|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <div class="card summary-card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Over 90 Days</h6>
+                        <h4 class="text-danger"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 16px; height: 16px; margin-right: 3px;"> {{ summary_data.total_over_90|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <div class="card summary-card text-center border-primary">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Total Outstanding</h6>
+                        <h4 class="text-primary"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 16px; height: 16px; margin-right: 3px;"> {{ summary_data.grand_total|floatformat:2 }}</h4>
+                        <small class="text-muted">{{ summary_data.customer_count }} customers</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="export-section">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-0"><i class="fas fa-download me-2"></i>Export Options</h6>
+                </div>
+                <div class="col-md-4 text-end">
+                    <!-- Export buttons with specific IDs -->
+                    <button type="button" class="btn btn-success me-2 export-btn" id="export-excel" data-format="excel">
+                        <i class="fas fa-file-excel me-1"></i>Export Excel
+                    </button>
+                    <button type="button" class="btn btn-danger me-2 export-btn" id="export-pdf" data-format="pdf">
+                        <i class="fas fa-file-pdf me-1"></i>Export PDF
+                    </button>
+                    <button type="button" class="btn btn-secondary export-btn" id="send-email" data-format="email">
+                        <i class="fas fa-envelope me-1"></i>Send Email
+                    </button>
+                    
+                    <!-- Hidden forms for export functionality -->
+                    <form method="post" action="{% url 'accounts_receivable_aging:export_aging_report' %}" style="display: none;" id="export-excel-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="as_of_date" value="{{ form.as_of_date.value|default:'' }}">
+                        <input type="hidden" name="customer" value="{{ form.customer.value|default:'' }}">
+                        <input type="hidden" name="salesman" value="{{ form.salesman.value|default:'' }}">
+                        <input type="hidden" name="customer_code" value="{{ form.customer_code.value|default:'' }}">
+                        <input type="hidden" name="min_amount" value="{{ form.min_amount.value|default:'' }}">
+                        <input type="hidden" name="aging_bucket" value="{{ form.aging_bucket.value|default:'' }}">
+                        <input type="hidden" name="show_zero_balances" value="{{ form.show_zero_balances.value|default:'' }}">
+                        <input type="hidden" name="export_format" value="excel">
+                        <input type="hidden" name="include_details" value="true">
+                    </form>
+                    
+                    <form method="post" action="{% url 'accounts_receivable_aging:export_aging_report' %}" style="display: none;" id="export-pdf-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="as_of_date" value="{{ form.as_of_date.value|default:'' }}">
+                        <input type="hidden" name="customer" value="{{ form.customer.value|default:'' }}">
+                        <input type="hidden" name="salesman" value="{{ form.salesman.value|default:'' }}">
+                        <input type="hidden" name="customer_code" value="{{ form.customer_code.value|default:'' }}">
+                        <input type="hidden" name="min_amount" value="{{ form.min_amount.value|default:'' }}">
+                        <input type="hidden" name="aging_bucket" value="{{ form.aging_bucket.value|default:'' }}">
+                        <input type="hidden" name="show_zero_balances" value="{{ form.show_zero_balances.value|default:'' }}">
+                        <input type="hidden" name="export_format" value="pdf">
+                        <input type="hidden" name="include_details" value="true">
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aging Report Table -->
+        <div class="aging-table">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="aging-report-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Customer</th>
+                            <th class="text-end">Current</th>
+                            <th class="text-end">1-30 Days</th>
+                            <th class="text-end">31-60 Days</th>
+                            <th class="text-end">61-90 Days</th>
+                            <th class="text-end">Over 90 Days</th>
+                            {% if report_type == 'summary_with_advance_payment' %}
+                            <th class="text-end">Advance Payment</th>
+                            <th class="text-end">Net Outstanding</th>
+                            {% endif %}
+                            <th class="text-end">Total Outstanding</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in aging_data %}
+                        <tr>
+                            <td>
+                                <strong>{{ row.customer_name }}</strong>
+                                {% if row.customer_code %}
+                                    <br><small class="text-muted">{{ row.customer_code }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end amount-positive"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.current_amount|floatformat:2 }}</td>
+                            <td class="text-end"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.days_1_30|floatformat:2 }}</td>
+                            <td class="text-end"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.days_31_60|floatformat:2 }}</td>
+                            <td class="text-end amount-overdue"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.days_61_90|floatformat:2 }}</td>
+                            <td class="text-end amount-overdue"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.days_over_90|floatformat:2 }}</td>
+                            {% if report_type == 'summary_with_advance_payment' %}
+                            <td class="text-end text-success"><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.advance_payment|floatformat:2 }}</td>
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.net_outstanding|floatformat:2 }}</strong></td>
+                            {% endif %}
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ row.total_outstanding|floatformat:2 }}</strong></td>
+                        </tr>
+                        
+                        {% if report_type == 'details' and row.invoices %}
+                            {% for invoice in row.invoices %}
+                            <tr class="table-light">
+                                <td class="ps-4">
+                                    <small class="text-muted">
+                                        <i class="fas fa-file-invoice me-1"></i>
+                                        {{ invoice.invoice_number }}
+                                        <br>Date: {{ invoice.invoice_date|date:"M d, Y" }}
+                                        {% if invoice.due_date %}
+                                        <br>Due: {{ invoice.due_date|date:"M d, Y" }}
+                                        {% endif %}
+                                        <br>Days: {{ invoice.days_outstanding }}
+                                    </small>
+                                </td>
+                                <td class="text-end"><small><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 10px; height: 10px; margin-right: 2px;"> {{ invoice.outstanding_amount|floatformat:2 }}</small></td>
+                                <td class="text-end"><small>-</small></td>
+                                <td class="text-end"><small>-</small></td>
+                                <td class="text-end"><small>-</small></td>
+                                <td class="text-end"><small>-</small></td>
+                                {% if report_type == 'summary_with_advance_payment' %}
+                                <td class="text-end"><small>-</small></td>
+                                <td class="text-end"><small>-</small></td>
+                                {% endif %}
+                                <td class="text-end"><small><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 10px; height: 10px; margin-right: 2px;"> {{ invoice.outstanding_amount|floatformat:2 }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if report_type == 'summary_with_advance_payment' %}9{% else %}7{% endif %}" class="text-center py-4">
+                                <i class="fas fa-info-circle me-2"></i>No data found for the selected criteria.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        {% if aging_data %}
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.total_current|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.total_1_30|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.total_31_60|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.total_61_90|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.total_over_90|floatformat:2 }}</strong></td>
+                            {% if report_type == 'summary_with_advance_payment' %}
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.total_advance_payment|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.total_net_outstanding|floatformat:2 }}</strong></td>
+                            {% endif %}
+                            <td class="text-end"><strong><img src="{% static 'img/dirham-symbol.png' %}" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;"> {{ summary_data.grand_total|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">Generate Your Aging Report</h4>
+            <p class="text-muted">Use the filters above to generate your accounts receivable aging report.</p>
+        </div>
+        {% endif %}
+    </div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailModalLabel">
+                    <i class="bi bi-envelope me-2"></i>Send Aging Report via Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="emailForm">
+                    {% csrf_token %}
+                    <!-- Hidden fields for current filters -->
+                    <input type="hidden" name="as_of_date" id="email_as_of_date">
+                    <input type="hidden" name="customer" id="email_customer">
+                    <input type="hidden" name="customer_code" id="email_customer_code">
+                    <input type="hidden" name="min_amount" id="email_min_amount">
+                    <input type="hidden" name="aging_bucket" id="email_aging_bucket">
+                    <input type="hidden" name="show_zero_balances" id="email_show_zero_balances">
+                    <input type="hidden" name="report_type" id="email_report_type">
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label for="recipient_email" class="form-label">Recipient Email *</label>
+                            <input type="email" class="form-control" id="recipient_email" name="recipient" required>
+                            <div class="form-text">Primary recipient email address</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="export_format" class="form-label">Format</label>
+                            <select class="form-select" id="export_format" name="export_format">
+                                <option value="pdf">PDF</option>
+                                <option value="excel">Excel</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 mt-3">
+                        <label for="cc_email" class="form-label">CC Email</label>
+                        <input type="email" class="form-control" id="cc_email" name="cc" placeholder="Optional: separate multiple emails with commas">
+                        <div class="form-text">Optional: CC recipients (separate multiple emails with commas)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email_subject" class="form-label">Subject *</label>
+                        <input type="text" class="form-control" id="email_subject" name="subject" value="Accounts Receivable Aging Report" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email_message" class="form-label">Message</label>
+                        <textarea class="form-control" id="email_message" name="message" rows="4" placeholder="Please find attached the Accounts Receivable Aging Report.">Please find attached the Accounts Receivable Aging Report.</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendEmailBtn">
+                    <i class="bi bi-send me-1"></i>Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% load static %}
+{% block extra_js %}
+<script>
+    console.log('Template extra_js block loaded');
+    console.log('jQuery available:', typeof $ !== 'undefined');
+    // Pass default currency to JavaScript
+    window.DEFAULT_CURRENCY = '{{ default_currency|default:"USD" }}';
+    console.log('Default currency set to:', window.DEFAULT_CURRENCY);
+</script>
+<script src="{% static 'accounts_receivable_aging/js/aging_report.js' %}?v={{ request.META.REQUEST_TIME|default:'12345' }}&t={% now 'U' %}"></script>
+<script>
+    console.log('After aging_report.js script tag');
+</script>
+{% endblock %}

@@ -1,0 +1,314 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-envelope-exclamation me-2"></i>Dunning Letters
+                        </h4>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'dunning_letters:dashboard' %}" class="btn btn-light btn-sm">
+                                <i class="bi bi-graph-up me-1"></i>Dashboard
+                            </a>
+                            <a href="{% url 'dunning_letters:create' %}" class="btn btn-success btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i>Create Letter
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Statistics Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-envelope display-4 text-primary"></i>
+                                    <h3 class="mt-2">{{ total_letters }}</h3>
+                                    <p class="text-muted mb-0">Total Letters</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-currency-dollar display-4 text-success"></i>
+                                    <h3 class="mt-2">AED {{ total_overdue_amount|floatformat:2 }}</h3>
+                                    <p class="text-muted mb-0">Total Overdue</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-envelope-check display-4 text-warning"></i>
+                                    <h3 class="mt-2">{{ level_counts.friendly|default:0 }}</h3>
+                                    <p class="text-muted mb-0">Friendly Reminders</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-danger">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-exclamation-triangle display-4 text-danger"></i>
+                                    <h3 class="mt-2">{{ level_counts.final|default:0 }}</h3>
+                                    <p class="text-muted mb-0">Final Notices</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-funnel me-2"></i>Filters
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="get" class="row g-3">
+                                <div class="col-md-3">
+                                    {{ form.customer }}
+                                </div>
+                                <div class="col-md-2">
+                                    {{ form.level }}
+                                </div>
+                                <div class="col-md-2">
+                                    {{ form.status }}
+                                </div>
+                                <div class="col-md-2">
+                                    {{ form.date_from }}
+                                </div>
+                                <div class="col-md-2">
+                                    {{ form.date_to }}
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Letters Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Invoice</th>
+                                    <th>Level</th>
+                                    <th>Status</th>
+                                    <th>Overdue Amount</th>
+                                    <th>Overdue Days</th>
+                                    <th>Sent Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for letter in letters %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ letter.customer.customer_name }}</strong>
+                                        {% if letter.customer.email %}
+                                            <br><small class="text-muted">{{ letter.customer.email }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ letter.invoice.invoice_number }}</span>
+                                    </td>
+                                    <td>
+                                        {% if letter.level == 'friendly' %}
+                                            <span class="badge bg-info">{{ letter.get_level_display }}</span>
+                                        {% elif letter.level == 'firm' %}
+                                            <span class="badge bg-warning text-dark">{{ letter.get_level_display }}</span>
+                                        {% elif letter.level == 'final' %}
+                                            <span class="badge bg-danger">{{ letter.get_level_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if letter.status == 'draft' %}
+                                            <span class="badge bg-secondary">{{ letter.get_status_display }}</span>
+                                        {% elif letter.status == 'sent' %}
+                                            <span class="badge bg-success">{{ letter.get_status_display }}</span>
+                                        {% elif letter.status == 'viewed' %}
+                                            <span class="badge bg-info">{{ letter.get_status_display }}</span>
+                                        {% elif letter.status == 'paid' %}
+                                            <span class="badge bg-success">{{ letter.get_status_display }}</span>
+                                        {% elif letter.status == 'cancelled' %}
+                                            <span class="badge bg-dark">{{ letter.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger fs-6">
+                                            AED {{ letter.overdue_amount|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">
+                                            {{ letter.overdue_days }} days
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if letter.email_sent_at %}
+                                            <i class="bi bi-calendar-check me-1"></i>
+                                            {{ letter.email_sent_at|date:"M d, Y" }}
+                                            {% if letter.days_since_sent %}
+                                                <br><small class="text-muted">{{ letter.days_since_sent }} days ago</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Not sent</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'dunning_letters:detail' letter.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if not letter.email_sent %}
+                                            <a href="{% url 'dunning_letters:send_email' letter.pk %}" 
+                                               class="btn btn-sm btn-outline-success" title="Send Email">
+                                                <i class="bi bi-envelope"></i>
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'dunning_letters:print' letter.pk %}" 
+                                               class="btn btn-sm btn-outline-info" title="Download PDF" target="_blank">
+                                                <i class="bi bi-printer"></i>
+                                            </a>
+                                            <a href="{% url 'dunning_letters:update' letter.pk %}" 
+                                               class="btn btn-sm btn-outline-warning" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'dunning_letters:delete' letter.pk %}" 
+                                               class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="bi bi-inbox display-4 text-muted"></i>
+                                        <p class="mt-2 text-muted">No dunning letters found.</p>
+                                        <a href="{% url 'dunning_letters:create' %}" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle me-1"></i>Create First Letter
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    {% if recent_letters %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-clock-history me-2"></i>Recent Activity
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline">
+                                        {% for letter in recent_letters %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker bg-primary"></div>
+                                            <div class="timeline-content">
+                                                <h6 class="mb-1">
+                                                    {{ letter.get_level_display }} sent to {{ letter.customer.customer_name }}
+                                                </h6>
+                                                <p class="text-muted mb-0">
+                                                    Invoice: {{ letter.invoice.invoice_number }} | 
+                                                    Amount: AED {{ letter.overdue_amount|floatformat:2 }}
+                                                </p>
+                                                <small class="text-muted">
+                                                    {{ letter.created_at|date:"M d, Y H:i" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0.25rem;
+        margin: 0 1px;
+    }
+    
+    .badge {
+        font-weight: 500;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -2.5rem;
+        top: 0.25rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
+    
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        border-left: 3px solid #007bff;
+    }
+    
+    .timeline-content h6 {
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #495057;
+    }
+</style>
+{% endblock %} 

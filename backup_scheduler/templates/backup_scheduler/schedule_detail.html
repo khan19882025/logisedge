@@ -1,0 +1,363 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ schedule.name }} - Backup Schedule{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'backup_scheduler/css/schedule_detail.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        <i class="fas fa-calendar me-2"></i>{{ schedule.name }}
+                    </h1>
+                    <p class="text-muted">Backup Schedule Details</p>
+                </div>
+                <div>
+                    <a href="{% url 'backup_scheduler:schedule_edit' schedule.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Schedule
+                    </a>
+                    <a href="{% url 'backup_scheduler:schedule_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Schedule Information -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Schedule Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Schedule Name:</label>
+                                <p class="mb-0">{{ schedule.name }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Description:</label>
+                                <p class="mb-0">{{ schedule.description|default:"No description provided" }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Backup Type:</label>
+                                <span class="badge bg-primary">{{ schedule.get_backup_type_display }}</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Backup Scope:</label>
+                                <span class="badge bg-info">{{ schedule.get_backup_scope_display }}</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Storage Location:</label>
+                                <p class="mb-0">{{ schedule.storage_location }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Frequency:</label>
+                                <span class="badge bg-success">{{ schedule.get_frequency_display }}</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Start Date:</label>
+                                <p class="mb-0">{{ schedule.start_date|date:"F j, Y" }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Start Time:</label>
+                                <p class="mb-0">{{ schedule.start_time|time:"g:i A" }}</p>
+                            </div>
+                            
+                            {% if schedule.frequency == 'weekly' %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Weekday:</label>
+                                    <p class="mb-0">{{ schedule.get_weekday_display }}</p>
+                                </div>
+                            {% elif schedule.frequency == 'monthly' %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Day of Month:</label>
+                                    <p class="mb-0">{{ schedule.day_of_month }}</p>
+                                </div>
+                            {% elif schedule.frequency == 'custom' %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Cron Expression:</label>
+                                    <code class="d-block">{{ schedule.cron_expression }}</code>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Retention Period:</label>
+                                <p class="mb-0">{{ schedule.retention_days }} days</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Maximum Backups:</label>
+                                <p class="mb-0">{{ schedule.max_backups }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Parallel Execution:</label>
+                                {% if schedule.allow_parallel %}
+                                    <span class="badge bg-success">Allowed</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Not Allowed</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Status:</label>
+                                {% if schedule.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Next Execution:</label>
+                                {% if schedule.next_execution %}
+                                    <p class="mb-0 text-success">{{ schedule.next_execution|date:"F j, Y g:i A" }}</p>
+                                {% else %}
+                                    <p class="mb-0 text-muted">Not scheduled</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Last Execution:</label>
+                                {% if schedule.last_execution %}
+                                    <p class="mb-0">{{ schedule.last_execution|date:"F j, Y g:i A" }}</p>
+                                {% else %}
+                                    <p class="mb-0 text-muted">Never executed</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions & Status -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" onclick="runBackupNow()">
+                            <i class="fas fa-play me-2"></i>Run Backup Now
+                        </button>
+                        
+                        {% if schedule.is_active %}
+                            <button class="btn btn-warning" onclick="pauseSchedule()">
+                                <i class="fas fa-pause me-2"></i>Pause Schedule
+                            </button>
+                        {% else %}
+                            <button class="btn btn-success" onclick="activateSchedule()">
+                                <i class="fas fa-play me-2"></i>Activate Schedule
+                            </button>
+                        {% endif %}
+                        
+                        <button class="btn btn-info" onclick="testConnection()">
+                            <i class="fas fa-plug me-2"></i>Test Connection
+                        </button>
+                        
+                        <button class="btn btn-secondary" onclick="viewLogs()">
+                            <i class="fas fa-file-alt me-2"></i>View Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Schedule Statistics -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <h4 class="text-primary">{{ total_executions }}</h4>
+                                <small class="text-muted">Total Executions</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <h4 class="text-success">{{ successful_executions }}</h4>
+                                <small class="text-muted">Successful</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center mt-3">
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <h4 class="text-danger">{{ failed_executions }}</h4>
+                                <small class="text-muted">Failed</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <h4 class="text-info">{{ total_size|filesizeformat }}</h4>
+                                <small class="text-muted">Total Size</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Execution History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Execution History</h6>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshHistory()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if executions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Execution Date</th>
+                                        <th>Status</th>
+                                        <th>Duration</th>
+                                        <th>File Size</th>
+                                        <th>Details</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for execution in executions %}
+                                        <tr>
+                                            <td>{{ execution.execution_date|date:"M j, Y g:i A" }}</td>
+                                            <td>
+                                                {% if execution.status == 'success' %}
+                                                    <span class="badge bg-success">Success</span>
+                                                {% elif execution.status == 'failed' %}
+                                                    <span class="badge bg-danger">Failed</span>
+                                                {% elif execution.status == 'running' %}
+                                                    <span class="badge bg-warning">Running</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ execution.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if execution.duration %}
+                                                    {{ execution.duration|floatformat:1 }}s
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if execution.file_size %}
+                                                    {{ execution.file_size|filesizeformat }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if execution.error_message %}
+                                                    <span class="text-danger">{{ execution.error_message|truncatechars:50 }}</span>
+                                                {% else %}
+                                                    <span class="text-success">Completed successfully</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-info" onclick="viewExecutionDetails({{ execution.pk }})">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    {% if execution.backup_file %}
+                                                        <a href="{{ execution.backup_file.url }}" class="btn btn-outline-success" download>
+                                                            <i class="fas fa-download"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if executions.has_other_pages %}
+                            <nav aria-label="Execution history pagination">
+                                <ul class="pagination justify-content-center">
+                                    {% if executions.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ executions.previous_page_number }}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in executions.paginator.page_range %}
+                                        {% if executions.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > executions.number|add:'-3' and num < executions.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if executions.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ executions.next_page_number }}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No execution history</h5>
+                            <p class="text-muted">This schedule hasn't been executed yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'backup_scheduler/js/schedule_detail.js' %}"></script>
+{% endblock %}

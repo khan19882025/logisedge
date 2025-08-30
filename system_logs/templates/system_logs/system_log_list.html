@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-list"></i> System Logs
+                </h1>
+                <p class="page-subtitle">View and manage system logs, errors, and debug information</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search"></i> Search & Filter
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-3">
+                            <label for="log_type" class="form-label">Log Type</label>
+                            <select name="log_type" id="log_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="ERROR" {% if request.GET.log_type == 'ERROR' %}selected{% endif %}>Error</option>
+                                <option value="WARNING" {% if request.GET.log_type == 'WARNING' %}selected{% endif %}>Warning</option>
+                                <option value="INFO" {% if request.GET.log_type == 'INFO' %}selected{% endif %}>Info</option>
+                                <option value="DEBUG" {% if request.GET.log_type == 'DEBUG' %}selected{% endif %}>Debug</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="severity" class="form-label">Severity</label>
+                            <select name="severity" id="severity" class="form-select">
+                                <option value="">All Severities</option>
+                                <option value="LOW" {% if request.GET.severity == 'LOW' %}selected{% endif %}>Low</option>
+                                <option value="MEDIUM" {% if request.GET.severity == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                                <option value="HIGH" {% if request.GET.severity == 'HIGH' %}selected{% endif %}>High</option>
+                                <option value="CRITICAL" {% if request.GET.severity == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                                <option value="FATAL" {% if request.GET.severity == 'FATAL' %}selected{% endif %}>Fatal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="module" class="form-label">Module</label>
+                            <input type="text" name="module" id="module" class="form-control" 
+                                   value="{{ request.GET.module }}" placeholder="Enter module name">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" name="search" id="search" class="form-control" 
+                                   value="{{ request.GET.search }}" placeholder="Search logs...">
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <a href="{% url 'system_logs:system_log_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table"></i> System Logs ({{ logs.count }} total)
+                    </h5>
+                    <div>
+                        <a href="{% url 'system_logs:system_log_export' %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-download"></i> Export
+                        </a>
+                        <a href="{% url 'system_logs:dashboard' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-chart-bar"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if logs %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Type</th>
+                                        <th>Severity</th>
+                                        <th>Module</th>
+                                        <th>Function</th>
+                                        <th>Message</th>
+                                        <th>User</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                    <tr>
+                                        <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if log.log_type == 'ERROR' %}danger{% elif log.log_type == 'WARNING' %}warning{% elif log.log_type == 'INFO' %}info{% else %}secondary{% endif %}">
+                                                {{ log.log_type }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if log.severity == 'CRITICAL' or log.severity == 'FATAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                                                {{ log.severity }}
+                                            </span>
+                                        </td>
+                                        <td>{{ log.module|default:"-" }}</td>
+                                        <td>{{ log.function|default:"-" }}</td>
+                                        <td>
+                                            <span title="{{ log.error_message }}">
+                                                {{ log.error_message|truncatechars:50 }}
+                                            </span>
+                                        </td>
+                                        <td>{{ log.user.username|default:"-" }}</td>
+                                        <td>
+                                            <a href="{% url 'system_logs:system_log_detail' log.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.log_type %}&log_type={{ request.GET.log_type }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.module %}&module={{ request.GET.module }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.log_type %}&log_type={{ request.GET.log_type }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.module %}&module={{ request.GET.module }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.log_type %}&log_type={{ request.GET.log_type }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.module %}&module={{ request.GET.module }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.log_type %}&log_type={{ request.GET.log_type }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.module %}&module={{ request.GET.module }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No logs found</h5>
+                            <p class="text-muted">No system logs match your current search criteria.</p>
+                            <a href="{% url 'system_logs:system_log_list' %}" class="btn btn-primary">
+                                <i class="fas fa-refresh"></i> Clear Filters
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

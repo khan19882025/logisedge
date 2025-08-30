@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Job Details - Master Data Import{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'master_data_import/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Import Job Details</h1>
+        <div>
+            <a href="{% url 'master_data_import_utilities:job_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-sm"></i> Back to Jobs
+            </a>
+            {% if import_job.status == 'pending' %}
+                <a href="{% url 'master_data_import_utilities:cancel_job' import_job.id %}" 
+                   class="btn btn-warning btn-sm" onclick="return confirm('Are you sure you want to cancel this job?')">
+                    <i class="fas fa-times fa-sm"></i> Cancel Job
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Job Overview -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Job Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Job Name:</strong></td>
+                                    <td>{{ import_job.job_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge badge-status-{{ import_job.status }}">
+                                            {{ import_job.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Template:</strong></td>
+                                    <td>
+                                        <a href="{% url 'master_data_import_utilities:template_detail' import_job.template.id %}">
+                                            {{ import_job.template.name }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Data Type:</strong></td>
+                                    <td>{{ import_job.template.data_type }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Created By:</strong></td>
+                                    <td>{{ import_job.created_by.get_full_name|default:import_job.created_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created At:</strong></td>
+                                    <td>{{ import_job.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Started At:</strong></td>
+                                    <td>{{ import_job.started_at|date:"M d, Y H:i"|default:"Not started" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Completed At:</strong></td>
+                                    <td>{{ import_job.completed_at|date:"M d, Y H:i"|default:"Not completed" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    {% if import_job.status != 'pending' %}
+                    <div class="mt-3">
+                        <label class="font-weight-bold">Progress</label>
+                        <div class="progress progress-bar-job">
+                            <div class="progress-bar progress-bar-dynamic" role="progressbar"
+                                 data-progress-percentage="{{ import_job.progress_percentage }}"
+                                 aria-valuenow="{{ import_job.progress_percentage }}"
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {{ import_job.progress_percentage|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- File Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">File Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>File Name:</strong></td>
+                                    <td>{{ import_job.file_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>File Size:</strong></td>
+                                    <td>{{ import_job.file_size|filesizeformat }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>File Type:</strong></td>
+                                    <td>{{ import_job.file_name|slice:"-4:"|upper }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <a href="{% url 'master_data_import_utilities:download_template' import_job.template.id %}" 
+                                   class="btn btn-outline-primary btn-sm mb-2">
+                                    <i class="fas fa-download"></i> Download Template
+                                </a>
+                                {% if import_job.import_file %}
+                                <br>
+                                <a href="{{ import_job.import_file.file.url }}" 
+                                   class="btn btn-outline-success btn-sm" target="_blank">
+                                    <i class="fas fa-eye"></i> View Uploaded File
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Results -->
+            {% if import_job.status in 'completed,failed' %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Import Results</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-success">{{ import_job.records_processed|default:0 }}</div>
+                                <small class="text-muted">Records Processed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-info">{{ import_job.records_imported|default:0 }}</div>
+                                <small class="text-muted">Records Imported</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-warning">{{ import_job.records_skipped|default:0 }}</div>
+                                <small class="text-muted">Records Skipped</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-danger">{{ import_job.records_failed|default:0 }}</div>
+                                <small class="text-muted">Records Failed</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if import_job.records_failed > 0 %}
+                    <div class="mt-3">
+                        <a href="{% url 'master_data_import_utilities:export_errors' import_job.id %}" 
+                           class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-download"></i> Export Error Report
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Error Details -->
+            {% if import_job.status == 'failed' and import_job.error_message %}
+            <div class="card shadow mb-4 border-danger">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle"></i> Error Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> {{ import_job.error_message }}
+                    </div>
+                    {% if import_job.error_details %}
+                    <pre class="bg-light p-3 rounded"><code>{{ import_job.error_details }}</code></pre>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Job Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Job Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if import_job.status == 'pending' %}
+                            <button class="btn btn-primary btn-block" onclick="startJob()">
+                                <i class="fas fa-play"></i> Start Import
+                            </button>
+                        {% elif import_job.status == 'processing' %}
+                            <button class="btn btn-info btn-block" onclick="refreshProgress()">
+                                <i class="fas fa-sync"></i> Refresh Progress
+                            </button>
+                        {% elif import_job.status == 'completed' %}
+                            <a href="{% url 'master_data_import_utilities:upload_file' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-plus"></i> New Import
+                            </a>
+                        {% elif import_job.status == 'failed' %}
+                            <a href="{% url 'master_data_import_utilities:upload_file' %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-redo"></i> Retry Import
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'master_data_import_utilities:job_list' %}" class="btn btn-secondary btn-block">
+                            <i class="fas fa-list"></i> View All Jobs
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Statistics -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Job Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h5 text-primary">{{ import_job.records_total|default:0 }}</div>
+                            <small class="text-muted">Total Records</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 text-success">{{ import_job.records_imported|default:0 }}</div>
+                            <small class="text-muted">Success Rate</small>
+                        </div>
+                    </div>
+                    
+                    {% if import_job.records_total > 0 %}
+                    <div class="mt-3">
+                        <div class="progress progress-bar-stat">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 data-completed="{{ import_job.records_imported|default:0 }}"
+                                 data-total="{{ import_job.records_total }}">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ import_job.records_imported|default:0 }} of {{ import_job.records_total }} records imported successfully
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_audit_logs %}
+                        <div class="timeline">
+                            {% for log in recent_audit_logs %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <div class="small text-muted">{{ log.timestamp|date:"M d, H:i" }}</div>
+                                    <div class="font-weight-bold">{{ log.action }}</div>
+                                    <div class="small">{{ log.details|default:"" }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No recent activity</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'master_data_import/js/dashboard.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize progress bars
+    initializeProgressBars();
+
+    // Auto-refresh progress for processing jobs
+    {% if import_job.status == 'processing' %}
+    setInterval(refreshProgress, 5000);
+    {% endif %}
+});
+
+function startJob() {
+    if (confirm('Are you sure you want to start this import job?')) {
+        // Implement job start logic
+        window.location.reload();
+    }
+}
+
+function refreshProgress() {
+    // Implement progress refresh logic
+    window.location.reload();
+}
+
+function refreshProgress() {
+    // AJAX call to refresh progress
+    $.get("{% url 'master_data_import_utilities:job_progress' import_job.id %}", function(data) {
+        if (data.status !== '{{ import_job.status }}') {
+            window.location.reload();
+        } else {
+            // Update progress bar
+            $('.progress-bar-dynamic').each(function() {
+                const bar = $(this);
+                const newProgress = data.progress_percentage;
+                bar.attr('aria-valuenow', newProgress);
+                bar.css('width', newProgress + '%');
+                bar.text(newProgress.toFixed(1) + '%');
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

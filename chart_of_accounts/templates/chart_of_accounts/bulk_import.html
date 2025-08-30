@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Import Accounts - Chart of Accounts{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chart_of_accounts/chart_of_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-upload text-primary"></i>
+                Bulk Import Accounts
+            </h1>
+            <p class="text-muted">
+                Import multiple accounts from CSV file
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'chart_of_accounts:account_list' %}" class="coa-btn coa-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Accounts
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Upload Form -->
+            <div class="coa-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-arrow-up"></i>
+                        Upload CSV File
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- File Upload -->
+                        <div class="mb-3">
+                            <label for="{{ form.csv_file.id_for_label }}" class="form-label">
+                                <i class="bi bi-file-earmark-text"></i>
+                                Select CSV File *
+                            </label>
+                            {{ form.csv_file }}
+                            {% if form.csv_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.csv_file.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.csv_file.help_text %}
+                                <div class="form-text">{{ form.csv_file.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'chart_of_accounts:account_list' %}" class="coa-btn coa-btn-secondary">
+                                <i class="bi bi-arrow-left"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="coa-btn coa-btn-primary">
+                                <i class="bi bi-upload"></i>
+                                Import Accounts
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- CSV Template -->
+            <div class="coa-card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-download"></i>
+                        Download CSV Template
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p>Download the CSV template to see the required format for importing accounts.</p>
+                    <a href="{% url 'chart_of_accounts:export_csv' %}?template=true" class="coa-btn coa-btn-success">
+                        <i class="bi bi-download"></i>
+                        Download Template
+                    </a>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="coa-card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Import Instructions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>Required Columns:</h6>
+                    <ul>
+                        <li><strong>account_code</strong> - Unique account code (e.g., 1000, 1100)</li>
+                        <li><strong>name</strong> - Account name (e.g., Cash, Accounts Receivable)</li>
+                        <li><strong>account_type</strong> - Account type name (must exist in system)</li>
+                        <li><strong>parent_account</strong> - Parent account code (optional)</li>
+                        <li><strong>description</strong> - Account description (optional)</li>
+                        <li><strong>is_active</strong> - Active status (true/false, default: true)</li>
+                    </ul>
+                    
+                    <h6>Important Notes:</h6>
+                    <ul>
+                        <li>Account codes must be unique</li>
+                        <li>Account types must already exist in the system</li>
+                        <li>Parent account codes must exist if specified</li>
+                        <li>First row should contain column headers</li>
+                        <li>Use commas to separate values</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart_of_accounts/chart_of_accounts.js' %}"></script>
+{% endblock %} 

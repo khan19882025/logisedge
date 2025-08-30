@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load backup_filters %}
+
+{% block title %}Backup Execution Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'backup_scheduler/css/execution_detail.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-info-circle me-2"></i>Backup Execution Details
+                </h1>
+                <p class="text-muted">Execution ID: {{ execution.execution_id }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Execution Details -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Execution Information</h6>
+                    <div>
+                        {% if execution.status == 'running' %}
+                            <a href="{% url 'backup_scheduler:execution_cancel' execution.pk %}" 
+                               class="btn btn-warning btn-sm"
+                               onclick="return confirm('Are you sure you want to cancel this backup?')">
+                                <i class="fas fa-stop me-2"></i>Cancel Backup
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'backup_scheduler:execution_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-2"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Execution ID:</strong></td>
+                                    <td><code>{{ execution.execution_id }}</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{{ execution.status|status_badge }} badge-lg">
+                                            {{ execution.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Backup Type:</strong></td>
+                                    <td>{{ execution.backup_type.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Backup Scope:</strong></td>
+                                    <td>{{ execution.backup_scope.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Storage Location:</strong></td>
+                                    <td>{{ execution.storage_location.name }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ execution.created_at|date:"M d, Y H:i:s" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Started:</strong></td>
+                                    <td>
+                                        {% if execution.started_at %}
+                                            {{ execution.started_at|date:"M d, Y H:i:s" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Completed:</strong></td>
+                                    <td>
+                                        {% if execution.completed_at %}
+                                            {{ execution.completed_at|date:"M d, Y H:i:s" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Duration:</strong></td>
+                                    <td>
+                                        {% if execution.duration_seconds %}
+                                            {{ execution.duration_seconds }} seconds
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Triggered By:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{{ execution.is_manual|yesno:'warning,secondary' }}">
+                                            {{ execution.is_manual|yesno:'Manual,Scheduled' }}
+                                        </span>
+                                        {{ execution.triggered_by.username }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if execution.file_path %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>File Path:</strong></td>
+                                    <td><code>{{ execution.file_path }}</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>File Size:</strong></td>
+                                    <td>{{ execution.file_size_mb }} MB</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Checksum:</strong></td>
+                                    <td><code>{{ execution.checksum }}</code></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if execution.error_message %}
+                    <hr>
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Error Details</h6>
+                        <p class="mb-0">{{ execution.error_message }}</p>
+                        {% if execution.error_details %}
+                        <details class="mt-2">
+                            <summary>Technical Details</summary>
+                            <pre class="mt-2"><code>{{ execution.error_details|pprint }}</code></pre>
+                        </details>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Progress Bar for Running Backups -->
+            {% if execution.status == 'running' %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Backup Progress</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" 
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            Processing...
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <small class="text-muted">Backup is currently running. This page will auto-refresh to show progress.</small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if execution.status == 'completed' %}
+                            <button class="btn btn-success btn-block" onclick="downloadBackup()">
+                                <i class="fas fa-download me-2"></i>Download Backup
+                            </button>
+                            <button class="btn btn-info btn-block" onclick="verifyBackup()">
+                                <i class="fas fa-check-circle me-2"></i>Verify Integrity
+                            </button>
+                        {% endif %}
+                        {% if execution.status == 'failed' %}
+                            <button class="btn btn-warning btn-block" onclick="retryBackup()">
+                                <i class="fas fa-redo me-2"></i>Retry Backup
+                            </button>
+                        {% endif %}
+                        <button class="btn btn-secondary btn-block" onclick="exportLogs()">
+                            <i class="fas fa-file-export me-2"></i>Export Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution Statistics -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Status</span>
+                            <span class="badge badge-{{ execution.status|status_badge }}">
+                                {{ execution.status|title }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Type</span>
+                            <span>{{ execution.is_manual|yesno:'Manual,Scheduled' }}</span>
+                        </div>
+                    </div>
+                    {% if execution.duration_seconds %}
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Duration</span>
+                            <span>{{ execution.duration_seconds }}s</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if execution.file_size_mb %}
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>File Size</span>
+                            <span>{{ execution.file_size_mb }} MB</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Execution Logs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Execution Logs</h6>
+                </div>
+                <div class="card-body">
+                    {% if logs %}
+                        <div class="log-container" style="max-height: 400px; overflow-y: auto;">
+                            {% for log in logs %}
+                            <div class="log-entry mb-2 p-3 border-left border-{{ log.level|log_level_border }} pl-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge badge-{{ log.level|log_level_badge }} me-2">
+                                            {{ log.level|upper }}
+                                        </span>
+                                        {{ log.message }}
+                                    </div>
+                                    <small class="text-muted">{{ log.timestamp|date:"M d, H:i:s" }}</small>
+                                </div>
+                                {% if log.user %}
+                                <small class="text-muted">by {{ log.user.username }}</small>
+                                {% endif %}
+                                {% if log.ip_address %}
+                                <small class="text-muted">from {{ log.ip_address }}</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No logs found for this execution.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'backup_scheduler/js/execution_detail.js' %}"></script>
+<script>
+    // Auto-refresh for running backups
+    {% if execution.status == 'running' %}
+    setTimeout(function() {
+        location.reload();
+    }, 5000);
+    {% endif %}
+
+    function downloadBackup() {
+        // Implementation for downloading backup file
+        alert('Download functionality will be implemented here');
+    }
+
+    function verifyBackup() {
+        // Implementation for verifying backup integrity
+        alert('Verification functionality will be implemented here');
+    }
+
+    function retryBackup() {
+        // Implementation for retrying failed backup
+        if (confirm('Are you sure you want to retry this backup?')) {
+            // Redirect to manual backup with pre-filled form
+            window.location.href = "{% url 'backup_scheduler:manual_backup' %}";
+        }
+    }
+
+    function exportLogs() {
+        // Implementation for exporting logs
+        alert('Export functionality will be implemented here');
+    }
+</script>
+{% endblock %}

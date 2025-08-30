@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cost Center Reports{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_reports/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt mr-2"></i>Cost Center Reports
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_reports:report_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Create Report
+            </a>
+            <a href="{% url 'cost_center_reports:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-2">
+                    {{ search_form.report_type.label_tag }}
+                    {{ search_form.report_type }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.cost_center.label_tag }}
+                    {{ search_form.cost_center }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.department.label_tag }}
+                    {{ search_form.department }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.start_date.label_tag }}
+                    {{ search_form.start_date }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.end_date.label_tag }}
+                    {{ search_form.end_date }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.status.label_tag }}
+                    {{ search_form.status }}
+                </div>
+                <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search mr-1"></i>Search
+                    </button>
+                    <a href="{% url 'cost_center_reports:report_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times mr-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Reports</h6>
+            <div>
+                <span class="badge badge-primary">{{ page_obj.paginator.count }} Total Reports</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Report Name</th>
+                                <th>Type</th>
+                                <th>Date Range</th>
+                                <th>Cost Center</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th>Generated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ report.report_name }}</strong>
+                                    {% if report.include_inactive %}
+                                        <span class="badge badge-warning">Inactive Included</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">{{ report.get_report_type_display }}</span>
+                                </td>
+                                <td>
+                                    {{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}
+                                </td>
+                                <td>
+                                    {% if report.cost_center %}
+                                        <a href="{% url 'cost_center_management:cost_center_detail' report.cost_center.pk %}">
+                                            {{ report.cost_center.code }} - {{ report.cost_center.name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">All Cost Centers</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if report.department %}
+                                        <a href="{% url 'cost_center_management:department_detail' report.department.pk %}">
+                                            {{ report.department.name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">All Departments</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if report.status == 'draft' %}
+                                        <span class="badge badge-secondary">{{ report.get_status_display }}</span>
+                                    {% elif report.status == 'generated' %}
+                                        <span class="badge badge-success">{{ report.get_status_display }}</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">{{ report.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ report.generated_at|date:"M d, Y H:i" }}<br>
+                                        by {{ report.generated_by.get_full_name|default:report.generated_by.username }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'cost_center_reports:report_detail' report.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Report">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cost_center_reports:report_edit' report.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary" title="Edit Report">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'cost_center_reports:report_export' report.pk %}" 
+                                           class="btn btn-sm btn-outline-info" title="Export Report">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <a href="{% url 'cost_center_reports:report_delete' report.pk %}" 
+                                           class="btn btn-sm btn-outline-danger delete-btn" title="Delete Report">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Reports pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-500">No reports found</h5>
+                    <p class="text-gray-400">Create your first cost center report to get started.</p>
+                    <a href="{% url 'cost_center_reports:report_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus mr-2"></i>Create Report
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_reports/script.js' %}"></script>
+{% endblock %}

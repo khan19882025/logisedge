@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cost Center Budgets - Cost Center Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_management/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-pie mr-2"></i>Cost Center Budgets
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_management:cost_center_budget_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus mr-1"></i>Add Budget
+            </a>
+            <a href="{% url 'cost_center_management:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <label for="id_cost_center">Cost Center</label>
+                    {{ search_form.cost_center }}
+                </div>
+                <div class="col-md-3">
+                    <label for="id_fiscal_year">Fiscal Year</label>
+                    {{ search_form.fiscal_year }}
+                </div>
+                <div class="col-md-3">
+                    <label for="id_budget_type">Budget Type</label>
+                    {{ search_form.budget_type }}
+                </div>
+                <div class="col-md-3">
+                    <label for="id_status">Status</label>
+                    {{ search_form.status }}
+                </div>
+                <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search mr-1"></i>Search
+                    </button>
+                    <a href="{% url 'cost_center_management:cost_center_budget_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times mr-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budgets Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Budget List</h6>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown" data-toggle="dropdown">
+                    <i class="fas fa-download mr-1"></i>Export
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel mr-1"></i>Excel
+                    </a>
+                    <a class="dropdown-item" href="#" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf mr-1"></i>PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if budgets %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="budgetsTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Cost Center</th>
+                            <th>Fiscal Year</th>
+                            <th>Budget Type</th>
+                            <th>Amount</th>
+                            <th>Utilized</th>
+                            <th>Remaining</th>
+                            <th>Utilization %</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for budget in budgets %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'cost_center_management:cost_center_detail' budget.cost_center.pk %}">
+                                    {{ budget.cost_center.code }} - {{ budget.cost_center.name }}
+                                </a>
+                            </td>
+                            <td>{{ budget.fiscal_year }}</td>
+                            <td>
+                                <span class="badge badge-{% if budget.budget_type == 'ANNUAL' %}primary{% elif budget.budget_type == 'QUARTERLY' %}info{% else %}secondary{% endif %}">
+                                    {{ budget.get_budget_type_display }}
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <span class="font-weight-bold">${{ budget.amount|floatformat:2 }}</span>
+                            </td>
+                            <td class="text-right">
+                                <span class="text-{% if budget.utilized_amount > budget.amount %}danger{% else %}success{% endif %}">
+                                    ${{ budget.utilized_amount|floatformat:2 }}
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <span class="text-{% if budget.remaining_amount < 0 %}danger{% else %}success{% endif %}">
+                                    ${{ budget.remaining_amount|floatformat:2 }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if budget.utilization_percentage > 100 %}bg-danger{% elif budget.utilization_percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ budget.utilization_percentage|floatformat:0 }}%"
+                                         aria-valuenow="{{ budget.utilization_percentage|floatformat:0 }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ budget.utilization_percentage|floatformat:0 }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-{% if budget.status == 'ACTIVE' %}success{% elif budget.status == 'INACTIVE' %}secondary{% else %}warning{% endif %}">
+                                    {{ budget.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'cost_center_management:cost_center_budget_detail' budget.pk %}" 
+                                       class="btn btn-sm btn-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'cost_center_management:cost_center_budget_update' budget.pk %}" 
+                                       class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if budget.status == 'ACTIVE' %}
+                                    <a href="{% url 'cost_center_management:cost_center_budget_delete' budget.pk %}" 
+                                       class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Budget pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_type %}&budget_type={{ request.GET.budget_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_type %}&budget_type={{ request.GET.budget_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_type %}&budget_type={{ request.GET.budget_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_type %}&budget_type={{ request.GET.budget_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.fiscal_year %}&fiscal_year={{ request.GET.fiscal_year }}{% endif %}{% if request.GET.budget_type %}&budget_type={{ request.GET.budget_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No budgets found</h5>
+                <p class="text-muted">No budgets match your search criteria.</p>
+                <a href="{% url 'cost_center_management:cost_center_budget_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus mr-1"></i>Create First Budget
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_management/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Initialize dataTable for better table functionality
+    if ($('#budgetsTable').length) {
+        $('#budgetsTable').DataTable({
+            "pageLength": 25,
+            "order": [[1, "desc"], [0, "asc"]],
+            "responsive": true,
+            "language": {
+                "search": "Search budgets:",
+                "lengthMenu": "Show _MENU_ budgets per page",
+                "info": "Showing _START_ to _END_ of _TOTAL_ budgets"
+            }
+        });
+    }
+});
+
+// Export functions
+function exportToExcel() {
+    // Implementation for Excel export
+    alert('Excel export functionality will be implemented here');
+}
+
+function exportToPDF() {
+    // Implementation for PDF export
+    alert('PDF export functionality will be implemented here');
+}
+</script>
+{% endblock %}

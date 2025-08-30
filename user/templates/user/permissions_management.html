@@ -1,0 +1,145 @@
+{% extends 'user/base.html' %}
+{% load static %}
+
+{% block title %}Permissions Management{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/user/permissions_management.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-shield-lock me-2"></i>
+                        Permissions Management
+                    </h4>
+                    <a href="{% url 'user:user_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Users
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="permissions-container">
+                        <!-- Left Panel: User List -->
+                        <div class="user-panel">
+                            <div class="panel-header">
+                                <h5><i class="bi bi-people me-2"></i>Select User</h5>
+                                <div class="search-box">
+                                    <input type="text" id="userSearch" class="form-control form-control-sm" placeholder="Search users...">
+                                </div>
+                            </div>
+                            <div class="panel-content">
+                                <div class="user-list" id="userList">
+                                    {% for user in users %}
+                                    <div class="user-item" data-user-id="{{ user.id }}" data-username="{{ user.username }}">
+                                        <div class="user-avatar">
+                                            {% if user.profile.profile_picture %}
+                                                <img src="{{ user.profile.profile_picture.url }}" alt="{{ user.username }}">
+                                            {% else %}
+                                                <i class="bi bi-person-circle"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="user-info">
+                                            <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                                            <div class="user-details">{{ user.email }}</div>
+                                            {% if user.profile.employee_id %}
+                                                <div class="user-id">ID: {{ user.profile.employee_id }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Middle Panel: Main Menu -->
+                        <div class="menu-panel">
+                            <div class="panel-header">
+                                <h5><i class="bi bi-grid-3x3-gap me-2"></i>Main Menu</h5>
+                                <div class="selected-user-info" id="selectedUserInfo" style="display: none;">
+                                    <small class="text-muted">Managing permissions for: <span id="selectedUserName"></span></small>
+                                </div>
+                            </div>
+                            <div class="panel-content">
+                                <div class="menu-grid" id="menuGrid">
+                                    {% for module, permissions in menu_structure.items %}
+                                    <div class="menu-item" data-module="{{ module }}">
+                                        <div class="menu-icon">
+                                            {% if module == 'Master' %}
+                                                <i class="bi bi-database"></i>
+                                            {% elif module == 'Warehouse' %}
+                                                <i class="bi bi-building"></i>
+                                            {% elif module == 'Freight' %}
+                                                <i class="bi bi-truck"></i>
+                                            {% elif module == 'Accounting' %}
+                                                <i class="bi bi-calculator"></i>
+                                            {% elif module == 'HR' %}
+                                                <i class="bi bi-people"></i>
+                                            {% elif module == 'Admin' %}
+                                                <i class="bi bi-gear"></i>
+                                            {% elif module == 'Settings' %}
+                                                <i class="bi bi-sliders"></i>
+                                            {% elif module == 'Utilities' %}
+                                                <i class="bi bi-tools"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="menu-title">{{ module }}</div>
+                                        <div class="menu-count">{{ permissions|length }} items</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Submenu Permissions -->
+                        <div class="permissions-panel">
+                            <div class="panel-header">
+                                <h5 id="permissionsTitle"><i class="bi bi-shield-check me-2"></i>Select a Module</h5>
+                                <div class="permission-actions" id="permissionActions" style="display: none;">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                                        <i class="bi bi-check-all me-1"></i>Select All
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAllBtn">
+                                        <i class="bi bi-x-circle me-1"></i>Clear All
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="panel-content">
+                                <div class="permissions-list" id="permissionsList">
+                                    <div class="no-selection">
+                                        <i class="bi bi-arrow-left-circle"></i>
+                                        <p>Select a user and module to manage permissions</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel-footer" id="panelFooter" style="display: none;">
+                                <button type="button" class="btn btn-success" id="savePermissionsBtn">
+                                    <i class="bi bi-check-lg me-1"></i>
+                                    Save Permissions
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script id="menuStructure" type="application/json">
+{{ menu_structure_json|safe }}
+</script>
+
+<script id="userPermissions" type="application/json">
+{{ user_permissions|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/user/permissions_management.js' %}"></script>
+{% endblock %}

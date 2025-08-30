@@ -1,0 +1,231 @@
+{% extends 'tax_summary/base.html' %}
+{% load static %}
+
+{% block title %}Tax Summary Dashboard{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block tax_summary_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-chart-pie text-primary"></i>
+                    Tax Summary Dashboard
+                </h1>
+                <div class="page-actions">
+                    <a href="{% url 'tax_summary:report_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create New Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-invoice-dollar fa-2x text-primary mb-2"></i>
+                    <h5 class="card-title">Total Reports</h5>
+                    <p class="card-text h3 text-primary">{{ total_reports }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-down fa-2x text-success mb-2"></i>
+                    <h5 class="card-title">Total Input Tax</h5>
+                    <p class="card-text h3 text-success">{{ total_input_tax|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-up fa-2x text-info mb-2"></i>
+                    <h5 class="card-title">Total Output Tax</h5>
+                    <p class="card-text h3 text-info">{{ total_output_tax|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-calculator fa-2x text-danger mb-2"></i>
+                    <h5 class="card-title">Net VAT Payable</h5>
+                    {% if net_vat_payable >= 0 %}
+                        <p class="card-text h3 text-danger">{{ net_vat_payable|floatformat:2 }}</p>
+                    {% else %}
+                        <p class="card-text h3 text-success">{{ net_vat_payable|floatformat:2 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports and Transactions -->
+    <div class="row">
+        <!-- Recent Reports -->
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i>
+                        Recent Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Report Name</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Generated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in recent_reports %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ report.report_name }}</strong>
+                                            <br><small class="text-muted">{{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ report.get_report_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            {% if report.status == 'draft' %}
+                                                <span class="badge bg-warning">Draft</span>
+                                            {% elif report.status == 'generated' %}
+                                                <span class="badge bg-success">Generated</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ report.get_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ report.generated_at|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'tax_summary:report_detail' report.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'tax_summary:report_update' report.pk %}" 
+                                                   class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No reports found</h5>
+                            <p class="text-muted">Create your first tax summary report to get started.</p>
+                            <a href="{% url 'tax_summary:report_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First Report
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exchange-alt"></i>
+                        Recent Transactions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice</th>
+                                        <th>Party</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>VAT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in recent_transactions %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ transaction.invoice_number }}</strong>
+                                            <br><small class="text-muted">{{ transaction.transaction_date|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>{{ transaction.party_name }}</td>
+                                        <td>
+                                            {% if transaction.transaction_type == 'input' %}
+                                                <span class="badge bg-success">Input</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Output</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ transaction.currency }} {{ transaction.taxable_amount|floatformat:2 }}</td>
+                                        <td>{{ transaction.currency }} {{ transaction.vat_amount|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No transactions found</h5>
+                            <p class="text-muted">Generate a report to see transaction details.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Summary Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i>
+                        Monthly Summary ({{ current_year }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if monthly_summary %}
+                        <canvas id="monthlyChart" width="400" height="200"></canvas>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No monthly data available</h5>
+                            <p class="text-muted">Generate reports to see monthly trends.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

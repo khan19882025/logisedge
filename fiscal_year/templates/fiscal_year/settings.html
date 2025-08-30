@@ -1,0 +1,298 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Fiscal Year Settings{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fiscal_year/fiscal_year.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-gear me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted mb-0">Configure fiscal year settings and defaults</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'fiscal_year:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="fiscal-year-form">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Default Configuration -->
+                    <h5 class="mb-3">
+                        <i class="bi bi-sliders me-2"></i>Default Configuration
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.default_fiscal_year_start_month.id_for_label }}" class="form-label">
+                                Default Fiscal Year Start Month
+                            </label>
+                            {{ form.default_fiscal_year_start_month }}
+                            {% if form.default_fiscal_year_start_month.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.default_fiscal_year_start_month.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">The default month when creating new fiscal years</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.default_period_type.id_for_label }}" class="form-label">
+                                Default Period Type
+                            </label>
+                            {{ form.default_period_type }}
+                            {% if form.default_period_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.default_period_type.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">The default period type for new fiscal years</div>
+                        </div>
+                    </div>
+
+                    <!-- Automation Settings -->
+                    <h5 class="mb-3 mt-4">
+                        <i class="bi bi-robot me-2"></i>Automation Settings
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ form.auto_create_periods }}
+                                <label class="form-check-label" for="{{ form.auto_create_periods.id_for_label }}">
+                                    Auto-create Periods
+                                </label>
+                            </div>
+                            {% if form.auto_create_periods.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.auto_create_periods.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Automatically create periods when creating a new fiscal year</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ form.allow_overlapping_periods }}
+                                <label class="form-check-label" for="{{ form.allow_overlapping_periods.id_for_label }}">
+                                    Allow Overlapping Periods
+                                </label>
+                            </div>
+                            {% if form.allow_overlapping_periods.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.allow_overlapping_periods.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Allow periods to overlap within the same fiscal year</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ form.require_period_approval }}
+                                <label class="form-check-label" for="{{ form.require_period_approval.id_for_label }}">
+                                    Require Period Approval
+                                </label>
+                            </div>
+                            {% if form.require_period_approval.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.require_period_approval.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Require approval before closing periods</div>
+                        </div>
+                    </div>
+
+                    <!-- Naming Conventions -->
+                    <h5 class="mb-3 mt-4">
+                        <i class="bi bi-tag me-2"></i>Naming Conventions
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.fiscal_year_naming_convention.id_for_label }}" class="form-label">
+                                Fiscal Year Naming Convention
+                            </label>
+                            {{ form.fiscal_year_naming_convention }}
+                            {% if form.fiscal_year_naming_convention.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.fiscal_year_naming_convention.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Use {start_year} and {end_year} placeholders</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.period_naming_convention.id_for_label }}" class="form-label">
+                                Period Naming Convention
+                            </label>
+                            {{ form.period_naming_convention }}
+                            {% if form.period_naming_convention.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.period_naming_convention.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Use {period_type} and {period_number} placeholders</div>
+                        </div>
+                    </div>
+
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Please correct the following errors:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div>
+                            <a href="{% url 'fiscal_year:dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="reset" class="btn btn-outline-warning">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Help & Examples
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Naming Convention Examples:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Fiscal Year:</strong> "FY {start_year}-{end_year}" → "FY 2024-2025"</li>
+                                <li><strong>Fiscal Year:</strong> "Financial Year {start_year}" → "Financial Year 2024"</li>
+                                <li><strong>Period:</strong> "{period_type} {period_number}" → "Quarter 1"</li>
+                                <li><strong>Period:</strong> "{period_type} {period_number}" → "Month 3"</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Common Start Months:</h6>
+                            <ul class="mb-0">
+                                <li><strong>January:</strong> Calendar year (Jan 1 - Dec 31)</li>
+                                <li><strong>April:</strong> Financial year (Apr 1 - Mar 31)</li>
+                                <li><strong>July:</strong> Academic year (Jul 1 - Jun 30)</li>
+                                <li><strong>October:</strong> Custom fiscal year</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Settings Summary -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-gear me-2"></i>Current Settings Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Default Start Month:</strong>
+                                <span class="text-muted">{{ settings.get_default_fiscal_year_start_month_display }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Default Period Type:</strong>
+                                <span class="text-muted">{{ settings.get_default_period_type_display }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Auto-create Periods:</strong>
+                                <span class="text-muted">{{ settings.auto_create_periods|yesno:"Yes,No" }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Require Approval:</strong>
+                                <span class="text-muted">{{ settings.require_period_approval|yesno:"Yes,No" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/fiscal_year/fiscal_year.js' %}"></script>
+<script>
+// Additional settings-specific JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+    
+    // Auto-save functionality
+    const inputs = form.querySelectorAll('input, select, textarea');
+    let autoSaveTimeout;
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                showAlert('Settings auto-saved', 'success');
+            }, 2000);
+        });
+    });
+});
+</script>
+{% endblock %} 

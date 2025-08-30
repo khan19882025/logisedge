@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Freight Quotations{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'freight_quotation/css/quotation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-invoice-dollar me-2"></i>Freight Quotations
+        </h1>
+        <div>
+            <a href="{% url 'freight_quotation:quotation_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Quotation
+            </a>
+            <a href="{% url 'freight_quotation:statistics' %}" class="btn btn-outline-info">
+                <i class="fas fa-chart-bar me-2"></i>Statistics
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-search me-2"></i>Search & Filters
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="{{ search_form.quotation_number.id_for_label }}" class="form-label">Quotation Number</label>
+                    {{ search_form.quotation_number }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ search_form.customer.id_for_label }}" class="form-label">Customer</label>
+                    {{ search_form.customer }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.status.id_for_label }}" class="form-label">Status</label>
+                    {{ search_form.status }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.mode_of_transport.id_for_label }}" class="form-label">Mode</label>
+                    {{ search_form.mode_of_transport }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.date_from.id_for_label }}" class="form-label">Date From</label>
+                    {{ search_form.date_from }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.date_to.id_for_label }}" class="form-label">Date To</label>
+                    {{ search_form.date_to }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                    <a href="{% url 'freight_quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quotations List -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i>Quotations ({{ page_obj.paginator.count }})
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if quotations %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Quotation #</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Origin → Destination</th>
+                                <th>Mode</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for quotation in quotations %}
+                            <tr>
+                                <td>
+                                    <strong>{{ quotation.quotation_number }}</strong>
+                                </td>
+                                <td>{{ quotation.quotation_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ quotation.customer.name }}</div>
+                                    <small class="text-muted">{{ quotation.customer.email }}</small>
+                                </td>
+                                <td>
+                                    <div>{{ quotation.origin }}</div>
+                                    <small class="text-muted">→ {{ quotation.destination }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ quotation.get_mode_of_transport_display }}</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ quotation.currency }} {{ quotation.grand_total|floatformat:2 }}</div>
+                                    <small class="text-muted">Valid until {{ quotation.validity_date|date:"M d, Y" }}</small>
+                                </td>
+                                <td>
+                                    {% if quotation.status == 'draft' %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                    {% elif quotation.status == 'sent' %}
+                                        <span class="badge bg-primary">Sent</span>
+                                    {% elif quotation.status == 'accepted' %}
+                                        <span class="badge bg-success">Accepted</span>
+                                    {% elif quotation.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% elif quotation.status == 'cancelled' %}
+                                        <span class="badge bg-warning">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ quotation.created_by.get_full_name|default:quotation.created_by.username }}</div>
+                                    <small class="text-muted">{{ quotation.created_at|date:"M d, Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'freight_quotation:quotation_detail' quotation.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'freight_quotation:quotation_edit' quotation.pk %}" 
+                                           class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'freight_quotation:quotation_clone' quotation.pk %}" 
+                                           class="btn btn-sm btn-outline-info" title="Clone">
+                                            <i class="fas fa-copy"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete('{{ quotation.quotation_number }}', {{ quotation.pk }})" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Quotations pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No quotations found</h4>
+                    <p class="text-muted">Create your first freight quotation to get started.</p>
+                    <a href="{% url 'freight_quotation:quotation_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Quotation
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete quotation <strong id="quotationNumber"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="deleteConfirmBtn" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'freight_quotation/js/quotation.js' %}"></script>
+<script>
+function confirmDelete(quotationNumber, quotationId) {
+    document.getElementById('quotationNumber').textContent = quotationNumber;
+    document.getElementById('deleteConfirmBtn').href = `/freight-quotation/${quotationId}/delete/`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %} 

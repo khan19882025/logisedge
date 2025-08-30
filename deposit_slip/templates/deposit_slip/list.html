@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Deposit Slips{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'deposit_slip/css/deposit_slip.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-money-bill-wave text-primary"></i>
+                    Deposit Slips
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Deposit Slips</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_count }}</h4>
+                            <p class="card-text">Total Slips</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-invoice fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_amount|floatformat:2 }}</h4>
+                            <p class="card-text">Total Amount (AED)</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="draft-count">-</h4>
+                            <p class="card-text">Draft Slips</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-edit fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title" id="available-amount">-</h4>
+                            <p class="card-text">Available for Deposit</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter"></i>
+                        Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filter-form">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label for="{{ filter_form.date_from.id_for_label }}" class="form-label">From Date</label>
+                                {{ filter_form.date_from }}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ filter_form.date_to.id_for_label }}" class="form-label">To Date</label>
+                                {{ filter_form.date_to }}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ filter_form.status.id_for_label }}" class="form-label">Status</label>
+                                {{ filter_form.status }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ filter_form.deposit_to.id_for_label }}" class="form-label">Bank Account</label>
+                                {{ filter_form.deposit_to }}
+                            </div>
+                            <div class="col-md-2">
+                                <label for="{{ filter_form.search.id_for_label }}" class="form-label">Search</label>
+                                {{ filter_form.search }}
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deposit Slips Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list"></i>
+                            Deposit Slips
+                        </h5>
+                        <a href="{% url 'deposit_slip:create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> New Deposit Slip
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Slip Number</th>
+                                    <th>Deposit Date</th>
+                                    <th>Bank Account</th>
+                                    <th>Reference</th>
+                                    <th>Total Amount</th>
+                                    <th>Items</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for deposit_slip in page_obj %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'deposit_slip:detail' deposit_slip.pk %}" class="text-primary fw-bold">
+                                            {{ deposit_slip.slip_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ deposit_slip.deposit_date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-university"></i>
+                                            {{ deposit_slip.deposit_to.name }}
+                                        </span>
+                                    </td>
+                                    <td>{{ deposit_slip.reference_number|default:"-" }}</td>
+                                    <td class="text-end fw-bold">{{ deposit_slip.total_amount|floatformat:2 }} AED</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ deposit_slip.total_items }}</span>
+                                    </td>
+                                    <td>
+                                        {% if deposit_slip.status == 'draft' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-edit"></i> Draft
+                                            </span>
+                                        {% elif deposit_slip.status == 'submitted' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-paper-plane"></i> Submitted
+                                            </span>
+                                        {% elif deposit_slip.status == 'confirmed' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Confirmed
+                                            </span>
+                                        {% elif deposit_slip.status == 'cancelled' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times"></i> Cancelled
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ deposit_slip.created_by.get_full_name|default:deposit_slip.created_by.username }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'deposit_slip:detail' deposit_slip.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if deposit_slip.can_edit %}
+                                            <a href="{% url 'deposit_slip:edit' deposit_slip.pk %}" 
+                                               class="btn btn-sm btn-outline-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if deposit_slip.can_submit %}
+                                            <button type="button" class="btn btn-sm btn-outline-info submit-slip" 
+                                                    data-pk="{{ deposit_slip.pk }}" title="Submit">
+                                                <i class="fas fa-paper-plane"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if deposit_slip.can_confirm %}
+                                            <button type="button" class="btn btn-sm btn-outline-success confirm-slip" 
+                                                    data-pk="{{ deposit_slip.pk }}" title="Confirm">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <p>No deposit slips found.</p>
+                                        <a href="{% url 'deposit_slip:create' %}" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Create First Deposit Slip
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Deposit slips pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+<script src="{% static 'deposit_slip/js/deposit_slip.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,615 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ task.name }} - Execution Logs - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'auto_task_scheduler/css/task_scheduler.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="task-logs-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-file-alt"></i>
+                Execution Logs
+            </h1>
+            <p class="page-subtitle">{{ task.name }}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'auto_task_scheduler:task_scheduler_detail' task.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Task
+            </a>
+            <a href="{% url 'auto_task_scheduler:task_scheduler_list' %}" class="btn btn-outline">
+                <i class="fas fa-list"></i>
+                All Tasks
+            </a>
+        </div>
+    </div>
+
+    <!-- Task Summary -->
+    <div class="task-summary">
+        <div class="summary-card">
+            <div class="summary-header">
+                <h3><i class="fas fa-info-circle"></i> Task Summary</h3>
+            </div>
+            <div class="summary-content">
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <label>Task Type:</label>
+                        <span class="task-type-badge type-{{ task.task_type }}">
+                            {{ task.get_task_type_display }}
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Status:</label>
+                        <span class="status-badge status-{{ task.status }}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Schedule:</label>
+                        <span>{{ task.get_schedule_type_display }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Next Run:</label>
+                        <span>
+                            {% if task.next_run_at %}
+                                {{ task.next_run_at|date:"M d, Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">Not scheduled</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="logs-controls">
+        <div class="controls-row">
+            <div class="search-box">
+                <input type="text" id="searchLogs" placeholder="Search logs..." onkeyup="filterLogs()">
+                <i class="fas fa-search"></i>
+            </div>
+            
+            <div class="filter-controls">
+                <select id="statusFilter" onchange="filterLogs()">
+                    <option value="">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="running">Running</option>
+                    <option value="pending">Pending</option>
+                </select>
+                
+                <select id="dateFilter" onchange="filterLogs()">
+                    <option value="">All Dates</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+                
+                <button class="btn btn-sm btn-secondary" onclick="exportLogs()">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+        
+        <div class="view-controls">
+            <div class="view-toggle">
+                <button class="btn btn-sm" onclick="setViewMode('table')" id="tableViewBtn">
+                    <i class="fas fa-table"></i> Table
+                </button>
+                <button class="btn btn-sm" onclick="setViewMode('timeline')" id="timelineViewBtn">
+                    <i class="fas fa-stream"></i> Timeline
+                </button>
+            </div>
+            
+            <div class="refresh-controls">
+                <button class="btn btn-sm btn-outline" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+                <label class="auto-refresh">
+                    <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                    Auto-refresh (30s)
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Container -->
+    <div class="logs-container" id="logsContainer">
+        {% if logs %}
+            <!-- Table View -->
+            <div class="logs-table" id="logsTable">
+                <div class="table-header">
+                    <div class="table-cell">Execution Time</div>
+                    <div class="table-cell">Status</div>
+                    <div class="table-cell">Duration</div>
+                    <div class="table-cell">Output</div>
+                    <div class="table-cell">Error</div>
+                    <div class="table-cell">Actions</div>
+                </div>
+                
+                {% for log in logs %}
+                <div class="table-row status-{{ log.status }}" data-status="{{ log.status }}" data-date="{{ log.started_at|date:'Y-m-d' }}">
+                    <div class="table-cell">
+                        <div class="execution-time">
+                            <div class="date">{{ log.started_at|date:"M d, Y" }}</div>
+                            <div class="time">{{ log.started_at|time:"H:i:s" }}</div>
+                        </div>
+                    </div>
+                    <div class="table-cell">
+                        <span class="status-badge status-{{ log.status }}">
+                            {{ log.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="table-cell">
+                        {% if log.execution_time %}
+                            <span class="duration">{{ log.execution_time|floatformat:2 }}s</span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </div>
+                    <div class="table-cell">
+                        <div class="output-preview">
+                            {% if log.output_message %}
+                                <div class="output-text">{{ log.output_message|truncatechars:80 }}</div>
+                            {% else %}
+                                <span class="text-muted">No output</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="table-cell">
+                        <div class="error-preview">
+                            {% if log.error_message %}
+                                <div class="error-text">{{ log.error_message|truncatechars:80 }}</div>
+                            {% else %}
+                                <span class="text-muted">No errors</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="table-cell">
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-icon" onclick="viewLogDetails('{{ log.id }}')" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if log.output_message %}
+                            <button class="btn btn-sm btn-icon" onclick="copyOutput('{{ log.id }}')" title="Copy Output">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Timeline View (Hidden by default) -->
+            <div class="logs-timeline" id="logsTimeline" style="display: none;">
+                {% for log in logs %}
+                <div class="timeline-item status-{{ log.status }}" data-status="{{ log.status }}" data-date="{{ log.started_at|date:'Y-m-d' }}">
+                    <div class="timeline-marker">
+                        <i class="fas fa-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <div class="timeline-time">
+                                {{ log.started_at|date:"M d, Y H:i:s" }}
+                            </div>
+                            <div class="timeline-status">
+                                <span class="status-badge status-{{ log.status }}">
+                                    {{ log.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-body">
+                            {% if log.execution_time %}
+                            <div class="timeline-duration">
+                                Duration: {{ log.execution_time|floatformat:2 }}s
+                            </div>
+                            {% endif %}
+                            
+                            {% if log.output_message %}
+                            <div class="timeline-output">
+                                <strong>Output:</strong>
+                                <div class="output-text">{{ log.output_message|truncatechars:150 }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if log.error_message %}
+                            <div class="timeline-error">
+                                <strong>Error:</strong>
+                                <div class="error-text">{{ log.error_message|truncatechars:150 }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="timeline-actions">
+                            <button class="btn btn-sm btn-outline" onclick="viewLogDetails('{{ log.id }}')">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3>No Execution Logs</h3>
+                <p>This task hasn't been executed yet, or no logs are available.</p>
+                <button class="btn btn-primary" onclick="runTaskNow('{{ task.id }}')">
+                    <i class="fas fa-play"></i>
+                    Run Task Now
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if logs.has_other_pages %}
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Showing {{ logs.start_index }} to {{ logs.end_index }} of {{ logs.paginator.count }} logs
+        </div>
+        
+        <div class="pagination">
+            {% if logs.has_previous %}
+                <a href="?page=1" class="page-link">&laquo; First</a>
+                <a href="?page={{ logs.previous_page_number }}" class="page-link">&lsaquo; Previous</a>
+            {% endif %}
+            
+            {% for num in logs.paginator.page_range %}
+                {% if logs.number == num %}
+                    <span class="page-link current">{{ num }}</span>
+                {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                    <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if logs.has_next %}
+                <a href="?page={{ logs.next_page_number }}" class="page-link">Next &rsaquo;</a>
+                <a href="?page={{ logs.paginator.num_pages }}" class="page-link">Last &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Log Statistics -->
+    {% if logs %}
+    <div class="logs-statistics">
+        <div class="stats-header">
+            <h3><i class="fas fa-chart-bar"></i> Execution Statistics</h3>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">{{ logs|length }}</div>
+                <div class="stat-label">Total Logs</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number success">
+                    {{ logs|dictsort:"status"|length|default:0 }}
+                </div>
+                <div class="stat-label">Successful</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number failure">
+                    {{ logs|dictsort:"status"|length|default:0 }}
+                </div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">
+                    {% if logs %}
+                        {% for log in logs %}
+                            {% if log.execution_time %}
+                                {{ log.execution_time|add:0|floatformat:2 }}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        0.00
+                    {% endif %}
+                </div>
+                <div class="stat-label">Avg Duration (s)</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Log Details Modal -->
+<div id="logDetailsModal" class="modal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-alt"></i> Execution Log Details</h3>
+            <span class="close" onclick="closeLogDetailsModal()">&times;</span>
+        </div>
+        <div class="modal-body" id="logDetailsContent">
+            <!-- Log details will be loaded here -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeLogDetailsModal()">Close</button>
+            <button type="button" class="btn btn-primary" onclick="downloadLog('{{ log.id }}')">
+                <i class="fas fa-download"></i> Download
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'auto_task_scheduler/js/task_scheduler.js' %}"></script>
+<script>
+    let currentViewMode = 'table';
+    let autoRefreshInterval = null;
+    
+    // Initialize page when loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTaskLogs();
+    });
+    
+    function initializeTaskLogs() {
+        // Set default view mode
+        setViewMode('table');
+        
+        // Apply initial filters
+        filterLogs();
+        
+        // Set up auto-refresh if enabled
+        if (document.getElementById('autoRefresh').checked) {
+            startAutoRefresh();
+        }
+    }
+    
+    function setViewMode(mode) {
+        currentViewMode = mode;
+        
+        if (mode === 'table') {
+            document.getElementById('logsTable').style.display = 'block';
+            document.getElementById('logsTimeline').style.display = 'none';
+            document.getElementById('tableViewBtn').classList.add('active');
+            document.getElementById('timelineViewBtn').classList.remove('active');
+        } else {
+            document.getElementById('logsTable').style.display = 'none';
+            document.getElementById('logsTimeline').style.display = 'block';
+            document.getElementById('tableViewBtn').classList.remove('active');
+            document.getElementById('timelineViewBtn').classList.add('active');
+        }
+    }
+    
+    function filterLogs() {
+        const searchTerm = document.getElementById('searchLogs').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const dateFilter = document.getElementById('dateFilter').value;
+        
+        const logElements = document.querySelectorAll('.table-row, .timeline-item');
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        logElements.forEach(element => {
+            let show = true;
+            
+            // Search filter
+            if (searchTerm) {
+                const outputText = element.querySelector('.output-text')?.textContent.toLowerCase() || '';
+                const errorText = element.querySelector('.error-text')?.textContent.toLowerCase() || '';
+                if (!outputText.includes(searchTerm) && !errorText.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+            
+            // Status filter
+            if (statusFilter && element.dataset.status !== statusFilter) {
+                show = false;
+            }
+            
+            // Date filter
+            if (dateFilter) {
+                const logDate = element.dataset.date;
+                if (dateFilter === 'today' && logDate !== today) {
+                    show = false;
+                } else if (dateFilter === 'yesterday' && logDate !== yesterday) {
+                    show = false;
+                } else if (dateFilter === 'week' && logDate < weekAgo) {
+                    show = false;
+                } else if (dateFilter === 'month' && logDate < monthAgo) {
+                    show = false;
+                }
+            }
+            
+            element.style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    function refreshLogs() {
+        location.reload();
+    }
+    
+    function toggleAutoRefresh() {
+        if (document.getElementById('autoRefresh').checked) {
+            startAutoRefresh();
+        } else {
+            stopAutoRefresh();
+        }
+    }
+    
+    function startAutoRefresh() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+        autoRefreshInterval = setInterval(refreshLogs, 30000); // 30 seconds
+    }
+    
+    function stopAutoRefresh() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+    
+    function exportLogs() {
+        // Implementation for exporting logs
+        showNotification('Export functionality coming soon!', 'info');
+    }
+    
+    function runTaskNow(taskId) {
+        showLoading();
+        
+        fetch(`/utilities/auto-task-scheduler/api/scheduled-tasks/${taskId}/run_manually/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.status === 'success') {
+                showNotification('Task started successfully!', 'success');
+                // Refresh the page after a short delay
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification(data.message || 'Failed to start task', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showNotification('Error starting task: ' + error.message, 'error');
+        });
+    }
+    
+    function viewLogDetails(logId) {
+        // Load log details via AJAX and show in modal
+        fetch(`/utilities/auto-task-scheduler/api/task-logs/${logId}/`)
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('logDetailsContent');
+            content.innerHTML = `
+                <div class="log-details">
+                    <div class="detail-section">
+                        <h4>Execution Information</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Started:</label>
+                                <span>${data.started_at}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Ended:</label>
+                                <span>${data.ended_at || 'Still running'}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Duration:</label>
+                                <span>${data.execution_time ? data.execution_time + 's' : 'N/A'}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Status:</label>
+                                <span class="status-badge status-${data.status}">${data.get_status_display}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Celery Task ID:</label>
+                                <span>${data.celery_task_id || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${data.output_message ? `
+                    <div class="detail-section">
+                        <h4>Output</h4>
+                        <pre class="output-content">${data.output_message}</pre>
+                    </div>
+                    ` : ''}
+                    
+                    ${data.error_message ? `
+                    <div class="detail-section">
+                        <h4>Error Details</h4>
+                        <pre class="error-content">${data.error_message}</pre>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.getElementById('logDetailsModal').style.display = 'block';
+        })
+        .catch(error => {
+            showNotification('Error loading log details: ' + error.message, 'error');
+        });
+    }
+    
+    function closeLogDetailsModal() {
+        document.getElementById('logDetailsModal').style.display = 'none';
+    }
+    
+    function copyOutput(logId) {
+        // Implementation for copying output to clipboard
+        showNotification('Copy functionality coming soon!', 'info');
+    }
+    
+    function downloadLog(logId) {
+        // Implementation for downloading log as file
+        showNotification('Download functionality coming soon!', 'info');
+    }
+    
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+    
+    function hideLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+    
+    function showNotification(message, type) {
+        // Simple notification implementation
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Clean up auto-refresh when page is unloaded
+    window.addEventListener('beforeunload', function() {
+        stopAutoRefresh();
+    });
+</script>
+{% endblock %}

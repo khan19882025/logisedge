@@ -1,0 +1,107 @@
+{% extends 'tax_summary/base.html' %}
+{% load static %}
+
+{% block title %}Generate Tax Summary Report - {{ report.report_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Generate Report</li>
+{% endblock %}
+
+{% block tax_content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        Generate Tax Summary Report
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Report Details</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Report Name:</strong></td>
+                                    <td>{{ report.report_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Report Type:</strong></td>
+                                    <td>{{ report.get_report_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date Range:</strong></td>
+                                    <td>{{ report.start_date }} to {{ report.end_date }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Currency:</strong></td>
+                                    <td>{{ report.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{% if report.status == 'draft' %}secondary{% elif report.status == 'generated' %}success{% else %}info{% endif %}">
+                                            {{ report.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Current Totals</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Input Tax:</strong></td>
+                                    <td class="text-right">{{ report.total_input_tax|floatformat:2 }} {{ report.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Output Tax:</strong></td>
+                                    <td class="text-right">{{ report.total_output_tax|floatformat:2 }} {{ report.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Net VAT Payable:</strong></td>
+                                    <td class="text-right {% if report.net_vat_payable < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ report.net_vat_payable|floatformat:2 }} {{ report.currency }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Input Transactions:</strong></td>
+                                    <td class="text-right">{{ report.input_transactions_count }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Output Transactions:</strong></td>
+                                    <td class="text-right">{{ report.output_transactions_count }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> This will process all tax transactions within the specified date range and currency. 
+                        Existing transactions for this report will be cleared and regenerated.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-play"></i>
+                                Generate Report
+                            </button>
+                            <a href="{% url 'tax_summary:report_detail' pk=report.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Report
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

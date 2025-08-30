@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Workflow Types{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'approval_workflow/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bx bx-category"></i> Workflow Types
+                </h4>
+                <div class="page-title-right">
+                    <a href="{% url 'approval_workflow:workflow_type_create' %}" class="btn btn-primary">
+                        <i class="bx bx-plus"></i> New Workflow Type
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="search" 
+                                   placeholder="Search workflow types..." 
+                                   value="{{ request.GET.search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="status">
+                                <option value="">All Status</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bx bx-search"></i> Search
+                            </button>
+                            <a href="{% url 'approval_workflow:workflow_type_list' %}" class="btn btn-secondary">
+                                <i class="bx bx-refresh"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Types List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Workflow Types ({{ page_obj.paginator.count }})</h4>
+                </div>
+                <div class="card-body">
+                    {% if workflow_types %}
+                        <div class="table-responsive">
+                            <table class="table table-centered table-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Auto Approval Threshold</th>
+                                        <th>Max Approval Days</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for workflow_type in workflow_types %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ workflow_type.name }}</strong>
+                                        </td>
+                                        <td>
+                                            {{ workflow_type.description|truncatechars:50|default:"No description" }}
+                                        </td>
+                                        <td>
+                                            {% if workflow_type.auto_approval_threshold %}
+                                                ${{ workflow_type.auto_approval_threshold }}
+                                            {% else %}
+                                                <span class="text-muted">No threshold</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ workflow_type.max_approval_days }} days
+                                        </td>
+                                        <td>
+                                            {% if workflow_type.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ workflow_type.created_at|date:"M d, Y" }}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'approval_workflow:workflow_type_update' workflow_type.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bx bx-edit"></i>
+                                                </a>
+                                                <a href="#" class="btn btn-sm btn-outline-info" 
+                                                   data-bs-toggle="tooltip" title="View Details">
+                                                    <i class="bx bx-detail"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <div class="row">
+                            <div class="col-12">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination justify-content-center">
+                                        {% if page_obj.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                                    <i class="bx bx-chevrons-left"></i>
+                                                </a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                                    <i class="bx bx-chevron-left"></i>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for num in page_obj.paginator.page_range %}
+                                            {% if page_obj.number == num %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ num }}</span>
+                                                </li>
+                                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if page_obj.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                                    <i class="bx bx-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                                    <i class="bx bx-chevrons-right"></i>
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bx bx-category font-size-48 text-muted"></i>
+                            <h5 class="mt-3">No workflow types found</h5>
+                            <p class="text-muted">Get started by creating your first workflow type.</p>
+                            <a href="{% url 'approval_workflow:workflow_type_create' %}" class="btn btn-primary">
+                                <i class="bx bx-plus"></i> Create Workflow Type
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'approval_workflow/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    initTooltips();
+    
+    // Initialize search functionality
+    initSearch();
+});
+
+function initSearch() {
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.form.submit();
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

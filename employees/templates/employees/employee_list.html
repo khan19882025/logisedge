@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employee Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/employees/employees.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-people me-2"></i>Employee Management
+            </h1>
+            <p class="text-muted">Manage your organization's employees</p>
+        </div>
+        <div>
+            <a href="{% url 'employees:employee_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add Employee
+            </a>
+            <a href="{% url 'employees:export_employees' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-download me-2"></i>Export
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-search me-2"></i>Search & Filter</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    {{ form.search }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.department }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.designation }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.status }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.employment_type }}
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Employees
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_employees }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-people fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Employees
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ page_obj.paginator.count|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-person-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Departments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ form.department.queryset.count }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Showing
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ page_obj.start_index }}-{{ page_obj.end_index }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-list-ul fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Employee List</h6>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="employeeTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Designation</th>
+                            <th>Email</th>
+                            <th>Mobile</th>
+                            <th>Join Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employee in page_obj %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-primary">{{ employee.employee_id }}</span>
+                            </td>
+                            <td>
+                                {% if employee.photo %}
+                                <img src="{{ employee.photo.url }}" alt="{{ employee.full_name }}" 
+                                     class="rounded-circle" width="40" height="40">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-white"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ employee.full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ employee.get_employment_type_display }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ employee.department.name }}</span>
+                            </td>
+                            <td>{{ employee.designation.title }}</td>
+                            <td>
+                                <a href="mailto:{{ employee.email }}" class="text-decoration-none">
+                                    {{ employee.email }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="tel:{{ employee.mobile }}" class="text-decoration-none">
+                                    {{ employee.mobile }}
+                                </a>
+                            </td>
+                            <td>{{ employee.join_date|date:"M d, Y" }}</td>
+                            <td>
+                                {% if employee.status == 'active' %}
+                                <span class="badge bg-success">Active</span>
+                                {% elif employee.status == 'inactive' %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% elif employee.status == 'resigned' %}
+                                <span class="badge bg-warning">Resigned</span>
+                                {% else %}
+                                <span class="badge bg-danger">Terminated</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'employees:employee_detail' employee.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'employees:employee_edit' employee.pk %}" 
+                                       class="btn btn-sm btn-outline-warning" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="confirmDelete('{{ employee.pk }}', '{{ employee.full_name }}')" 
+                                            title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Employee pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.designation %}&designation={{ request.GET.designation }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.employment_type %}&employment_type={{ request.GET.employment_type }}{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.designation %}&designation={{ request.GET.designation }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.employment_type %}&employment_type={{ request.GET.employment_type }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.designation %}&designation={{ request.GET.designation }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.employment_type %}&employment_type={{ request.GET.employment_type }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.designation %}&designation={{ request.GET.designation }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.employment_type %}&employment_type={{ request.GET.employment_type }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.designation %}&designation={{ request.GET.designation }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.employment_type %}&employment_type={{ request.GET.employment_type }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No employees found</h4>
+                <p class="text-muted">Try adjusting your search criteria or add a new employee.</p>
+                <a href="{% url 'employees:employee_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add First Employee
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete <strong id="employeeName"></strong>? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/employees/employees.js' %}"></script>
+<script>
+function confirmDelete(employeeId, employeeName) {
+    document.getElementById('employeeName').textContent = employeeName;
+    document.getElementById('deleteForm').action = `/employees/employees/${employeeId}/delete/`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Auto-submit form when department changes to update designations
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentSelect = document.querySelector('select[name="department"]');
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+});
+</script>
+{% endblock %} 

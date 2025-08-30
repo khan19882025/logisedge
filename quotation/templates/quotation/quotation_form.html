@@ -1,0 +1,376 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/quotation/quotation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ title }}</h1>
+            <p class="text-muted">Create or edit quotation details</p>
+        </div>
+        <div>
+            <a href="{% url 'quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Quotation Form -->
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="quotationForm">
+                {% csrf_token %}
+                
+                <!-- Navigation Tabs -->
+                <ul class="nav nav-tabs mb-4" id="quotationTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab">
+                            <i class="bi bi-info-circle me-2"></i>Basic Information
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="items-tab" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab">
+                            <i class="bi bi-list-ul me-2"></i>Items & Services
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab">
+                            <i class="bi bi-calculator me-2"></i>Financial Details
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="terms-tab" data-bs-toggle="tab" data-bs-target="#terms" type="button" role="tab">
+                            <i class="bi bi-file-text me-2"></i>Terms & Notes
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="quotationTabContent">
+                    <!-- Basic Information Tab -->
+                    <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.customer.id_for_label }}" class="form-label required-field">Customer</label>
+                                    {{ form.customer }}
+                                    {% if form.customer.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.customer.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Select the customer for this quotation</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.facility.id_for_label }}" class="form-label required-field">Facility</label>
+                                    {{ form.facility }}
+                                    {% if form.facility.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.facility.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Select the facility where services will be provided</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.salesman.id_for_label }}" class="form-label required-field">Salesman</label>
+                                    {{ form.salesman }}
+                                    {% if form.salesman.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.salesman.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Select the responsible salesman</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.subject.id_for_label }}" class="form-label required-field">Subject</label>
+                                    {{ form.subject }}
+                                    {% if form.subject.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.subject.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Brief subject or title for the quotation</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.valid_until.id_for_label }}" class="form-label required-field">Valid Until</label>
+                                    {{ form.valid_until }}
+                                    {% if form.valid_until.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.valid_until.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Date until which this quotation is valid</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.description.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Detailed description of the services or products</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items & Services Tab -->
+                    <div class="tab-pane fade" id="items" role="tabpanel">
+                        <div class="mb-3">
+                            <h5>Quotation Services</h5>
+                            <p class="text-muted">Add services to this quotation</p>
+                            <small class="text-info">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Tip: Press Tab on the Unit Price field to automatically add a new row
+                            </small>
+                        </div>
+                        
+                        {{ formset.management_form }}
+                        <div id="items-container">
+                            <!-- Table Header -->
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 20%;">Service</th>
+                                            <th style="width: 25%;">Description</th>
+                                            <th style="width: 8%;">Quantity</th>
+                                            <th style="width: 12%;">Unit Price</th>
+                                            <th style="width: 10%;">Total</th>
+                                            <th style="width: 8%;">VAT</th>
+                                            <th style="width: 8%;">VAT (5%)</th>
+                                            <th style="width: 12%;">Total (Inc. VAT)</th>
+                                            <th style="width: 5%;">Delete</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for form in formset %}
+                                        <tr class="item-form">
+                                            <td>
+                                                {{ form.service }}
+                                                {% if form.service.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.service.errors.0 }}
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ form.description }}
+                                                {% if form.description.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.description.errors.0 }}
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ form.quantity }}
+                                                {% if form.quantity.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.quantity.errors.0 }}
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ form.unit_price }}
+                                                {% if form.unit_price.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.unit_price.errors.0 }}
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="item-total">0.00</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="form-check">
+                                                    <input type="checkbox" class="form-check-input item-vat-checkbox" 
+                                                           name="{{ formset.prefix }}-{{ forloop.counter0 }}-vat_enabled" 
+                                                           value="true"
+                                                           {% if form.instance.pk and form.instance.vat_applied %}checked{% endif %}>
+                                                    <label class="form-check-label small">Apply VAT</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="item-vat">0.00</span>
+                                            </td>
+                                            <td>
+                                                <span class="item-total-vat">0.00</span>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if formset.can_delete %}
+                                                <div class="form-check">
+                                                    {{ form.DELETE }}
+                                                    <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">
+                                                        <i class="bi bi-trash text-danger"></i>
+                                                    </label>
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr class="item-notes-row" style="display: none;">
+                                            <td colspan="9">
+                                                <div class="mb-2">
+                                                    <label for="{{ form.notes.id_for_label }}" class="form-label small">Notes</label>
+                                                    {{ form.notes }}
+                                                    {% if form.notes.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.notes.errors.0 }}
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary" id="add-item">
+                            <i class="bi bi-plus-circle me-2"></i>Add Service
+                        </button>
+                        
+                        <!-- Debug button for testing VAT calculation -->
+                        <button type="button" class="btn btn-outline-info ms-2" id="test-vat">
+                            <i class="bi bi-bug me-2"></i>Test VAT
+                        </button>
+                    </div>
+
+                    <!-- Financial Details Tab -->
+                    <div class="tab-pane fade" id="financial" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.currency.id_for_label }}" class="form-label">Currency</label>
+                                    {{ form.currency }}
+                                    {% if form.currency.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.currency.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Currency for the quotation</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.additional_tax_amount.id_for_label }}" class="form-label">Additional Tax Amount</label>
+                                    {{ form.additional_tax_amount }}
+                                    {% if form.additional_tax_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.additional_tax_amount.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Additional tax amount (VAT is calculated automatically)</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.discount_amount.id_for_label }}" class="form-label">Discount Amount</label>
+                                    {{ form.discount_amount }}
+                                    {% if form.discount_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.discount_amount.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Discount amount to be applied</div>
+                                </div>
+
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Summary</h6>
+                                        <div class="row">
+                                            <div class="col-6">Subtotal:</div>
+                                            <div class="col-6 text-end" id="subtotal">0.00</div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">VAT (5%):</div>
+                                            <div class="col-6 text-end" id="vat-display">0.00</div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">Additional Tax:</div>
+                                            <div class="col-6 text-end" id="additional-tax-display">0.00</div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">Discount:</div>
+                                            <div class="col-6 text-end" id="discount-display">0.00</div>
+                                        </div>
+                                        <hr>
+                                        <div class="row fw-bold">
+                                            <div class="col-6">Total:</div>
+                                            <div class="col-6 text-end" id="total-display">0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terms & Notes Tab -->
+                    <div class="tab-pane fade" id="terms" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.terms_conditions.id_for_label }}" class="form-label">Terms & Conditions</label>
+                                    {{ form.terms_conditions }}
+                                    {% if form.terms_conditions.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.terms_conditions.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Terms and conditions for this quotation</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.notes.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="help-text">Additional notes or comments</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    <div>
+                        <span class="text-muted small">* Required fields</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'quotation:quotation_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/quotation/quotation.js' %}"></script>
+<script src="{% static 'js/quotation/service-price.js' %}"></script>
+{% endblock %} 

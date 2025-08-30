@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Source Details - logisEdge{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        border-left: 4px solid #007bff;
+    }
+    .status-badge {
+        font-size: 0.9rem;
+    }
+    .audit-info {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1rem;
+    }
+    .field-group {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .field-group h6 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .field-value {
+        font-weight: 500;
+        color: #212529;
+    }
+    .field-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{% url 'payment_source:payment_source_list' %}">
+                                    <i class="bi bi-credit-card"></i> Payment Sources
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">
+                                {% if payment_source.code %}{{ payment_source.code }} - {% endif %}{{ payment_source.name }}
+                            </li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-0">
+                        {% if payment_source.code %}{{ payment_source.code }} - {% endif %}{{ payment_source.name }}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {{ payment_source.get_source_type_display }} • {{ payment_source.get_category_display }}
+                    </p>
+                </div>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'payment_source:payment_source_update' payment_source.pk %}" 
+                       class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    <a href="{% url 'payment_source:payment_source_list' %}" 
+                       class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+
+            <!-- Payment Source Details -->
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Basic Information -->
+                    <div class="field-group">
+                        <h6><i class="bi bi-card-text text-primary"></i> Basic Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4 field-label">Name:</dt>
+                                    <dd class="col-sm-8 field-value">{{ payment_source.name }}</dd>
+                                    
+                                    {% if payment_source.code %}
+                                    <dt class="col-sm-4 field-label">Code:</dt>
+                                    <dd class="col-sm-8 field-value">
+                                        <span class="badge bg-secondary">{{ payment_source.code }}</span>
+                                    </dd>
+                                    {% endif %}
+                                    
+                                    <dt class="col-sm-4 field-label">Status:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge {% if payment_source.active %}bg-success{% else %}bg-danger{% endif %} status-badge">
+                                            {{ payment_source.status_display }}
+                                        </span>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4 field-label">Payment Type:</dt>
+                                    <dd class="col-sm-8 field-value">{{ payment_source.get_payment_type_display }}</dd>
+                                    
+                                    <dt class="col-sm-4 field-label">Source Type:</dt>
+                                    <dd class="col-sm-8 field-value">{{ payment_source.get_source_type_display }}</dd>
+                                    
+                                    <dt class="col-sm-4 field-label">Category:</dt>
+                                    <dd class="col-sm-8 field-value">{{ payment_source.get_category_display }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                        
+                        {% if payment_source.description %}
+                        <div class="mt-3">
+                            <dt class="field-label">Description:</dt>
+                            <dd class="mt-2">
+                                <div class="p-3 bg-light rounded">
+                                    {{ payment_source.description|linebreaks }}
+                                </div>
+                            </dd>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Financial Settings -->
+                    <div class="field-group">
+                        <h6><i class="bi bi-currency-exchange text-warning"></i> Financial Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4 field-label">Currency:</dt>
+                                    <dd class="col-sm-8 field-value">
+                                        {% if payment_source.currency %}
+                                            {{ payment_source.currency.code }} - {{ payment_source.currency.name }}
+                                        {% else %}
+                                            <span class="text-muted">Not set (defaults to AED)</span>
+                                        {% endif %}
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4 field-label">Linked Ledger:</dt>
+                                    <dd class="col-sm-8 field-value">
+                                        {% if payment_source.linked_ledger %}
+                                            {{ payment_source.linked_ledger.account_code }} - {{ payment_source.linked_ledger.name }}
+                                        {% else %}
+                                            <span class="text-danger">Not linked</span>
+                                        {% endif %}
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4 field-label">Default Expense Ledger:</dt>
+                                    <dd class="col-sm-8 field-value">
+                                        {% if payment_source.default_expense_ledger %}
+                                            {{ payment_source.default_expense_ledger.account_code }} - {{ payment_source.default_expense_ledger.name }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vendor Settings -->
+                    <div class="field-group">
+                        <h6><i class="bi bi-people text-info"></i> Vendor Settings</h6>
+                        <dl class="row">
+                            <dt class="col-sm-3 field-label">Default Vendor:</dt>
+                            <dd class="col-sm-9 field-value">
+                                {% if payment_source.default_vendor %}
+                                    {{ payment_source.default_vendor.customer_code }} - {{ payment_source.default_vendor.customer_name }}
+                                {% else %}
+                                    <span class="text-muted">Not set</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+
+                    <!-- Additional Information -->
+                    {% if payment_source.remarks %}
+                    <div class="field-group">
+                        <h6><i class="bi bi-chat-text text-secondary"></i> Additional Information</h6>
+                        <div class="p-3 bg-light rounded">
+                            {{ payment_source.remarks|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Legacy Information (if applicable) -->
+                    {% if payment_source.linked_account and payment_source.linked_account != payment_source.linked_ledger %}
+                    <div class="field-group">
+                        <h6><i class="bi bi-exclamation-triangle text-warning"></i> Legacy Information</h6>
+                        <div class="alert alert-warning">
+                            <strong>Note:</strong> This payment source has a legacy linked account that differs from the current linked ledger.
+                            <br><strong>Legacy Account:</strong> {{ payment_source.linked_account.account_code }} - {{ payment_source.linked_account.name }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-4">
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-lightning text-warning"></i>
+                                Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'payment_source:payment_source_update' payment_source.pk %}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Edit Payment Source
+                                </a>
+                                
+                                {% if payment_source.active %}
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            onclick="deletePaymentSource({{ payment_source.pk }})">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-outline-success" 
+                                            onclick="restorePaymentSource({{ payment_source.pk }})">
+                                        <i class="bi bi-arrow-clockwise"></i> Restore
+                                    </button>
+                                {% endif %}
+                                
+                                <a href="{% url 'payment_source:payment_source_list' %}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="bi bi-list"></i> View All
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Audit Information -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-clock-history text-info"></i>
+                                Audit Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row small">
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">
+                                    <small class="text-muted">
+                                        {{ payment_source.created_at|date:"F j, Y, g:i a" }}
+                                    </small>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Created By:</dt>
+                                <dd class="col-sm-8">
+                                    {% if payment_source.created_by %}
+                                        <small class="text-muted">
+                                            {{ payment_source.created_by.get_full_name|default:payment_source.created_by.username }}
+                                        </small>
+                                    {% else %}
+                                        <small class="text-muted">-</small>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Updated:</dt>
+                                <dd class="col-sm-8">
+                                    <small class="text-muted">
+                                        {{ payment_source.updated_at|date:"F j, Y, g:i a" }}
+                                    </small>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Updated By:</dt>
+                                <dd class="col-sm-8">
+                                    {% if payment_source.updated_by %}
+                                        <small class="text-muted">
+                                            {{ payment_source.updated_by.get_full_name|default:payment_source.updated_by.username }}
+                                        </small>
+                                    {% else %}
+                                        <small class="text-muted">-</small>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <!-- Usage Information -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-graph-up text-info"></i>
+                                Usage Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div class="h4 text-primary mb-1">0</div>
+                                <small class="text-muted">Invoices using this source</small>
+                            </div>
+                            <hr>
+                            <div class="text-center">
+                                <div class="h4 text-success mb-1">0</div>
+                                <small class="text-muted">Ledger entries tagged</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the payment source "<strong>{{ payment_source.name }}</strong>"?</p>
+                <p class="text-muted"><strong>Note:</strong> This will only deactivate the payment source, not permanently remove it.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deletePaymentSource(id) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+    
+    document.getElementById('confirmDelete').onclick = async () => {
+        try {
+            const response = await fetch(`/payment-source/api/payment-sources/${id}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete payment source');
+            }
+            
+            modal.hide();
+            window.location.href = "{% url 'payment_source:payment_source_list' %}";
+            
+        } catch (error) {
+            console.error('Error deleting payment source:', error);
+            alert('Failed to delete payment source');
+        }
+    };
+}
+
+function restorePaymentSource(id) {
+    if (confirm('Are you sure you want to restore this payment source?')) {
+        fetch(`/payment-source/${id}/restore/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                throw new Error('Failed to restore payment source');
+            }
+        })
+        .catch(error => {
+            console.error('Error restoring payment source:', error);
+            alert('Failed to restore payment source');
+        });
+    }
+}
+</script>
+
+<!-- CSRF Token -->
+{% csrf_token %}
+{% endblock %}

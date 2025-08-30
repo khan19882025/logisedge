@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cash_flow_statement/css/report.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-cash-stack me-2"></i>
+                        Cash Flow Statements
+                    </h4>
+                    <div class="btn-group">
+                        <a href="{% url 'cash_flow_statement:report_quick' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-lightning me-1"></i>Quick Report
+                        </a>
+                        <a href="{% url 'cash_flow_statement:report_create' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>New Report
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">Manage and view your saved cash flow statement reports</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>
+                        Saved Reports
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'cash_flow_statement:template_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-file-earmark-text me-1"></i>Templates
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Report Name</th>
+                                    <th>Period</th>
+                                    <th>Currency</th>
+                                    <th>Type</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                                            <div>
+                                                <strong>{{ report.name }}</strong>
+                                                {% if report.description %}
+                                                <br><small class="text-muted">{{ report.description|truncatechars:50 }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ report.from_date|date:"M d, Y" }} - {{ report.to_date|date:"M d, Y" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ report.currency.code }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ report.get_report_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ report.created_at|date:"M d, Y" }}
+                                            <br>
+                                            by {{ report.created_by.get_full_name|default:report.created_by.username }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'cash_flow_statement:report_detail' report.pk %}" 
+                                               class="btn btn-outline-primary" 
+                                               data-bs-toggle="tooltip" 
+                                               title="View Report">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'cash_flow_statement:report_export' report.pk %}?format=PDF" 
+                                               class="btn btn-outline-danger" 
+                                               data-bs-toggle="tooltip" 
+                                               title="Export PDF">
+                                                <i class="bi bi-file-pdf"></i>
+                                            </a>
+                                            <a href="{% url 'cash_flow_statement:report_export' report.pk %}?format=EXCEL" 
+                                               class="btn btn-outline-success" 
+                                               data-bs-toggle="tooltip" 
+                                               title="Export Excel">
+                                                <i class="bi bi-file-excel"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteModal{{ report.pk }}"
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Delete Report">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteModal{{ report.pk }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Delete Report</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to delete the report "<strong>{{ report.name }}</strong>"?</p>
+                                                <p class="text-muted">This action cannot be undone.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="post" action="{% url 'cash_flow_statement:report_delete' report.pk %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Reports pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-earmark-text text-muted" style="font-size: 4rem;"></i>
+                        <h5 class="text-muted mt-3">No Reports Found</h5>
+                        <p class="text-muted">You haven't created any cash flow statement reports yet.</p>
+                        <div class="mt-4">
+                            <a href="{% url 'cash_flow_statement:report_quick' %}" class="btn btn-primary me-2">
+                                <i class="bi bi-lightning me-1"></i>Create Quick Report
+                            </a>
+                            <a href="{% url 'cash_flow_statement:report_create' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Create Advanced Report
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-lightning text-warning" style="font-size: 2rem;"></i>
+                    <h6 class="card-title mt-2">Quick Report</h6>
+                    <p class="card-text text-muted">Generate a cash flow statement with basic filters in seconds.</p>
+                    <a href="{% url 'cash_flow_statement:report_quick' %}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-play-circle me-1"></i>Start Quick Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-gear text-primary" style="font-size: 2rem;"></i>
+                    <h6 class="card-title mt-2">Advanced Report</h6>
+                    <p class="card-text text-muted">Create detailed cash flow statements with advanced options.</p>
+                    <a href="{% url 'cash_flow_statement:report_create' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Create Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-earmark-text text-success" style="font-size: 2rem;"></i>
+                    <h6 class="card-title mt-2">Templates</h6>
+                    <p class="card-text text-muted">Use predefined templates for consistent report formatting.</p>
+                    <a href="{% url 'cash_flow_statement:template_list' %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-collection me-1"></i>View Templates
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cash_flow_statement/js/report.js' %}"></script>
+{% endblock %} 

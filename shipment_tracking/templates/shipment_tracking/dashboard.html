@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load shipment_filters %}
+
+{% block title %}Shipment Tracking Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shipment_tracking/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-ship fa-fw"></i> Shipment Tracking Dashboard
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'shipment_tracking:shipment_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> New Shipment
+            </a>
+            <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-list"></i> View All
+            </a>
+            <a href="{% url 'shipment_tracking:shipment_search' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-search"></i> Search
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Shipments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-ship fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Delivered
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ delivered_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                In Transit
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ in_transit_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-truck fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                On Hold
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ on_hold_shipments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-pause-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Recent Shipments -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Shipments</h6>
+                    <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_shipments %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Shipment ID</th>
+                                        <th>Container</th>
+                                        <th>Customer</th>
+                                        <th>Status</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for shipment in recent_shipments %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'shipment_tracking:shipment_detail' shipment.pk %}">
+                                                {{ shipment.shipment_id }}
+                                            </a>
+                                        </td>
+                                        <td>{{ shipment.container_number|default:"-" }}</td>
+                                        <td>{{ shipment.customer_name }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ shipment.current_status|status_badge_color }}">
+                                                {{ shipment.get_current_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ shipment.last_updated|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'shipment_tracking:shipment_detail' shipment.pk %}" 
+                                                   class="btn btn-info btn-sm" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if user.is_staff %}
+                                                <a href="{% url 'shipment_tracking:shipment_update' shipment.pk %}" 
+                                                   class="btn btn-warning btn-sm" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-ship fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No shipments found. Create your first shipment to get started.</p>
+                            <a href="{% url 'shipment_tracking:shipment_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Shipment
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Status Updates -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Status Updates</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_updates %}
+                        <div class="timeline">
+                            {% for update in recent_updates %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-{{ update.status|status_badge_color }}"></div>
+                                <div class="timeline-content">
+                                    <h6 class="timeline-title">
+                                        <a href="{% url 'shipment_tracking:shipment_detail' update.shipment.pk %}">
+                                            {{ update.shipment.shipment_id }}
+                                        </a>
+                                    </h6>
+                                    <p class="timeline-text">
+                                        <strong>{{ update.get_status_display }}</strong><br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-map-marker-alt"></i> {{ update.location }}<br>
+                                            <i class="fas fa-clock"></i> {{ update.timestamp|date:"M d, Y H:i" }}
+                                        </small>
+                                    </p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No recent status updates.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    {% if user.is_staff %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'shipment_tracking:shipment_create' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-plus fa-2x mb-2"></i><br>
+                                Create Shipment
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'shipment_tracking:bulk_update' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-upload fa-2x mb-2"></i><br>
+                                Bulk Update
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'shipment_tracking:shipment_import' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-file-import fa-2x mb-2"></i><br>
+                                Import Shipments
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'shipment_tracking:export_shipments' %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-file-export fa-2x mb-2"></i><br>
+                                Export Data
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Status Distribution Chart -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'shipment_tracking/js/dashboard.js' %}"></script>
+<script>
+    // Status distribution chart data
+    const statusData = {
+        labels: [
+            {% for status in status_distribution %}
+                '{{ status.current_status|status_display }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for status in status_distribution %}
+                    {{ status.count }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69', '#6610f2', '#fd7e14'
+            ]
+        }]
+    };
+
+    // Initialize chart
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: statusData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

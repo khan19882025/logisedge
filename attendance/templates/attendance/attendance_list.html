@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Attendance Records{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/attendance/attendance.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-list text-primary me-2"></i>
+                    Attendance Records
+                </h2>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'attendance:attendance_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Record
+                    </a>
+                    <a href="{% url 'attendance:bulk_attendance' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>Bulk Entry
+                    </a>
+                    <a href="{% url 'attendance:export_attendance' %}" class="btn btn-outline-success">
+                        <i class="fas fa-download me-2"></i>Export
+                    </a>
+                </div>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Search and Filter Section -->
+            <div class="search-filter-section">
+                <form method="get" id="search-form">
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label for="{{ form.employee.id_for_label }}" class="form-label">Employee</label>
+                            {{ form.employee }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
+                            {{ form.department }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date</label>
+                            {{ form.start_date }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
+                            {{ form.end_date }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                            {{ form.status }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.shift.id_for_label }}" class="form-label">Shift</label>
+                            {{ form.shift }}
+                        </div>
+                    </div>
+                    <div class="filter-row mt-3">
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.is_late }}
+                                <label class="form-check-label" for="{{ form.is_late.id_for_label }}">
+                                    Late Arrivals Only
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.has_overtime }}
+                                <label class="form-check-label" for="{{ form.has_overtime.id_for_label }}">
+                                    Overtime Only
+                                </label>
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            <a href="{% url 'attendance:attendance_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Statistics Summary -->
+            <div class="stats-grid mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="stat-number">{{ total_records }}</div>
+                    <div class="stat-label">Total Records</div>
+                </div>
+                <div class="stat-card present">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-number">{{ present_count }}</div>
+                    <div class="stat-label">Present</div>
+                </div>
+                <div class="stat-card absent">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-times"></i>
+                    </div>
+                    <div class="stat-number">{{ absent_count }}</div>
+                    <div class="stat-label">Absent</div>
+                </div>
+                <div class="stat-card late">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-number">{{ late_count }}</div>
+                    <div class="stat-label">Late</div>
+                </div>
+            </div>
+            
+            <!-- Attendance Table -->
+            <div class="attendance-table-container">
+                <div class="table-responsive">
+                    <table class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                </th>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Check In</th>
+                                <th>Check Out</th>
+                                <th>Total Hours</th>
+                                <th>Overtime</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in page_obj %}
+                            <tr data-employee-id="{{ record.employee.id }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input attendance-checkbox" value="{{ record.id }}">
+                                </td>
+                                <td>
+                                    <div class="employee-info">
+                                        {% if record.employee.photo %}
+                                            <img src="{{ record.employee.photo.url }}" alt="{{ record.employee.get_full_name }}" class="employee-avatar">
+                                        {% else %}
+                                            <div class="employee-avatar bg-secondary d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div class="employee-details">
+                                            <div class="employee-name">{{ record.employee.get_full_name }}</div>
+                                            <div class="employee-id">{{ record.employee.employee_id }}</div>
+                                            <div class="employee-dept">{{ record.employee.department.name|default:"No Department" }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ record.date|date:"M d, Y" }}</td>
+                                <td class="time-display check-in-time {% if record.is_late %}late{% endif %}">
+                                    {% if record.check_in_time %}
+                                        {{ record.check_in_time|time:"H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="time-display check-out-time">
+                                    {% if record.check_out_time %}
+                                        {{ record.check_out_time|time:"H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ record.total_hours|default:"0"|floatformat:1 }}h</td>
+                                <td>{{ record.overtime_hours|default:"0"|floatformat:1 }}h</td>
+                                <td>
+                                    <span class="status-badge status-{{ record.status }}">
+                                        {{ record.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'attendance:attendance_detail' record.pk %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'attendance:attendance_edit' record.pk %}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                                                data-confirm="Are you sure you want to delete this attendance record?"
+                                                onclick="if(confirm('Are you sure you want to delete this attendance record?')) window.location.href='{% url 'attendance:attendance_delete' record.pk %}'" 
+                                                title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                    <br>No attendance records found
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Bulk Actions -->
+            {% if page_obj %}
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="bulk-actions">
+                    <button type="button" class="btn btn-outline-primary bulk-action-btn" data-action="export">
+                        <i class="fas fa-download me-2"></i>Export Selected
+                    </button>
+                    <button type="button" class="btn btn-outline-warning bulk-action-btn" data-action="edit">
+                        <i class="fas fa-edit me-2"></i>Edit Selected
+                    </button>
+                    <button type="button" class="btn btn-outline-danger bulk-action-btn" data-action="delete">
+                        <i class="fas fa-trash me-2"></i>Delete Selected
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+                </div>
+                <nav aria-label="Attendance records pagination">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.shift %}&shift={{ request.GET.shift }}{% endif %}{% if request.GET.is_late %}&is_late={{ request.GET.is_late }}{% endif %}{% if request.GET.has_overtime %}&has_overtime={{ request.GET.has_overtime }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.shift %}&shift={{ request.GET.shift }}{% endif %}{% if request.GET.is_late %}&is_late={{ request.GET.is_late }}{% endif %}{% if request.GET.has_overtime %}&has_overtime={{ request.GET.has_overtime }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.shift %}&shift={{ request.GET.shift }}{% endif %}{% if request.GET.is_late %}&is_late={{ request.GET.is_late }}{% endif %}{% if request.GET.has_overtime %}&has_overtime={{ request.GET.has_overtime }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.shift %}&shift={{ request.GET.shift }}{% endif %}{% if request.GET.is_late %}&is_late={{ request.GET.is_late }}{% endif %}{% if request.GET.has_overtime %}&has_overtime={{ request.GET.has_overtime }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.shift %}&shift={{ request.GET.shift }}{% endif %}{% if request.GET.is_late %}&is_late={{ request.GET.is_late }}{% endif %}{% if request.GET.has_overtime %}&has_overtime={{ request.GET.has_overtime }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/attendance/attendance.js' %}"></script>
+<script>
+    // Select all functionality
+    document.getElementById('select-all').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.attendance-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+    
+    // Update select all when individual checkboxes change
+    document.querySelectorAll('.attendance-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allCheckboxes = document.querySelectorAll('.attendance-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.attendance-checkbox:checked');
+            const selectAllCheckbox = document.getElementById('select-all');
+            
+            if (checkedCheckboxes.length === 0) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = false;
+            } else if (checkedCheckboxes.length === allCheckboxes.length) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = true;
+            } else {
+                selectAllCheckbox.indeterminate = true;
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,418 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-plus-circle me-2"></i>Create Debit Note
+                        </h4>
+                        <a href="{% url 'debit_note:list' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.number.id_for_label }}" class="form-label">
+                                        <strong>Debit Note Number</strong>
+                                    </label>
+                                    {{ form.number }}
+                                    <div class="form-text">Auto-generated after saving</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.date.id_for_label }}" class="form-label">
+                                        <strong>Debit Note Date *</strong>
+                                    </label>
+                                    {{ form.date }}
+                                    {% if form.date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.date.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.supplier.id_for_label }}" class="form-label">
+                                        <strong>Supplier Name *</strong>
+                                    </label>
+                                    {{ form.supplier }}
+                                    {% if form.supplier.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.supplier.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Select a supplier with unpaid invoices</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                        <strong>Amount (AED) *</strong>
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.amount }}
+                                        <span class="input-group-text">AED</span>
+                                    </div>
+                                    {% if form.amount.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.amount.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Enter the debit amount or select invoices below</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden field for selected invoices -->
+                        {{ form.selected_invoices }}
+                        
+                        <!-- Unpaid Invoices Table -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-receipt me-2"></i>Unpaid Invoices
+                                            </h5>
+                                            <div>
+                                                <button type="button" class="btn btn-dark btn-sm" id="select-all-btn">
+                                                    <i class="bi bi-check-all me-1"></i>Select All
+                                                </button>
+                                                <button type="button" class="btn btn-dark btn-sm" id="clear-all-btn">
+                                                    <i class="bi bi-x-circle me-1"></i>Clear All
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="invoices-table-container">
+                                            <div class="text-center text-muted py-4">
+                                                <i class="bi bi-info-circle display-4"></i>
+                                                <p class="mt-2">Select a supplier to view their unpaid invoices</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'debit_note:list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i>Save Debit Note
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const supplierSelect = document.getElementById('supplier-select');
+    const amountField = document.getElementById('{{ form.amount.id_for_label }}');
+    const selectedInvoicesField = document.getElementById('selected-invoices');
+    const invoicesContainer = document.getElementById('invoices-table-container');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    
+    let currentInvoices = [];
+    
+    supplierSelect.addEventListener('change', function() {
+        const supplierId = this.value;
+        
+        if (!supplierId) {
+            // Reset and hide table
+            selectedInvoicesField.value = '';
+            amountField.value = '';
+            invoicesContainer.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-info-circle display-4"></i>
+                    <p class="mt-2">Select a supplier to view their unpaid invoices</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Fetch unpaid invoices for selected supplier
+        fetch(`{% url 'debit_note:get_unpaid_invoices' %}?supplier_id=${supplierId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentInvoices = data.invoices;
+                    displayInvoices(data.invoices);
+                } else {
+                    console.error('Error fetching invoices:', data.error);
+                    invoicesContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Error loading invoices: ${data.error}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                invoicesContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading invoices. Please try again.
+                    </div>
+                `;
+            });
+    });
+    
+    function displayInvoices(invoices) {
+        if (invoices.length === 0) {
+            invoicesContainer.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-check-circle display-4 text-success"></i>
+                    <p class="mt-2">No unpaid invoices found for this supplier</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let tableHTML = `
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-warning">
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" class="form-check-input" id="select-all-checkbox">
+                            </th>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>BL Number</th>
+                            <th>Items</th>
+                            <th class="text-end">Amount (AED)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        invoices.forEach((invoice, index) => {
+            const statusClass = getStatusClass(invoice.status);
+            tableHTML += `
+                <tr>
+                    <td>
+                        <input type="checkbox" class="form-check-input invoice-checkbox" 
+                               data-invoice-id="${invoice.id}" 
+                               data-amount="${invoice.total_sale}"
+                               value="${invoice.id}">
+                    </td>
+                    <td><strong>${invoice.invoice_number}</strong></td>
+                    <td>${formatDate(invoice.invoice_date)}</td>
+                    <td>${invoice.bl_number}</td>
+                    <td><span class="badge bg-secondary">${invoice.items_count} items</span></td>
+                    <td class="text-end"><strong>AED ${parseFloat(invoice.total_sale).toFixed(2)}</strong></td>
+                    <td><span class="badge ${statusClass}">${invoice.status}</span></td>
+                </tr>
+            `;
+        });
+        
+        tableHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        invoicesContainer.innerHTML = tableHTML;
+        
+        // Add event listeners to checkboxes
+        setupCheckboxListeners();
+    }
+    
+    function setupCheckboxListeners() {
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
+        
+        // Select all checkbox
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                invoiceCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateSelectedInvoices();
+                calculateTotalAmount();
+            });
+        }
+        
+        // Individual invoice checkboxes
+        invoiceCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateSelectedInvoices();
+                calculateTotalAmount();
+                
+                // Update select all checkbox
+                const allChecked = Array.from(invoiceCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(invoiceCheckboxes).some(cb => cb.checked);
+                
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                }
+            });
+        });
+    }
+    
+    function updateSelectedInvoices() {
+        const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        selectedInvoicesField.value = selectedIds.join(',');
+    }
+    
+    function calculateTotalAmount() {
+        const selectedCheckboxes = document.querySelectorAll('.invoice-checkbox:checked');
+        let total = 0;
+        
+        selectedCheckboxes.forEach(checkbox => {
+            total += parseFloat(checkbox.dataset.amount);
+        });
+        
+        amountField.value = total.toFixed(2);
+    }
+    
+    // Select All button
+    selectAllBtn.addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('.invoice-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        }
+        updateSelectedInvoices();
+        calculateTotalAmount();
+    });
+    
+    // Clear All button
+    clearAllBtn.addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('.invoice-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+        updateSelectedInvoices();
+        calculateTotalAmount();
+    });
+    
+    function getStatusClass(status) {
+        switch(status.toLowerCase()) {
+            case 'draft': return 'bg-secondary';
+            case 'sent': return 'bg-warning text-dark';
+            case 'overdue': return 'bg-danger';
+            case 'paid': return 'bg-success';
+            default: return 'bg-secondary';
+        }
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    }
+});
+</script>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+        border: 1px solid #ced4da;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border-radius: 0.5rem;
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+    
+    .btn {
+        border-radius: 0.375rem;
+        font-weight: 500;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-text {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .table th {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .table td {
+        font-size: 0.875rem;
+        vertical-align: middle;
+    }
+    
+    .form-check-input {
+        cursor: pointer;
+    }
+    
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+</style>
+{% endblock %} 

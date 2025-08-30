@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Compliance Report - {{ compliance_report.report_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title">
+                        <i class="fas fa-file-contract"></i> Compliance Report Details
+                    </h4>
+                    <div class="btn-group">
+                        <a href="{% url 'activity_logs:compliance_report_update' compliance_report.pk %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'activity_logs:compliance_report_delete' compliance_report.pk %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        <a href="{% url 'activity_logs:compliance_report_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <!-- Report Information -->
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-info-circle"></i> Report Information
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Report Name:</label>
+                                        <span class="info-value">{{ compliance_report.report_name }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Report Type:</label>
+                                        <span class="info-value">
+                                            <span class="badge bg-info">{{ compliance_report.get_report_type_display }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Summary:</label>
+                                        <span class="info-value">{{ compliance_report.report_summary|linebreaks }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Compliance Period -->
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-calendar-alt"></i> Compliance Period
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Start Date:</label>
+                                        <span class="info-value">{{ compliance_report.start_date|date:"M d, Y" }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">End Date:</label>
+                                        <span class="info-value">{{ compliance_report.end_date|date:"M d, Y" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Report Data -->
+                            {% if compliance_report.report_data %}
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-database"></i> Report Data
+                                </h5>
+                                <div class="info-group">
+                                    <label class="info-label">Data:</label>
+                                    <span class="info-value">
+                                        <pre class="details-json">{{ compliance_report.report_data|pprint }}</pre>
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <!-- Metadata -->
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-clock"></i> Metadata
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Generated At:</label>
+                                        <span class="info-value">{{ compliance_report.generated_at|date:"M d, Y H:i:s" }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Generated By:</label>
+                                        <span class="info-value">{{ compliance_report.generated_by.username }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Status:</label>
+                                        <span class="info-value">
+                                            {% if compliance_report.is_approved %}
+                                                <span class="badge bg-success">Approved</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pending Approval</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Approval Information -->
+                            {% if compliance_report.is_approved %}
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-check-circle"></i> Approval
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Approved By:</label>
+                                        <span class="info-value">{{ compliance_report.approved_by.username|default:"Unknown" }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Approved At:</label>
+                                        <span class="info-value">{{ compliance_report.approved_at|date:"M d, Y H:i:s" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Export Files -->
+                            {% if compliance_report.pdf_file or compliance_report.csv_file %}
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-download"></i> Export Files
+                                </h5>
+                                <div class="info-grid">
+                                    {% if compliance_report.pdf_file %}
+                                    <div class="info-group">
+                                        <label class="info-label">PDF:</label>
+                                        <span class="info-value">
+                                            <a href="{{ compliance_report.pdf_file.url }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-file-pdf"></i> Download PDF
+                                            </a>
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                    {% if compliance_report.csv_file %}
+                                    <div class="info-group">
+                                        <label class="info-label">CSV:</label>
+                                        <span class="info-value">
+                                            <a href="{{ compliance_report.csv_file.url }}" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-file-csv"></i> Download CSV
+                                            </a>
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .section-title {
+        color: #495057;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .info-grid {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .info-value {
+        color: #212529;
+        font-size: 0.95rem;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .details-json {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        font-size: 0.875rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0.25rem;
+    }
+    
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% load customs_filters %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Customs BOE Stock Report</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .company-info {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .activity {
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 4px;
+            text-align: center;
+            font-size: 8px;
+        }
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .numeric {
+            text-align: right;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+        }
+        .group-header {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            CODE NO: {{ code_no }} | COMPANY NAME: {{ company_name }}
+        </div>
+        <div>
+            DETAILS OF TRANSACTION {{ date_range }}
+        </div>
+        <div class="activity">
+            Activity: {{ filter_type }}
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="2">Declaration No</th>
+                <th rowspan="2">BILL NOS</th>
+                <th rowspan="2">DATE</th>
+                <th rowspan="2">HS CODE</th>
+                <th rowspan="2">PARTICULARS</th>
+                <th rowspan="2">COG</th>
+                <th rowspan="2">PKG_TYPE</th>
+                <th colspan="3" class="group-header">Total Transaction Goods In</th>
+                <th colspan="3" class="group-header">Total Transaction Goods Out</th>
+                <th colspan="3" class="group-header">Available Stock</th>
+                <th colspan="3" class="group-header">Balance</th>
+                <th rowspan="2">DUTY @5%</th>
+                <th rowspan="2">TOTAL DUES</th>
+            </tr>
+            <tr>
+                <th>QTY</th>
+                <th>WT</th>
+                <th>VALUE</th>
+                <th>QTY</th>
+                <th>WT</th>
+                <th>VALUE</th>
+                <th>QTY</th>
+                <th>WT</th>
+                <th>VALUE</th>
+                <th>QTY</th>
+                <th>WT</th>
+                <th>VALUE</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction.declaration_no }}</td>
+                <td>{{ transaction.bill_no }}</td>
+                <td>{{ transaction.date|date:"d/m/Y" }}</td>
+                <td>{{ transaction.hs_code }}</td>
+                <td>{{ transaction.particulars }}</td>
+                <td>{{ transaction.cog }}</td>
+                <td>{{ transaction.pkg_type }}</td>
+                <td class="numeric">{{ transaction.qty_in|floatformat:0 }}</td>
+                <td class="numeric">{{ transaction.wt_in|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.value_in|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.qty_out|floatformat:0 }}</td>
+                <td class="numeric">{{ transaction.wt_out|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.value_out|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.qty_in|subtract:transaction.qty_out|floatformat:0 }}</td>
+                <td class="numeric">{{ transaction.wt_in|subtract:transaction.wt_out|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.value_in|subtract:transaction.value_out|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.qty_in|subtract:transaction.qty_out|floatformat:0 }}</td>
+                <td class="numeric">{{ transaction.wt_in|subtract:transaction.wt_out|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.value_in|subtract:transaction.value_out|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.duty|calculate_percentage:transaction.value_in|floatformat:2 }}</td>
+                <td class="numeric">{{ transaction.total_dues|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="21">No BOE transactions found for the selected filter.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Generated on: {{ generated_date }}</p>
+        <p>Customs BOE Stock Report - {{ company_name }}</p>
+    </div>
+</body>
+</html>

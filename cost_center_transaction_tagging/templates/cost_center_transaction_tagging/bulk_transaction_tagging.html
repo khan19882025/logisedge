@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Transaction Tagging - Cost Center Transaction Tagging{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_transaction_tagging/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-upload mr-2"></i>Bulk Transaction Tagging
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Bulk Tagging Form</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <div class="row">
+                    <!-- Transaction IDs -->
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label for="{{ form.transaction_ids.id_for_label }}" class="form-label">
+                                Transaction IDs <span class="text-danger">*</span>
+                            </label>
+                            {{ form.transaction_ids }}
+                            {% if form.transaction_ids.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.transaction_ids.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Enter transaction IDs separated by commas, spaces, or new lines. 
+                                Example: TXN-20231201-12345678, TXN-20231201-87654321
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Cost Center -->
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="{{ form.cost_center.id_for_label }}" class="form-label">
+                                Cost Center <span class="text-danger">*</span>
+                            </label>
+                            {{ form.cost_center }}
+                            {% if form.cost_center.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.cost_center.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Select the cost center to assign to all transactions.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times mr-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload mr-1"></i>Bulk Tag Transactions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Help Information -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-info-circle mr-2"></i>Help Information
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="font-weight-bold">Bulk Tagging Process:</h6>
+                    <ul class="list-unstyled">
+                        <li>• Enter transaction IDs in the text area</li>
+                        <li>• Select the cost center to assign</li>
+                        <li>• System will validate all transaction IDs</li>
+                        <li>• Only valid transactions will be updated</li>
+                        <li>• Audit logs will be created for each change</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="font-weight-bold">Transaction ID Format:</h6>
+                    <ul class="list-unstyled">
+                        <li>• Format: TXN-YYYYMMDD-HHHHMMMM</li>
+                        <li>• Separate multiple IDs with commas, spaces, or new lines</li>
+                        <li>• Example: TXN-20231201-12345678</li>
+                        <li>• Invalid IDs will be skipped</li>
+                        <li>• Only active transactions can be tagged</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bulk Operations -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Recent Bulk Operations</h6>
+        </div>
+        <div class="card-body">
+            {% if recent_bulk_operations %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Operation Date</th>
+                            <th>Transactions Updated</th>
+                            <th>Cost Center</th>
+                            <th>User</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for operation in recent_bulk_operations %}
+                        <tr>
+                            <td>{{ operation.created_at|date:"M d, Y H:i" }}</td>
+                            <td>{{ operation.transaction_count }}</td>
+                            <td>{{ operation.cost_center.code }} - {{ operation.cost_center.name }}</td>
+                            <td>{{ operation.user|default:"System" }}</td>
+                            <td>
+                                <span class="badge badge-success">Completed</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-upload fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No bulk operations found</h5>
+                <p class="text-muted">No bulk tagging operations have been performed yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_transaction_tagging/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Form validation
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            var validation = Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+    
+    // Auto-format transaction IDs
+    $('#id_transaction_ids').on('input', function() {
+        var value = $(this).val();
+        // Remove extra spaces and normalize separators
+        value = value.replace(/\s+/g, ' ').replace(/[,\s]+/g, ', ').trim();
+        $(this).val(value);
+    });
+    
+    // Show preview of transaction IDs
+    $('#id_transaction_ids').on('blur', function() {
+        var value = $(this).val();
+        if (value) {
+            var ids = value.split(/[,\s]+/).filter(function(id) { return id.trim(); });
+            if (ids.length > 0) {
+                var preview = ids.length + ' transaction ID(s) detected: ' + ids.slice(0, 3).join(', ');
+                if (ids.length > 3) {
+                    preview += ' and ' + (ids.length - 3) + ' more...';
+                }
+                $(this).next('.form-text').text(preview);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

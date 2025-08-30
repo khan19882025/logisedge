@@ -1,0 +1,577 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bills Management{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+    .filter-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .bill-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    }
+    .table-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-weight: 600;
+    }
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    .status-paid {
+        background-color: #d1edff;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+    .status-overdue {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    .action-btn {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        border-radius: 0.375rem;
+        margin: 0 0.125rem;
+        transition: all 0.3s ease;
+    }
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .pagination-container {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        padding: 20px;
+        background: #f8f9fa;
+    }
+    .search-input {
+        border-radius: 25px;
+        padding: 10px 20px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    .search-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Bills Management</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Bills Management</h1>
+                    <p class="text-muted">Manage and track all billing records</p>
+                </div>
+                <a href="{% url 'billing_payable_tracking:bill_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Bill
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filter-card">
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Status Filter</label>
+                <select id="status-filter" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Vendor Filter</label>
+                <select id="vendor-filter" class="form-select">
+                    <option value="">All Vendors</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Search</label>
+                <input type="text" id="search-input" class="form-control search-input" placeholder="Search by bill number, vendor name...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">&nbsp;</label>
+                <div class="d-grid">
+                    <button id="clear-filters" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bills Table -->
+    <div class="bill-table position-relative">
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-header">
+                    <tr>
+                        <th>Bill No.</th>
+                        <th>Vendor</th>
+                        <th>Amount</th>
+                        <th>Bill Date</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Days Until Due</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="bills-table-body">
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="loading-spinner mx-auto mb-2"></div>
+                            <p class="text-muted">Loading bills...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container">
+            <div class="d-flex align-items-center">
+                <span class="text-muted me-3">Show</span>
+                <select id="page-size" class="form-select form-select-sm me-3" style="width: auto;">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span class="text-muted">entries</span>
+            </div>
+            
+            <div id="pagination-info" class="text-muted">
+                Showing 0 to 0 of 0 entries
+            </div>
+            
+            <nav aria-label="Bills pagination">
+                <ul id="pagination-controls" class="pagination pagination-sm mb-0">
+                    <!-- Pagination buttons will be inserted here -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Bill Action Modals -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirm-action" class="btn btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Bills Management System
+class BillsManager {
+    constructor() {
+        this.apiBaseUrl = '/accounting/billing-payable-tracking/api';
+        this.currentPage = 1;
+        this.pageSize = 25;
+        this.filters = {
+            status: '',
+            vendor: '',
+            search: ''
+        };
+        this.bills = [];
+        this.vendors = [];
+        this.totalCount = 0;
+        this.init();
+    }
+
+    getCurrencySymbolHtml(currencySymbol) {
+        if (currencySymbol && currencySymbol.includes('/static/img/dirham-symbol.png')) {
+            return `<img src="/static/img/dirham-symbol.png" alt="AED" style="width: 12px; height: 12px; margin-right: 2px;">`;
+        }
+        return currencySymbol || '$';
+    }
+
+    async init() {
+        await this.loadVendors();
+        await this.loadBills();
+        this.setupEventListeners();
+    }
+
+    async loadVendors() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/vendors/`);
+            const data = await response.json();
+            this.vendors = data.results || data;
+            this.populateVendorFilter();
+        } catch (error) {
+            console.error('Error loading vendors:', error);
+        }
+    }
+
+    populateVendorFilter() {
+        const vendorSelect = document.getElementById('vendor-filter');
+        vendorSelect.innerHTML = '<option value="">All Vendors</option>';
+        
+        this.vendors.forEach(vendor => {
+            const option = document.createElement('option');
+            option.value = vendor.id;
+            option.textContent = vendor.name;
+            vendorSelect.appendChild(option);
+        });
+    }
+
+    async loadBills() {
+        this.showLoading(true);
+        
+        try {
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                page_size: this.pageSize,
+                ...this.filters
+            });
+            
+            // Remove empty filters
+            for (const [key, value] of params.entries()) {
+                if (!value) params.delete(key);
+            }
+            
+            const response = await fetch(`${this.apiBaseUrl}/bills/?${params}`);
+            const data = await response.json();
+            
+            this.bills = data.results || data;
+            this.totalCount = data.count || this.bills.length;
+            
+            this.renderBillsTable();
+            this.renderPagination();
+        } catch (error) {
+            console.error('Error loading bills:', error);
+            this.showError('Failed to load bills');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    renderBillsTable() {
+        const tbody = document.getElementById('bills-table-body');
+        
+        if (!this.bills || this.bills.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">No bills found</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const billsHtml = this.bills.map(bill => `
+            <tr>
+                <td class="fw-bold">${bill.bill_no}</td>
+                <td>${bill.vendor_name}</td>
+                <td class="fw-bold">${this.getCurrencySymbolHtml(bill.currency_symbol)}${parseFloat(bill.amount).toFixed(2)}</td>
+                <td>${new Date(bill.bill_date).toLocaleDateString()}</td>
+                <td>${new Date(bill.due_date).toLocaleDateString()}</td>
+                <td>
+                    <span class="status-badge status-${bill.status}">
+                        ${bill.status.toUpperCase()}
+                    </span>
+                </td>
+                <td>
+                    <span class="${this.getDaysUntilDueClass(bill.days_until_due)}">
+                        ${this.formatDaysUntilDue(bill.days_until_due)}
+                    </span>
+                </td>
+                <td>
+                    ${this.renderActionButtons(bill)}
+                </td>
+            </tr>
+        `).join('');
+
+        tbody.innerHTML = billsHtml;
+    }
+
+    renderActionButtons(bill) {
+        let buttons = `
+            <a href="/accounting/billing-payable-tracking/bills/${bill.id}/" class="action-btn btn btn-sm btn-outline-info" title="View Details">
+                <i class="bi bi-eye"></i>
+            </a>
+            <a href="/accounting/billing-payable-tracking/bills/${bill.id}/edit/" class="action-btn btn btn-sm btn-outline-primary" title="Edit">
+                <i class="bi bi-pencil"></i>
+            </a>
+        `;
+        
+        if (bill.status === 'pending') {
+            buttons += `
+                <button class="action-btn btn btn-sm btn-success" onclick="billsManager.markAsPaid(${bill.id})" title="Mark as Paid">
+                    <i class="bi bi-check-circle"></i>
+                </button>
+                <button class="action-btn btn btn-sm btn-warning" onclick="billsManager.confirmBill(${bill.id})" title="Confirm Bill">
+                    <i class="bi bi-check2-square"></i>
+                </button>
+            `;
+        }
+        
+        return buttons;
+    }
+
+    getDaysUntilDueClass(days) {
+        if (days < 0) return 'text-danger fw-bold';
+        if (days === 0) return 'text-warning fw-bold';
+        if (days <= 7) return 'text-info';
+        return 'text-muted';
+    }
+
+    formatDaysUntilDue(days) {
+        if (days < 0) return `${Math.abs(days)} days overdue`;
+        if (days === 0) return 'Due today';
+        return `${days} days left`;
+    }
+
+    renderPagination() {
+        const totalPages = Math.ceil(this.totalCount / this.pageSize);
+        const startEntry = (this.currentPage - 1) * this.pageSize + 1;
+        const endEntry = Math.min(this.currentPage * this.pageSize, this.totalCount);
+        
+        // Update pagination info
+        document.getElementById('pagination-info').textContent = 
+            `Showing ${startEntry} to ${endEntry} of ${this.totalCount} entries`;
+        
+        // Generate pagination controls
+        const paginationControls = document.getElementById('pagination-controls');
+        let paginationHtml = '';
+        
+        // Previous button
+        paginationHtml += `
+            <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="billsManager.goToPage(${this.currentPage - 1})">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        `;
+        
+        // Page numbers
+        const startPage = Math.max(1, this.currentPage - 2);
+        const endPage = Math.min(totalPages, this.currentPage + 2);
+        
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHtml += `
+                <li class="page-item ${i === this.currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="billsManager.goToPage(${i})">${i}</a>
+                </li>
+            `;
+        }
+        
+        // Next button
+        paginationHtml += `
+            <li class="page-item ${this.currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="billsManager.goToPage(${this.currentPage + 1})">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        `;
+        
+        paginationControls.innerHTML = paginationHtml;
+    }
+
+    setupEventListeners() {
+        // Filter change events
+        document.getElementById('status-filter').addEventListener('change', (e) => {
+            this.filters.status = e.target.value;
+            this.currentPage = 1;
+            this.loadBills();
+        });
+        
+        document.getElementById('vendor-filter').addEventListener('change', (e) => {
+            this.filters.vendor = e.target.value;
+            this.currentPage = 1;
+            this.loadBills();
+        });
+        
+        // Search input with debounce
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.filters.search = e.target.value;
+                this.currentPage = 1;
+                this.loadBills();
+            }, 500);
+        });
+        
+        // Page size change
+        document.getElementById('page-size').addEventListener('change', (e) => {
+            this.pageSize = parseInt(e.target.value);
+            this.currentPage = 1;
+            this.loadBills();
+        });
+        
+        // Clear filters
+        document.getElementById('clear-filters').addEventListener('click', () => {
+            this.clearFilters();
+        });
+    }
+
+    goToPage(page) {
+        if (page < 1 || page > Math.ceil(this.totalCount / this.pageSize)) return;
+        this.currentPage = page;
+        this.loadBills();
+    }
+
+    clearFilters() {
+        this.filters = { status: '', vendor: '', search: '' };
+        this.currentPage = 1;
+        
+        document.getElementById('status-filter').value = '';
+        document.getElementById('vendor-filter').value = '';
+        document.getElementById('search-input').value = '';
+        
+        this.loadBills();
+    }
+
+    async markAsPaid(billId) {
+        this.showConfirmModal(
+            'Mark Bill as Paid',
+            'Are you sure you want to mark this bill as paid?',
+            () => this.performBillAction(billId, 'mark_paid')
+        );
+    }
+
+    async confirmBill(billId) {
+        this.showConfirmModal(
+            'Confirm Bill',
+            'Are you sure you want to confirm this bill?',
+            () => this.performBillAction(billId, 'confirm')
+        );
+    }
+
+    async performBillAction(billId, action) {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/bills/${billId}/${action}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                }
+            });
+            
+            if (response.ok) {
+                this.loadBills(); // Refresh the table
+                this.showSuccess(`Bill ${action.replace('_', ' ')} successfully!`);
+            } else {
+                throw new Error(`Failed to ${action} bill`);
+            }
+        } catch (error) {
+            console.error(`Error performing ${action}:`, error);
+            this.showError(`Failed to ${action.replace('_', ' ')} bill`);
+        }
+    }
+
+    showConfirmModal(title, message, onConfirm) {
+        document.querySelector('#confirmModal .modal-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        
+        const confirmBtn = document.getElementById('confirm-action');
+        confirmBtn.onclick = () => {
+            onConfirm();
+            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+        };
+        
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+
+    showLoading(show) {
+        document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+    }
+
+    showSuccess(message) {
+        // You can implement toast notifications here
+        console.log('Success:', message);
+    }
+
+    showError(message) {
+        // You can implement toast notifications here
+        console.error('Error:', message);
+    }
+
+    getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+}
+
+// Initialize bills manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.billsManager = new BillsManager();
+    console.log('Bills Management System loaded');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends 'depreciation_schedule/base.html' %}
+{% load static %}
+
+{% block title %}{{ schedule.name }} - Depreciation Schedule{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_list' %}">Schedules</a></li>
+<li class="breadcrumb-item active">{{ schedule.name }}</li>
+{% endblock %}
+
+{% block depreciation_schedule_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">{{ schedule.name }}</h1>
+            <div class="btn-group" role="group">
+                {% if schedule.status == 'draft' %}
+                    <a href="{% url 'depreciation_schedule:calculate_depreciation' schedule.pk %}" class="btn btn-success">
+                        <i class="bi bi-calculator me-2"></i>Calculate Depreciation
+                    </a>
+                {% elif schedule.status == 'calculated' %}
+                    <a href="{% url 'depreciation_schedule:post_depreciation' schedule.pk %}" class="btn btn-primary">
+                        <i class="bi bi-journal-check me-2"></i>Post to GL
+                    </a>
+                {% endif %}
+                <a href="{% url 'depreciation_schedule:schedule_update' schedule.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil me-2"></i>Edit
+                </a>
+                <a href="{% url 'depreciation_schedule:export_depreciation' schedule.pk %}" class="btn btn-outline-info">
+                    <i class="bi bi-download me-2"></i>Export
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Details -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Schedule Details</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Schedule Number:</dt>
+                            <dd class="col-sm-8">{{ schedule.schedule_number }}</dd>
+                            
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">{{ schedule.name }}</dd>
+                            
+                            <dt class="col-sm-4">Description:</dt>
+                            <dd class="col-sm-8">{{ schedule.description|default:"No description" }}</dd>
+                            
+                            <dt class="col-sm-4">Start Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.start_date|date:"M d, Y" }}</dd>
+                            
+                            <dt class="col-sm-4">End Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.end_date|date:"M d, Y" }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-{{ schedule.status }} rounded-pill">
+                                    {{ schedule.get_status_display }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Total Depreciation:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_depreciation|floatformat:2 }}</dd>
+                            
+                            <dt class="col-sm-4">Total Assets:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_assets }}</dd>
+                            
+                            <dt class="col-sm-4">Depreciation Expense Account:</dt>
+                            <dd class="col-sm-8">{{ schedule.depreciation_expense_account }}</dd>
+                            
+                            <dt class="col-sm-4">Accumulated Depreciation Account:</dt>
+                            <dd class="col-sm-8">{{ schedule.accumulated_depreciation_account }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-right">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Depreciation
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ schedule.total_depreciation|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Assets
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ schedule.total_assets }}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if schedule.journal_entry %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="font-weight-bold">Journal Entry</h6>
+                        <p class="mb-1">
+                            <strong>Reference:</strong> {{ schedule.journal_entry.reference }}<br>
+                            <strong>Date:</strong> {{ schedule.journal_entry.date|date:"M d, Y" }}<br>
+                            <strong>Status:</strong> 
+                            <span class="badge bg-{{ schedule.journal_entry.status }} rounded-pill">
+                                {{ schedule.journal_entry.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Depreciation Entries -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Depreciation Entries</h6>
+                <a href="{% url 'depreciation_schedule:depreciation_entries' schedule.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-list me-1"></i>View All Entries
+                </a>
+            </div>
+            <div class="card-body">
+                {% if entries %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Asset Code</th>
+                                    <th>Asset Name</th>
+                                    <th>Period</th>
+                                    <th>Opening Value</th>
+                                    <th>Depreciation Amount</th>
+                                    <th>Accumulated Depreciation</th>
+                                    <th>Closing Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in entries %}
+                                <tr>
+                                    <td>{{ entry.asset.asset_code }}</td>
+                                    <td>{{ entry.asset.asset_name }}</td>
+                                    <td>{{ entry.period_display }}</td>
+                                    <td>{{ entry.opening_value|floatformat:2 }}</td>
+                                    <td>{{ entry.depreciation_amount|floatformat:2 }}</td>
+                                    <td>{{ entry.accumulated_depreciation|floatformat:2 }}</td>
+                                    <td>{{ entry.closing_value|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if entries.has_other_pages %}
+                    <nav aria-label="Depreciation entries pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if entries.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ entries.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in entries.paginator.page_range %}
+                                {% if entries.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > entries.number|add:'-3' and num < entries.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if entries.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ entries.next_page_number }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No depreciation entries found for this schedule.</p>
+                        {% if schedule.status == 'draft' %}
+                            <a href="{% url 'depreciation_schedule:calculate_depreciation' schedule.pk %}" class="btn btn-primary">
+                                <i class="bi bi-calculator me-2"></i>Calculate Depreciation
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

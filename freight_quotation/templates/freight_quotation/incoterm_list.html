@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Incoterms{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'freight_quotation/css/quotation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-globe me-2"></i>Incoterms
+        </h1>
+        <div>
+            <a href="{% url 'freight_quotation:incoterm_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Incoterm
+            </a>
+            <a href="{% url 'freight_quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Quotations
+            </a>
+        </div>
+    </div>
+
+    <!-- Incoterms List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Incoterms ({{ page_obj.paginator.count }})</h5>
+        </div>
+        <div class="card-body">
+            {% if incoterms %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for incoterm in incoterms %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ incoterm.code }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ incoterm.name }}</strong>
+                                </td>
+                                <td>
+                                    {% if incoterm.description %}
+                                        {{ incoterm.description|truncatewords:15 }}
+                                    {% else %}
+                                        <span class="text-muted">No description</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if incoterm.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'freight_quotation:incoterm_edit' incoterm.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'freight_quotation:incoterm_delete' incoterm.pk %}" 
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Are you sure you want to delete this incoterm?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Incoterms pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-globe fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No incoterms found</h5>
+                    <p class="text-muted">Create your first incoterm to get started.</p>
+                    <a href="{% url 'freight_quotation:incoterm_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Incoterm
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

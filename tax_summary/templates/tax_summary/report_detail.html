@@ -1,0 +1,236 @@
+{% extends 'tax_summary/base.html' %}
+{% load static %}
+
+{% block title %}{{ report.report_name }} - Tax Summary Report Details{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'tax_summary:report_list' %}">Reports</a></li>
+    <li class="breadcrumb-item active">{{ report.report_name }}</li>
+{% endblock %}
+
+{% block tax_summary_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-file-invoice-dollar text-primary"></i>
+                    {{ report.report_name }}
+                </h1>
+                <div class="page-actions">
+                    {% if report.status == 'draft' %}
+                        <a href="{% url 'tax_summary:report_update' report.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i> Edit Report
+                        </a>
+                        <a href="{% url 'tax_summary:generate_report' report.pk %}" class="btn btn-success">
+                            <i class="fas fa-play"></i> Generate Report
+                        </a>
+                    {% endif %}
+                    {% if report.status == 'generated' %}
+                        <a href="{% url 'tax_summary:transactions' report.pk %}" class="btn btn-info">
+                            <i class="fas fa-list"></i> View Transactions
+                        </a>
+                        <a href="{% url 'tax_summary:export_report' report.pk %}" class="btn btn-warning">
+                            <i class="fas fa-download"></i> Export Report
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'tax_summary:report_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+                    <h5 class="card-title">Period</h5>
+                    <p class="card-text">{{ report.get_report_type_display }}</p>
+                    <small class="text-muted">{{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-down fa-2x text-success mb-2"></i>
+                    <h5 class="card-title">Input Tax</h5>
+                    <p class="card-text text-success">{{ report.currency }} {{ report.total_input_tax|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-up fa-2x text-info mb-2"></i>
+                    <h5 class="card-title">Output Tax</h5>
+                    <p class="card-text text-info">{{ report.currency }} {{ report.total_output_tax|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <i class="fas fa-calculator fa-2x text-danger mb-2"></i>
+                    <h5 class="card-title">Net VAT</h5>
+                    {% if report.net_vat_payable >= 0 %}
+                        <p class="card-text text-danger">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</p>
+                    {% else %}
+                        <p class="card-text text-success">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Details -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i>
+                        Transaction Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Invoice</th>
+                                        <th>Party</th>
+                                        <th>Type</th>
+                                        <th>Taxable Amount</th>
+                                        <th>VAT Amount</th>
+                                        <th>VAT %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions|slice:":10" %}
+                                    <tr>
+                                        <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            <strong>{{ transaction.invoice_number }}</strong>
+                                        </td>
+                                        <td>{{ transaction.party_name }}</td>
+                                        <td>
+                                            {% if transaction.transaction_type == 'input' %}
+                                                <span class="badge bg-success">Input</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Output</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ report.currency }} {{ transaction.taxable_amount|floatformat:2 }}</td>
+                                        <td>{{ report.currency }} {{ transaction.vat_amount|floatformat:2 }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ transaction.vat_percentage }}%</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if transactions.count > 10 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'tax_summary:transactions' report.pk %}" class="btn btn-outline-primary">
+                                    View All {{ transactions.count }} Transactions
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No transactions found</h5>
+                            <p class="text-muted">Generate the report to see transaction details.</p>
+                            {% if report.status == 'draft' %}
+                                <a href="{% url 'tax_summary:generate_report' report.pk %}" class="btn btn-primary">
+                                    <i class="fas fa-play"></i> Generate Report
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Report Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Report Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Report Name:</dt>
+                        <dd class="col-sm-6">{{ report.report_name }}</dd>
+                        
+                        <dt class="col-sm-6">Status:</dt>
+                        <dd class="col-sm-6">
+                            {% if report.status == 'draft' %}
+                                <span class="badge bg-warning">Draft</span>
+                            {% elif report.status == 'generated' %}
+                                <span class="badge bg-success">Generated</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ report.get_status_display }}</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-6">Currency:</dt>
+                        <dd class="col-sm-6">{{ report.currency }}</dd>
+                        
+                        <dt class="col-sm-6">Created By:</dt>
+                        <dd class="col-sm-6">{{ report.generated_by.get_full_name|default:report.generated_by.username }}</dd>
+                        
+                        <dt class="col-sm-6">Created Date:</dt>
+                        <dd class="col-sm-6">{{ report.generated_at|date:"M d, Y H:i" }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Tax Summary -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie"></i>
+                        Tax Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-success">Input Tax</h6>
+                            <p class="h5 text-success">{{ report.currency }} {{ report.total_input_tax|floatformat:2 }}</p>
+                            <small class="text-muted">{{ report.input_transactions_count }} transactions</small>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-info">Output Tax</h6>
+                            <p class="h5 text-info">{{ report.currency }} {{ report.total_output_tax|floatformat:2 }}</p>
+                            <small class="text-muted">{{ report.output_transactions_count }} transactions</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <h6>Net VAT Payable</h6>
+                        {% if report.net_vat_payable >= 0 %}
+                            <p class="h4 text-danger">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</p>
+                        {% else %}
+                            <p class="h4 text-success">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

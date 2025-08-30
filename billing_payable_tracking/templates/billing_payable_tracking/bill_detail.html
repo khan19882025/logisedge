@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ bill.bill_no }} - Bill Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px 15px 0 0;
+        margin: -30px -30px 30px -30px;
+    }
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85em;
+    }
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    .status-paid {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .status-overdue {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #666;
+        min-width: 150px;
+    }
+    .info-value {
+        color: #333;
+        flex: 1;
+        text-align: right;
+    }
+    .btn-action {
+        margin: 0 5px;
+    }
+    .history-item {
+        padding: 15px;
+        border-left: 4px solid #667eea;
+        background: #f8f9fa;
+        margin-bottom: 10px;
+        border-radius: 0 8px 8px 0;
+    }
+    .history-meta {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    .amount-display {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:bill_list' %}">Bills</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ bill.bill_no }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Main Bill Details -->
+        <div class="col-lg-8">
+            <div class="detail-card">
+                <div class="detail-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1"><i class="bi bi-receipt me-2"></i>{{ bill.bill_no }}</h2>
+                            <p class="mb-0 opacity-75">{{ bill.vendor.name }}</p>
+                        </div>
+                        <div class="text-end">
+                            <span class="status-badge status-{{ bill.status }}">{{ bill.get_status_display }}</span>
+                            {% if bill.confirmed %}
+                                <br><small class="opacity-75 mt-1 d-block"><i class="bi bi-check-circle me-1"></i>Confirmed</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bill Information -->
+                <div class="mb-4">
+                    <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Bill Information</h5>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Bill Number:</span>
+                        <span class="info-value">{{ bill.bill_no }}</span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Vendor:</span>
+                        <span class="info-value">{{ bill.vendor.name }}</span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Amount:</span>
+                        <span class="info-value amount-display">
+                            {% if bill.currency.symbol and '/static/img/dirham-symbol.png' in bill.currency.symbol %}
+                                <img src="/static/img/dirham-symbol.png" alt="AED" style="width: 14px; height: 14px; margin-right: 2px;">
+                            {% else %}
+                                {{ bill.currency.symbol|default:"$" }}
+                            {% endif %}{{ bill.amount|floatformat:2 }}
+                            <small class="text-muted">({{ bill.currency.code|default:"AED" }})</small>
+                        </span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Bill Date:</span>
+                        <span class="info-value">{{ bill.bill_date|date:"M d, Y" }}</span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Due Date:</span>
+                        <span class="info-value">
+                            {{ bill.due_date|date:"M d, Y" }}
+                            {% if bill.is_overdue %}
+                                <span class="text-danger ms-2"><i class="bi bi-exclamation-triangle"></i> Overdue</span>
+                            {% elif bill.is_due_today %}
+                                <span class="text-warning ms-2"><i class="bi bi-clock"></i> Due Today</span>
+                            {% elif bill.is_due_soon %}
+                                <span class="text-info ms-2"><i class="bi bi-calendar-check"></i> Due Soon</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if bill.paid_date %}
+                    <div class="info-row">
+                        <span class="info-label">Paid Date:</span>
+                        <span class="info-value">{{ bill.paid_date|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if bill.paid_amount %}
+                    <div class="info-row">
+                        <span class="info-label">Paid Amount:</span>
+                        <span class="info-value">
+                            {% if bill.currency.symbol and '/static/img/dirham-symbol.png' in bill.currency.symbol %}
+                                <img src="/static/img/dirham-symbol.png" alt="AED" style="width: 14px; height: 14px; margin-right: 2px;">
+                            {% else %}
+                                {{ bill.currency.symbol|default:"$" }}
+                            {% endif %}{{ bill.paid_amount|floatformat:2 }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value">
+                            <span class="status-badge status-{{ bill.status }}">{{ bill.get_status_display }}</span>
+                        </span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Created By:</span>
+                        <span class="info-value">{{ bill.created_by.get_full_name|default:bill.created_by.username }}</span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Created At:</span>
+                        <span class="info-value">{{ bill.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    
+                    {% if bill.notes %}
+                    <div class="info-row">
+                        <span class="info-label">Notes:</span>
+                        <span class="info-value">{{ bill.notes|linebreaks }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'billing_payable_tracking:bill_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Bills
+                    </a>
+                    <div>
+                        {% if bill.status != 'paid' %}
+                            <button type="button" class="btn btn-success btn-action" onclick="markAsPaid('{{ bill.id }}')">
+                                <i class="bi bi-check-circle me-2"></i>Mark as Paid
+                            </button>
+                        {% endif %}
+                        
+                        {% if not bill.confirmed %}
+                            <button type="button" class="btn btn-info btn-action" onclick="confirmBill('{{ bill.id }}')">
+                                <i class="bi bi-shield-check me-2"></i>Confirm
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'billing_payable_tracking:bill_edit' bill.pk %}" class="btn btn-primary btn-action">
+                            <i class="bi bi-pencil-square me-2"></i>Edit
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- History -->
+            {% if history %}
+            <div class="detail-card">
+                <h5 class="mb-3"><i class="bi bi-clock-history me-2"></i>History</h5>
+                {% for entry in history %}
+                <div class="history-item">
+                    <div class="history-meta">
+                        <strong>{{ entry.get_action_display }}</strong> by {{ entry.user.get_full_name|default:entry.user.username }}
+                        <br><small class="text-muted">{{ entry.timestamp|date:"M d, Y H:i" }}</small>
+                    </div>
+                    {% if entry.description %}
+                    <div class="history-description">
+                        {{ entry.description }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Reminders -->
+            {% if reminders %}
+            <div class="detail-card">
+                <h5 class="mb-3"><i class="bi bi-bell me-2"></i>Reminders</h5>
+                {% for reminder in reminders %}
+                <div class="history-item">
+                    <div class="history-meta">
+                        <strong>{{ reminder.get_reminder_type_display }}</strong>
+                        <br><small class="text-muted">{{ reminder.sent_date|date:"M d, Y H:i" }}</small>
+                        <br><small class="text-muted">To: {{ reminder.recipient_email }}</small>
+                        {% if reminder.sent_successfully %}
+                            <span class="badge bg-success ms-2">Sent</span>
+                        {% else %}
+                            <span class="badge bg-danger ms-2">Failed</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Vendor Information -->
+            <div class="detail-card">
+                <h5 class="mb-3"><i class="bi bi-building me-2"></i>Vendor Information</h5>
+                
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">{{ bill.vendor.name }}</span>
+                </div>
+                
+                {% if bill.vendor.email %}
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ bill.vendor.email }}</span>
+                </div>
+                {% endif %}
+                
+                {% if bill.vendor.phone %}
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ bill.vendor.phone }}</span>
+                </div>
+                {% endif %}
+                
+                {% if bill.vendor.address %}
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value">{{ bill.vendor.address|linebreaks }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class BillDetailActions {
+    constructor() {
+        this.apiBaseUrl = '/accounting/billing-payable-tracking';
+        this.csrfToken = this.getCookie('csrftoken');
+    }
+
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async markAsPaid(billId) {
+        if (!confirm('Are you sure you want to mark this bill as paid?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/ajax/mark-paid/${billId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to mark bill as paid'));
+            }
+        } catch (error) {
+            console.error('Error marking bill as paid:', error);
+            alert('An error occurred while marking the bill as paid.');
+        }
+    }
+
+    async confirmBill(billId) {
+        if (!confirm('Are you sure you want to confirm this bill?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/ajax/confirm-bill/${billId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to confirm bill'));
+            }
+        } catch (error) {
+            console.error('Error confirming bill:', error);
+            alert('An error occurred while confirming the bill.');
+        }
+    }
+}
+
+// Initialize actions
+const billActions = new BillDetailActions();
+
+// Global functions for onclick handlers
+function markAsPaid(billId) {
+    billActions.markAsPaid(billId);
+}
+
+function confirmBill(billId) {
+    billActions.confirmBill(billId);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load hr_letters_filters %}
+
+{% block title %}Generated Letters{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'hr_letters_documents/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-envelope me-2"></i>Generated Letters
+            </h1>
+            <p class="text-muted">View and manage all generated HR letters and documents</p>
+        </div>
+        <div>
+            <a href="{% url 'hr_letters_documents:letter_create' %}" class="btn btn-primary me-2">
+                <i class="fas fa-plus me-2"></i>Generate Letter
+            </a>
+            <a href="{% url 'hr_letters_documents:bulk_letter_generation' %}" class="btn btn-outline-primary">
+                <i class="fas fa-magic me-2"></i>Bulk Generate
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Letter Type</label>
+                    <select name="letter_type" class="form-select">
+                        <option value="">All Types</option>
+                        {% for letter_type in letter_types %}
+                        <option value="{{ letter_type.id }}" {% if request.GET.letter_type == letter_type.id|stringformat:"s" %}selected{% endif %}>
+                            {{ letter_type.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="finalized" {% if request.GET.status == 'finalized' %}selected{% endif %}>Finalized</option>
+                        <option value="signed" {% if request.GET.status == 'signed' %}selected{% endif %}>Signed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date Range</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}" placeholder="From">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}" placeholder="To">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <a href="{% url 'hr_letters_documents:letter_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Generated Letters Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Generated Letters ({{ object_list.count }})</h5>
+                </div>
+                <div class="col-auto">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search letters...">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if object_list %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Letter</th>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Issue Date</th>
+                            <th>Created By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for letter in object_list %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ letter.subject|truncatewords:8 }}</h6>
+                                        <small class="text-muted">Ref: {{ letter.reference_number }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ letter.employee.first_name }} {{ letter.employee.last_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ letter.employee.designation }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ letter.letter_type.name }}</span>
+                            </td>
+                            <td>
+                                {% if letter.status == 'draft' %}
+                                    <span class="badge bg-warning">Draft</span>
+                                {% elif letter.status == 'finalized' %}
+                                    <span class="badge bg-info">Finalized</span>
+                                {% elif letter.status == 'signed' %}
+                                    <span class="badge bg-success">Signed</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ letter.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if letter.issue_date %}
+                                    <small>{{ letter.issue_date|date:"M d, Y" }}</small>
+                                {% else %}
+                                    <span class="text-muted">Not set</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ letter.created_by.get_full_name|default:letter.created_by.username }}</small>
+                                <br>
+                                <small class="text-muted">{{ letter.created_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'hr_letters_documents:letter_detail' letter.pk %}" 
+                                       class="btn btn-sm btn-outline-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if letter.status == 'draft' %}
+                                    <a href="{% url 'hr_letters_documents:letter_edit' letter.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if letter.status == 'draft' %}
+                                    <a href="{% url 'hr_letters_documents:letter_finalize' letter.pk %}" 
+                                       class="btn btn-sm btn-outline-success" title="Finalize">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if letter.status == 'finalized' %}
+                                    <a href="{% url 'hr_letters_documents:letter_sign' letter.pk %}" 
+                                       class="btn btn-sm btn-outline-warning" title="Sign">
+                                        <i class="fas fa-signature"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'hr_letters_documents:letter_delete' letter.pk %}" 
+                                       class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="fas fa-envelope fa-3x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No Generated Letters Found</h5>
+                <p class="text-muted">Get started by generating your first HR letter.</p>
+                <a href="{% url 'hr_letters_documents:letter_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Generate Letter
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('tbody tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Duplicate Detection Sessions{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'merge_duplicates/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-calendar text-primary me-2"></i>
+                    Duplicate Detection Sessions
+                </h1>
+                <p class="text-muted">Manage and monitor duplicate detection sessions</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'data_cleaning_tool:merge_duplicates_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{% url 'data_cleaning_tool:merge_duplicates_session_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>New Session
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">All Sessions</h6>
+                </div>
+                <div class="card-body">
+                    {% if sessions %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Session Name</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Duplicates Found</th>
+                                        <th>Records Merged</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in sessions %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'data_cleaning_tool:merge_duplicates_session_detail' session.pk %}">
+                                                {{ session.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ session.description|truncatechars:50 }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ session.status|yesno:'success,warning,info,danger,secondary' }}">
+                                                {{ session.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ session.duplicates_found }}</td>
+                                        <td>{{ session.records_merged }}</td>
+                                        <td>{{ session.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'data_cleaning_tool:merge_duplicates_session_detail' session.pk %}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if session.status == 'pending' %}
+                                                <a href="{% url 'data_cleaning_tool:merge_duplicates_session_start' session.pk %}" 
+                                                   class="btn btn-outline-success" title="Start Session">
+                                                    <i class="fas fa-play"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-muted">No sessions created yet.</p>
+                            <a href="{% url 'data_cleaning_tool:merge_duplicates_session_create' %}" class="btn btn-primary">
+                                Create Your First Session
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'merge_duplicates/js/dashboard.js' %}"></script>
+{% endblock %}

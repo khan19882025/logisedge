@@ -1,0 +1,538 @@
+{% extends 'documentation/base.html' %}
+{% load static %}
+
+{% block title %}{{ documentation.document_no }} - Documentation Details{% endblock %}
+
+{% block documentation_content %}
+<style>
+    .btn-group .dropdown-menu {
+        min-width: 200px;
+    }
+    .btn-group .dropdown-item {
+        padding: 8px 15px;
+    }
+    .btn-group .dropdown-item i {
+        width: 20px;
+    }
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    .btn-info {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+    }
+    .btn-warning {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #212529;
+    }
+    
+    /* Checkbox styling */
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .form-check-input:indeterminate {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    .form-check-label {
+        cursor: pointer;
+        padding-left: 5px;
+    }
+    .form-check-label i {
+        width: 20px;
+        color: #6c757d;
+    }
+    
+    /* Modal styling */
+    .modal-lg {
+        max-width: 600px;
+    }
+    .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .form-text {
+        font-size: 0.875em;
+        color: #6c757d;
+    }
+</style>
+<div class="row">
+    <div class="col-12">
+        <!-- Header Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-text me-2"></i>Documentation Details - {{ documentation.document_no }}
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-printer me-1"></i>Print
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'documentation:print_invoice' documentation.pk %}">
+                                    <i class="bi bi-receipt me-2"></i>Invoice
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'documentation:print_packing_list' documentation.pk %}">
+                                    <i class="bi bi-list-check me-2"></i>Packing List
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'documentation:print_da' documentation.pk %}">
+                                    <i class="bi bi-file-earmark-text me-2"></i>DA (Delivery Authorization)
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'documentation:print_too_letter' documentation.pk %}">
+                                    <i class="bi bi-envelope me-2"></i>TOO Letter
+                                </a></li>
+                            </ul>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-info btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-envelope me-1"></i>Email
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'documentation:email_invoice' documentation.pk %}">
+                                    <i class="bi bi-receipt me-2"></i>Send Invoice
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'documentation:email_packing_list' documentation.pk %}">
+                                    <i class="bi bi-list-check me-2"></i>Send Packing List
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'documentation:email_da' documentation.pk %}">
+                                    <i class="bi bi-file-earmark-text me-2"></i>Send DA
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'documentation:email_too_letter' documentation.pk %}">
+                                    <i class="bi bi-envelope me-2"></i>Send TOO Letter
+                                </a></li>
+                            </ul>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-warning btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-check2-square me-1"></i>Bulk Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#bulkPrintModal">
+                                    <i class="bi bi-printer me-2"></i>Bulk Print
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#bulkEmailModal">
+                                    <i class="bi bi-envelope me-2"></i>Bulk Email
+                                </a></li>
+                            </ul>
+                        </div>
+                        <a href="{% url 'documentation:documentation_update' documentation.pk %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </a>
+                        <a href="{% url 'documentation:documentation_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Created by:</strong> {{ documentation.created_by.get_full_name }}
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <strong>Created:</strong> {{ documentation.created_at|date:"M d, Y H:i" }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Last updated:</strong> {{ documentation.updated_at|date:"M d, Y H:i" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Section -->
+        <div class="row">
+            <!-- Document Information - Left Column -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Document Information
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Document No:</strong> {{ documentation.document_no|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Document Type:</strong> 
+                            {% if documentation.document_type %}
+                                <span class="badge bg-primary">{{ documentation.get_document_type_display }}</span>
+                            {% else %}
+                                Not Set
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Customer:</strong> {{ documentation.customer.customer_name|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Bill To:</strong> {{ documentation.bill_to|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Bill To Address:</strong> {{ documentation.bill_to_address|default:"Not Set"|linebreaks }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Deliver to:</strong> {{ documentation.deliver_to.customer_name|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Deliver To Address:</strong> {{ documentation.deliver_to_address|default:"Not Set"|linebreaks }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Port of Loading:</strong> {{ documentation.port_of_loading.port_code|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Discharge Port:</strong> {{ documentation.discharge_port.port_code|default:"Not Set" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Details - Right Column -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-calendar-event me-2"></i>Shipping Details
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Date:</strong> {{ documentation.date|date:"M d, Y"|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Payment Mode:</strong> 
+                            {% if documentation.payment_mode %}
+                                <span class="badge bg-info">{{ documentation.get_payment_mode_display }}</span>
+                            {% else %}
+                                Not Set
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Container:</strong> {{ documentation.container|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>BL Number:</strong> {{ documentation.bl_number|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>BOE:</strong> {{ documentation.boe|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Exit Point:</strong> {{ documentation.exit_point.port_code|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Destination:</strong> {{ documentation.get_destination_display|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Ship Mode:</strong> 
+                            {% if documentation.ship_mode %}
+                                <span class="badge bg-warning text-dark">{{ documentation.get_ship_mode_display }}</span>
+                            {% else %}
+                                Not Set
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Ship Date:</strong> {{ documentation.ship_date|date:"M d, Y"|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Vessel:</strong> {{ documentation.vessel|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Voyage:</strong> {{ documentation.voyage|default:"Not Set" }}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Delivery Terms:</strong> {{ documentation.delivery_terms|default:"Not Set" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selected Cargo Items Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-box-seam me-2"></i>Selected Cargo Items
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% if documentation.cargo_items.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Job No</th>
+                                            <th>Item Code</th>
+                                            <th>Item</th>
+                                            <th>HS Code</th>
+                                            <th>Unit</th>
+                                            <th>QTY</th>
+                                            <th>COO</th>
+                                            <th>N-weight</th>
+                                            <th>G-weight</th>
+                                            <th>Rate</th>
+                                            <th>Amount</th>
+                                            <th>ED</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cargo in documentation.cargo_items.all %}
+                                        <tr>
+                                            <td>{{ cargo.job_cargo.job.job_code }}</td>
+                                            <td>{{ cargo.item_code|default:"-" }}</td>
+                                            <td>{{ cargo.item_name|default:"-" }}</td>
+                                            <td>{{ cargo.hs_code|default:"-" }}</td>
+                                            <td>{{ cargo.unit|default:"-" }}</td>
+                                            <td>{{ cargo.quantity|default:"-" }}</td>
+                                            <td>{{ cargo.coo|default:"-" }}</td>
+                                            <td>{{ cargo.net_weight|default:"-" }}</td>
+                                            <td>{{ cargo.gross_weight|default:"-" }}</td>
+                                            <td>{{ cargo.rate|default:"-" }}</td>
+                                            <td>{{ cargo.amount|default:"-" }}</td>
+                                            <td>{{ cargo.job_cargo.job.containers.first.ed_number|default:"-" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-box display-4 text-muted"></i>
+                                <h5 class="mt-3 text-muted">No Cargo Items Selected</h5>
+                                <p class="text-muted">This documentation doesn't have any cargo items selected yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Print Modal -->
+<div class="modal fade" id="bulkPrintModal" tabindex="-1" aria-labelledby="bulkPrintModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkPrintModalLabel">
+                    <i class="bi bi-printer me-2"></i>Bulk Print Documents
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkPrintForm" method="post" action="{% url 'documentation:bulk_print' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="documentation_id" value="{{ documentation.pk }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Select Documents to Print:</strong></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllPrint" onchange="toggleAllPrint()">
+                            <label class="form-check-label" for="selectAllPrint">
+                                <strong>Select All</strong>
+                            </label>
+                        </div>
+                        <hr>
+                        <div class="form-check">
+                            <input class="form-check-input print-checkbox" type="checkbox" name="documents" value="invoice" id="printInvoice">
+                            <label class="form-check-label" for="printInvoice">
+                                <i class="bi bi-receipt me-2"></i>Invoice
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input print-checkbox" type="checkbox" name="documents" value="packing_list" id="printPackingList">
+                            <label class="form-check-label" for="printPackingList">
+                                <i class="bi bi-list-check me-2"></i>Packing List
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input print-checkbox" type="checkbox" name="documents" value="da" id="printDA">
+                            <label class="form-check-label" for="printDA">
+                                <i class="bi bi-file-earmark-text me-2"></i>DA (Delivery Authorization)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input print-checkbox" type="checkbox" name="documents" value="too_letter" id="printTOOLetter">
+                            <label class="form-check-label" for="printTOOLetter">
+                                <i class="bi bi-envelope me-2"></i>TOO Letter
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Print Options:</strong></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="combine_pdf" id="combinePDF" checked>
+                            <label class="form-check-label" for="combinePDF">
+                                Combine all documents into a single PDF
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="bulkPrintForm" class="btn btn-success">
+                    <i class="bi bi-printer me-1"></i>Print Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Email Modal -->
+<div class="modal fade" id="bulkEmailModal" tabindex="-1" aria-labelledby="bulkEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkEmailModalLabel">
+                    <i class="bi bi-envelope me-2"></i>Bulk Email Documents
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkEmailForm" method="post" action="{% url 'documentation:bulk_email' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="documentation_id" value="{{ documentation.pk }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Select Documents to Email:</strong></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAllEmail" onchange="toggleAllEmail()">
+                            <label class="form-check-label" for="selectAllEmail">
+                                <strong>Select All</strong>
+                            </label>
+                        </div>
+                        <hr>
+                        <div class="form-check">
+                            <input class="form-check-input email-checkbox" type="checkbox" name="documents" value="invoice" id="emailInvoice">
+                            <label class="form-check-label" for="emailInvoice">
+                                <i class="bi bi-receipt me-2"></i>Invoice
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input email-checkbox" type="checkbox" name="documents" value="packing_list" id="emailPackingList">
+                            <label class="form-check-label" for="emailPackingList">
+                                <i class="bi bi-list-check me-2"></i>Packing List
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input email-checkbox" type="checkbox" name="documents" value="da" id="emailDA">
+                            <label class="form-check-label" for="emailDA">
+                                <i class="bi bi-file-earmark-text me-2"></i>DA (Delivery Authorization)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input email-checkbox" type="checkbox" name="documents" value="too_letter" id="emailTOOLetter">
+                            <label class="form-check-label" for="emailTOOLetter">
+                                <i class="bi bi-envelope me-2"></i>TOO Letter
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emailSubject" class="form-label"><strong>Email Subject:</strong></label>
+                        <input type="text" class="form-control" id="emailSubject" name="subject" 
+                               value="Documents - {{ documentation.document_no }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emailMessage" class="form-label"><strong>Email Message:</strong></label>
+                        <textarea class="form-control" id="emailMessage" name="message" rows="4" required>Please find attached the requested documents for documentation {{ documentation.document_no }}.</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emailRecipients" class="form-label"><strong>Recipients:</strong></label>
+                        <input type="email" class="form-control" id="emailRecipients" name="recipients" 
+                               value="{% if documentation.customer.email %}{{ documentation.customer.email }}{% endif %}" 
+                               placeholder="Enter email addresses separated by commas" required>
+                        <div class="form-text">Multiple email addresses can be separated by commas</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Email Options:</strong></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="combine_pdf" id="emailCombinePDF" checked>
+                            <label class="form-check-label" for="emailCombinePDF">
+                                Combine all documents into a single PDF attachment
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="bulkEmailForm" class="btn btn-info">
+                    <i class="bi bi-envelope me-1"></i>Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAllPrint() {
+    const selectAll = document.getElementById('selectAllPrint');
+    const checkboxes = document.querySelectorAll('.print-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function toggleAllEmail() {
+    const selectAll = document.getElementById('selectAllEmail');
+    const checkboxes = document.querySelectorAll('.email-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+// Update select all checkboxes when individual checkboxes change
+document.querySelectorAll('.print-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const selectAll = document.getElementById('selectAllPrint');
+        const allChecked = Array.from(document.querySelectorAll('.print-checkbox')).every(cb => cb.checked);
+        const anyChecked = Array.from(document.querySelectorAll('.print-checkbox')).some(cb => cb.checked);
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = anyChecked && !allChecked;
+    });
+});
+
+document.querySelectorAll('.email-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const selectAll = document.getElementById('selectAllEmail');
+        const allChecked = Array.from(document.querySelectorAll('.email-checkbox')).every(cb => cb.checked);
+        const anyChecked = Array.from(document.querySelectorAll('.email-checkbox')).some(cb => cb.checked);
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = anyChecked && !allChecked;
+    });
+});
+
+// Form validation for bulk print
+document.getElementById('bulkPrintForm').addEventListener('submit', function(e) {
+    const selectedDocuments = document.querySelectorAll('.print-checkbox:checked');
+    if (selectedDocuments.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one document to print.');
+        return false;
+    }
+});
+
+// Form validation for bulk email
+document.getElementById('bulkEmailForm').addEventListener('submit', function(e) {
+    const selectedDocuments = document.querySelectorAll('.email-checkbox:checked');
+    if (selectedDocuments.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one document to email.');
+        return false;
+    }
+});
+</script>
+{% endblock %} 

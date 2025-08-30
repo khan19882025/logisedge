@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Container {{ object.container_number }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Delete Container
+        </h1>
+        <a href="{% url 'container_management:container_list' %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Containers
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Warning!
+                        </h5>
+                        <p class="mb-0">
+                            You are about to delete the container <strong>{{ object.container_number }}</strong>. 
+                            This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Container Details:</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Container Number:</strong></td>
+                                    <td>{{ object.container_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>{{ object.get_container_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Size:</strong></td>
+                                    <td>{{ object.size }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{{ object.get_status_display_class }}">
+                                            {{ object.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Location:</strong></td>
+                                    <td>{{ object.current_location }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger">Related Data:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="bi bi-calendar-check me-2"></i>
+                                    <strong>{{ object.bookings.count }}</strong> bookings
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-geo-alt me-2"></i>
+                                    <strong>{{ object.tracking_events.count }}</strong> tracking events
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-arrow-left-right me-2"></i>
+                                    <strong>{{ object.movements.count }}</strong> movements
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-building me-2"></i>
+                                    <strong>{{ object.inventory_records.count }}</strong> inventory records
+                                </li>
+                            </ul>
+                            
+                            {% if object.bookings.exists or object.tracking_events.exists or object.movements.exists or object.inventory_records.exists %}
+                                <div class="alert alert-danger mt-3" role="alert">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Warning:</strong> This container has related data. 
+                                    Deleting it will also remove all associated records.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'container_management:container_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-x me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Delete Container
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+{% endblock %}

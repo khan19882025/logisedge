@@ -1,0 +1,221 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Salesmen - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/salesman/salesman.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-person-badge me-2"></i>Salesmen
+            </h1>
+            <p class="text-muted mb-0">Manage your sales personnel</p>
+        </div>
+        <a href="{% url 'salesman:salesman_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Add Salesman
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="salesman-search-form">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search_query }}" placeholder="Search by code, name, email, or phone">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-control" id="status" name="status">
+                    <option value="">All Status</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="department" class="form-label">Department</label>
+                <input type="text" class="form-control" id="department" name="department" 
+                       value="{{ department_filter }}" placeholder="Filter by department">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="text-muted mb-0">
+            Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} salesmen
+        </p>
+        {% if request.GET %}
+        <a href="{% url 'salesman:salesman_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x-circle me-1"></i>Clear Filters
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Salesmen Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 salesman-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Commission</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for salesman in page_obj %}
+                        <tr class="salesman-card">
+                            <td>
+                                <strong>{{ salesman.salesman_code }}</strong>
+                            </td>
+                            <td>
+                                <a href="{% url 'salesman:salesman_detail' salesman.pk %}" class="text-decoration-none">
+                                    {{ salesman.get_full_name }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if salesman.email %}
+                                <a href="mailto:{{ salesman.email }}" class="text-decoration-none">
+                                    {{ salesman.email }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if salesman.phone %}
+                                <a href="tel:{{ salesman.phone }}" class="text-decoration-none">
+                                    {{ salesman.phone }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>{{ salesman.department|default:"-" }}</td>
+                            <td>
+                                {% if salesman.status == 'active' %}
+                                <span class="badge bg-success salesman-status-badge">Active</span>
+                                {% elif salesman.status == 'inactive' %}
+                                <span class="badge bg-secondary salesman-status-badge">Inactive</span>
+                                {% elif salesman.status == 'on_leave' %}
+                                <span class="badge bg-warning salesman-status-badge">On Leave</span>
+                                {% else %}
+                                <span class="badge bg-danger salesman-status-badge">Terminated</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if salesman.commission_rate > 0 %}
+                                <span class="salesman-commission">{{ salesman.commission_rate }}%</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="salesman-actions">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'salesman:salesman_detail' salesman.pk %}" 
+                                       class="btn btn-outline-primary" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'salesman:salesman_update' salesman.pk %}" 
+                                       class="btn btn-outline-warning" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'salesman:salesman_delete' salesman.pk %}" 
+                                       class="btn btn-outline-danger btn-delete" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-person-badge display-1 text-muted"></i>
+                <h4 class="mt-3">No salesmen found</h4>
+                <p class="text-muted">Get started by adding your first salesman.</p>
+                <a href="{% url 'salesman:salesman_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add Salesman
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Salesman pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/salesman/salesman.js' %}"></script>
+{% endblock %} 

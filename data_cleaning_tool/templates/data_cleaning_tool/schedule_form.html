@@ -1,0 +1,381 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}{% if schedule %}Edit Schedule{% else %}Create New Schedule{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-{% if schedule %}edit{% else %}plus-circle{% endif %} text-primary me-2"></i>
+                        {% if schedule %}Edit Schedule{% else %}Create New Schedule{% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if schedule %}
+                            Modify the automated cleaning schedule "{{ schedule.name }}"
+                        {% else %}
+                            Define a new automated schedule for recurring data cleaning tasks
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'data_cleaning_tool:schedule_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Schedules
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-cog me-2"></i>
+                                Schedule Configuration
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="scheduleForm">
+                                {% csrf_token %}
+                                
+                                <!-- Basic Information -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_name" class="form-label">Schedule Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="id_name" name="name" value="{{ schedule.name|default:'' }}" required>
+                                            <div class="form-text">A descriptive name for the schedule</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_frequency" class="form-label">Frequency <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="id_frequency" name="frequency" required>
+                                                <option value="">Select Frequency</option>
+                                                <option value="daily" {% if schedule.frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                                <option value="weekly" {% if schedule.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                                <option value="monthly" {% if schedule.frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                                                <option value="quarterly" {% if schedule.frequency == 'quarterly' %}selected{% endif %}>Quarterly</option>
+                                                <option value="yearly" {% if schedule.frequency == 'yearly' %}selected{% endif %}>Yearly</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="id_description" name="description" rows="3" placeholder="Describe what this schedule does...">{{ schedule.description|default:'' }}</textarea>
+                                    <div class="form-text">Detailed description of the schedule's purpose</div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <!-- Time and Date Configuration -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-calendar-alt me-2"></i>
+                                    Time and Date Configuration
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_specific_time" class="form-label">Specific Time (HH:MM)</label>
+                                            <input type="time" class="form-control" id="id_specific_time" name="specific_time" value="{{ schedule.specific_time|time:'H:i'|default:'' }}">
+                                            <div class="form-text">The exact time of day the schedule should run (e.g., 02:00 for 2 AM)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_start_date" class="form-label">Start Date</label>
+                                            <input type="date" class="form-control" id="id_start_date" name="start_date" value="{{ schedule.start_date|date:'Y-m-d'|default:'' }}">
+                                            <div class="form-text">The date from which the schedule becomes active</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_end_date" class="form-label">End Date (Optional)</label>
+                                            <input type="date" class="form-control" id="id_end_date" name="end_date" value="{{ schedule.end_date|date:'Y-m-d'|default:'' }}">
+                                            <div class="form-text">The date when the schedule should stop running</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_day_of_week" class="form-label">Day of Week (for Weekly)</label>
+                                            <select class="form-select" id="id_day_of_week" name="day_of_week">
+                                                <option value="">Select Day</option>
+                                                <option value="0" {% if schedule.day_of_week == 0 %}selected{% endif %}>Monday</option>
+                                                <option value="1" {% if schedule.day_of_week == 1 %}selected{% endif %}>Tuesday</option>
+                                                <option value="2" {% if schedule.day_of_week == 2 %}selected{% endif %}>Wednesday</option>
+                                                <option value="3" {% if schedule.day_of_week == 3 %}selected{% endif %}>Thursday</option>
+                                                <option value="4" {% if schedule.day_of_week == 4 %}selected{% endif %}>Friday</option>
+                                                <option value="5" {% if schedule.day_of_week == 5 %}selected{% endif %}>Saturday</option>
+                                                <option value="6" {% if schedule.day_of_week == 6 %}selected{% endif %}>Sunday</option>
+                                            </select>
+                                            <div class="form-text">For weekly schedules, specify the day of the week</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_day_of_month" class="form-label">Day of Month (for Monthly)</label>
+                                            <input type="number" class="form-control" id="id_day_of_month" name="day_of_month" value="{{ schedule.day_of_month|default:'' }}" min="1" max="31">
+                                            <div class="form-text">For monthly schedules, specify the day of the month (1-31)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_month_of_year" class="form-label">Month of Year (for Yearly)</label>
+                                            <select class="form-select" id="id_month_of_year" name="month_of_year">
+                                                <option value="">Select Month</option>
+                                                <option value="1" {% if schedule.month_of_year == 1 %}selected{% endif %}>January</option>
+                                                <option value="2" {% if schedule.month_of_year == 2 %}selected{% endif %}>February</option>
+                                                <option value="3" {% if schedule.month_of_year == 3 %}selected{% endif %}>March</option>
+                                                <option value="4" {% if schedule.month_of_year == 4 %}selected{% endif %}>April</option>
+                                                <option value="5" {% if schedule.month_of_year == 5 %}selected{% endif %}>May</option>
+                                                <option value="6" {% if schedule.month_of_year == 6 %}selected{% endif %}>June</option>
+                                                <option value="7" {% if schedule.month_of_year == 7 %}selected{% endif %}>July</option>
+                                                <option value="8" {% if schedule.month_of_year == 8 %}selected{% endif %}>August</option>
+                                                <option value="9" {% if schedule.month_of_year == 9 %}selected{% endif %}>September</option>
+                                                <option value="10" {% if schedule.month_of_year == 10 %}selected{% endif %}>October</option>
+                                                <option value="11" {% if schedule.month_of_year == 11 %}selected{% endif %}>November</option>
+                                                <option value="12" {% if schedule.month_of_year == 12 %}selected{% endif %}>December</option>
+                                            </select>
+                                            <div class="form-text">For yearly schedules, specify the month</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <!-- Cleaning Configuration -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-broom me-2"></i>
+                                    Cleaning Configuration
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_cleaning_type" class="form-label">Cleaning Type <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="id_cleaning_type" name="cleaning_type" required>
+                                                <option value="">Select Cleaning Type</option>
+                                                <option value="master" {% if schedule.cleaning_type == 'master' %}selected{% endif %}>Master Data</option>
+                                                <option value="transactional" {% if schedule.cleaning_type == 'transactional' %}selected{% endif %}>Transactional Data</option>
+                                                <option value="financial" {% if schedule.cleaning_type == 'financial' %}selected{% endif %}>Financial Data</option>
+                                                <option value="comprehensive" {% if schedule.cleaning_type == 'comprehensive' %}selected{% endif %}>Comprehensive</option>
+                                            </select>
+                                            <div class="form-text">The type of data this schedule will clean</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_rules_to_apply" class="form-label">Rules to Apply</label>
+                                            <select class="form-select" id="id_rules_to_apply" name="rules_to_apply" multiple>
+                                                {% for rule in all_rules %}
+                                                    <option value="{{ rule.id }}" {% if rule in schedule.rules_to_apply.all %}selected{% endif %}>{{ rule.name }} ({{ rule.get_rule_type_display }})</option>
+                                                {% endfor %}
+                                            </select>
+                                            <div class="form-text">Select specific rules to be executed by this schedule (leave empty for all active rules of the selected type)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_create_session_on_run" name="create_session_on_run" {% if schedule.create_session_on_run %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_create_session_on_run">
+                                                Create Session on Run
+                                            </label>
+                                            <div class="form-text">Automatically create a new cleaning session record each time this schedule runs</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_send_notifications" name="send_notifications" {% if schedule.send_notifications %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_send_notifications">
+                                                Send Notifications
+                                            </label>
+                                            <div class="form-text">Send email notifications upon schedule completion or failure</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <!-- Status and Control -->
+                                <h6 class="mb-3">
+                                    <i class="fas fa-toggle-on me-2"></i>
+                                    Status and Control
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_status" class="form-label">Status</label>
+                                            <select class="form-select" id="id_status" name="status">
+                                                <option value="active" {% if schedule.status == 'active' %}selected{% endif %}>Active</option>
+                                                <option value="inactive" {% if schedule.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                                <option value="paused" {% if schedule.status == 'paused' %}selected{% endif %}>Paused</option>
+                                            </select>
+                                            <div class="form-text">Current status of the schedule</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_priority" class="form-label">Execution Priority</label>
+                                            <select class="form-select" id="id_priority" name="priority">
+                                                <option value="low" {% if schedule.priority == 'low' %}selected{% endif %}>Low</option>
+                                                <option value="medium" {% if schedule.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                                <option value="high" {% if schedule.priority == 'high' %}selected{% endif %}>High</option>
+                                                <option value="critical" {% if schedule.priority == 'critical' %}selected{% endif %}>Critical</option>
+                                            </select>
+                                            <div class="form-text">Importance of this schedule relative to others</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        {% if schedule %}Update Schedule{% else %}Create Schedule{% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Schedule Frequency Guide
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="text-primary">Daily</h6>
+                                <p class="small text-muted mb-0">
+                                    Runs once every day at the specified time.
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-success">Weekly</h6>
+                                <p class="small text-muted mb-0">
+                                    Runs once every week on the specified day and time.
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-info">Monthly</h6>
+                                <p class="small text-muted mb-0">
+                                    Runs once every month on the specified day of the month and time.
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-warning">Quarterly</h6>
+                                <p class="small text-muted mb-0">
+                                    Runs once every three months on the specified day and month.
+                                </p>
+                            </div>
+                            <div class="mb-0">
+                                <h6 class="text-secondary">Yearly</h6>
+                                <p class="small text-muted mb-0">
+                                    Runs once every year on the specified day and month.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                Best Practices
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled small">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Schedule resource-intensive tasks during off-peak hours.
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Use descriptive names for easy identification.
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Monitor audit logs and reports regularly.
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Test new schedules in a staging environment first.
+                                </li>
+                                <li class="mb-0">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Enable notifications for critical schedules.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const frequencySelect = document.getElementById('id_frequency');
+    const dayOfWeekField = document.getElementById('id_day_of_week').closest('.mb-3');
+    const dayOfMonthField = document.getElementById('id_day_of_month').closest('.mb-3');
+    const monthOfYearField = document.getElementById('id_month_of_year').closest('.mb-3');
+
+    function toggleFrequencyFields() {
+        const frequency = frequencySelect.value;
+
+        dayOfWeekField.style.display = 'none';
+        dayOfMonthField.style.display = 'none';
+        monthOfYearField.style.display = 'none';
+
+        if (frequency === 'weekly') {
+            dayOfWeekField.style.display = 'block';
+        } else if (frequency === 'monthly') {
+            dayOfMonthField.style.display = 'block';
+        } else if (frequency === 'quarterly' || frequency === 'yearly') {
+            dayOfMonthField.style.display = 'block';
+            monthOfYearField.style.display = 'block';
+        }
+    }
+
+    frequencySelect.addEventListener('change', toggleFrequencyFields);
+    toggleFrequencyFields(); // Initial call to set visibility based on current value
+});
+</script>
+
+<style>
+/* Add any specific styles for this template here if needed */
+</style>
+{% endblock %}

@@ -1,0 +1,355 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Report Detail - {{ report.id }} - Data Cleaning Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-chart-line me-2"></i>Quality Report #{{ report.id }}
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'data_cleaning_tool:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'data_cleaning_tool:reports' %}">Reports</a></li>
+                <li class="breadcrumb-item active">Report #{{ report.id }}</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Report Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Report Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Report ID:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-secondary">#{{ report.id }}</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Generated At:</dt>
+                                <dd class="col-sm-8">{{ report.generated_at|date:"F d, Y \a\t H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">Session:</dt>
+                                <dd class="col-sm-8">
+                                    {% if report.session %}
+                                        <a href="{% url 'data_cleaning_tool:session_detail' pk=report.session.pk %}" class="text-decoration-none">
+                                            {{ report.session.name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">No session</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Report Type:</dt>
+                                <dd class="col-sm-8">{{ report.get_report_type_display }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Overall Score:</dt>
+                                <dd class="col-sm-8">
+                                    {% if report.overall_score >= 90 %}
+                                        <span class="badge bg-success fs-6">{{ report.overall_score }}%</span>
+                                    {% elif report.overall_score >= 70 %}
+                                        <span class="badge bg-warning text-dark fs-6">{{ report.overall_score }}%</span>
+                                    {% else %}
+                                        <span class="badge bg-danger fs-6">{{ report.overall_score }}%</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    {% if report.overall_score >= 90 %}
+                                        <span class="badge bg-success">Excellent</span>
+                                    {% elif report.overall_score >= 70 %}
+                                        <span class="badge bg-warning text-dark">Good</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Needs Improvement</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Records Analyzed:</dt>
+                                <dd class="col-sm-8">{{ report.records_analyzed|default:"N/A" }}</dd>
+                                
+                                <dt class="col-sm-4">Issues Found:</dt>
+                                <dd class="col-sm-8">{{ report.issues_found|default:"N/A" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="downloadReport()">
+                            <i class="fas fa-download me-2"></i>Download Report
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="shareReport()">
+                            <i class="fas fa-share me-2"></i>Share Report
+                        </button>
+                        <button class="btn btn-outline-success" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel me-2"></i>Export to Excel
+                        </button>
+                        <button class="btn btn-outline-info" onclick="printReport()">
+                            <i class="fas fa-print me-2"></i>Print Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quality Scores -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Quality Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Data Quality</h6>
+                                <div class="progress mb-2" style="height: 25px;">
+                                    <div class="progress-bar {% if report.data_quality_score >= 90 %}bg-success{% elif report.data_quality_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ report.data_quality_score }}%"
+                                         aria-valuenow="{{ report.data_quality_score }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <h4 class="mb-0">{{ report.data_quality_score }}%</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Completeness</h6>
+                                <div class="progress mb-2" style="height: 25px;">
+                                    <div class="progress-bar {% if report.completeness_score >= 90 %}bg-success{% elif report.completeness_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ report.completeness_score }}%"
+                                         aria-valuenow="{{ report.completeness_score }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <h4 class="mb-0">{{ report.completeness_score }}%</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Accuracy</h6>
+                                <div class="progress mb-2" style="height: 25px;">
+                                    <div class="progress-bar {% if report.accuracy_score >= 90 %}bg-success{% elif report.accuracy_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ report.accuracy_score }}%"
+                                         aria-valuenow="{{ report.accuracy_score }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <h4 class="mb-0">{{ report.accuracy_score }}%</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-muted">Consistency</h6>
+                                <div class="progress mb-2" style="height: 25px;">
+                                    <div class="progress-bar {% if report.consistency_score >= 90 %}bg-success{% elif report.consistency_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ report.consistency_score }}%"
+                                         aria-valuenow="{{ report.consistency_score }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <h4 class="mb-0">{{ report.consistency_score }}%</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Findings -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i>Detailed Findings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if report.findings %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Issue</th>
+                                        <th>Severity</th>
+                                        <th>Count</th>
+                                        <th>Recommendation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for finding in report.findings %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ finding.category }}</span>
+                                        </td>
+                                        <td>{{ finding.issue }}</td>
+                                        <td>
+                                            {% if finding.severity == 'high' %}
+                                                <span class="badge bg-danger">{{ finding.severity|title }}</span>
+                                            {% elif finding.severity == 'medium' %}
+                                                <span class="badge bg-warning text-dark">{{ finding.severity|title }}</span>
+                                            {% else %}
+                                                <span class="badge bg-info">{{ finding.severity|title }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ finding.count }}</td>
+                                        <td>{{ finding.recommendation }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                            <h5 class="text-success">No Issues Found</h5>
+                            <p class="text-muted">Great! No data quality issues were detected in this analysis.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    {% if report.recommendations %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for recommendation in report.recommendations %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-left-info">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-arrow-right me-2 text-info"></i>
+                                        {{ recommendation.title }}
+                                    </h6>
+                                    <p class="card-text">{{ recommendation.description }}</p>
+                                    {% if recommendation.priority %}
+                                        <span class="badge bg-info">{{ recommendation.priority|title }} Priority</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Report Metadata
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Generated By:</dt>
+                                <dd class="col-sm-8">{{ report.generated_by.username|default:"System" }}</dd>
+                                
+                                <dt class="col-sm-4">Processing Time:</dt>
+                                <dd class="col-sm-8">{{ report.processing_time|default:"N/A" }}</dd>
+                                
+                                <dt class="col-sm-4">Data Source:</dt>
+                                <dd class="col-sm-8">{{ report.data_source|default:"N/A" }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Report Version:</dt>
+                                <dd class="col-sm-8">{{ report.report_version|default:"1.0" }}</dd>
+                                
+                                <dt class="col-sm-4">Last Updated:</dt>
+                                <dd class="col-sm-8">{{ report.last_updated|date:"M d, Y H:i"|default:"N/A" }}</dd>
+                                
+                                <dt class="col-sm-4">Export Format:</dt>
+                                <dd class="col-sm-8">{{ report.export_format|default:"PDF" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadReport() {
+    // Download functionality would go here
+    showAlert('Download functionality coming soon!', 'info');
+}
+
+function shareReport() {
+    // Share functionality would go here
+    showAlert('Share functionality coming soon!', 'info');
+}
+
+function exportToExcel() {
+    // Excel export functionality would go here
+    showAlert('Excel export functionality coming soon!', 'info');
+}
+
+function printReport() {
+    // Print functionality would go here
+    window.print();
+}
+</script>
+{% endblock %}

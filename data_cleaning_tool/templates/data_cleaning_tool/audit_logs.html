@@ -1,0 +1,226 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Audit Logs - Data Cleaning Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-history me-2"></i>Audit Logs
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'data_cleaning_tool:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Audit Logs</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Filter Logs
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label for="{{ form.date_from.id_for_label }}" class="form-label">Date From</label>
+                    {{ form.date_from }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ form.date_to.id_for_label }}" class="form-label">Date To</label>
+                    {{ form.date_to }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ form.severity.id_for_label }}" class="form-label">Severity</label>
+                    {{ form.severity }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ form.action_type.id_for_label }}" class="form-label">Action Type</label>
+                    {{ form.action_type }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ form.target_model.id_for_label }}" class="form-label">Target Model</label>
+                    {{ form.target_model }}
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>Filter
+                    </button>
+                    <a href="{% url 'data_cleaning_tool:audit_logs' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Audit Logs
+                </h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportLogs()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Severity</th>
+                                <th>Target</th>
+                                <th>Details</th>
+                                <th>Session</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in page_obj %}
+                            <tr>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ log.created_at|date:"M d, Y H:i" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if log.user %}
+                                        <span class="badge bg-info">{{ log.user.username }}</span>
+                                    {% else %}
+                                        <span class="text-muted">System</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ log.get_action_type_display }}</span>
+                                </td>
+                                <td>
+                                    {% if log.severity == 'error' %}
+                                        <span class="badge bg-danger">{{ log.get_severity_display }}</span>
+                                    {% elif log.severity == 'warning' %}
+                                        <span class="badge bg-warning text-dark">{{ log.get_severity_display }}</span>
+                                    {% elif log.severity == 'info' %}
+                                        <span class="badge bg-info">{{ log.get_severity_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ log.get_severity_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <code>{{ log.target_model }}</code>
+                                    {% if log.record_id %}
+                                        <small class="text-muted">#{{ log.record_id }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ log.details }}">
+                                        {{ log.details|truncatechars:50 }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if log.session %}
+                                        <a href="{% url 'data_cleaning_tool:session_detail' pk=log.session.pk %}" class="text-decoration-none">
+                                            {{ log.session.name|truncatechars:30 }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Audit logs pagination">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.target_model %}&target_model={{ request.GET.target_model }}{% endif %}">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.target_model %}&target_model={{ request.GET.target_model }}{% endif %}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.target_model %}&target_model={{ request.GET.target_model }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.target_model %}&target_model={{ request.GET.target_model }}{% endif %}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.severity %}&severity={{ request.GET.severity }}{% endif %}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.target_model %}&target_model={{ request.GET.target_model }}{% endif %}">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                        </small>
+                    </div>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No audit logs found</h5>
+                    <p class="text-muted">There are no audit logs matching your current filters.</p>
+                    <a href="{% url 'data_cleaning_tool:audit_logs' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-times me-1"></i>Clear Filters
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function exportLogs() {
+    // Get current filter parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const exportUrl = '{% url "data_cleaning_tool:audit_logs" %}' + '?' + urlParams.toString() + '&export=csv';
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = exportUrl;
+    link.download = 'audit_logs.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

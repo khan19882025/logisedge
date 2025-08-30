@@ -1,0 +1,163 @@
+{% extends 'depreciation_schedule/base.html' %}
+{% load static %}
+
+{% block title %}Post Depreciation - {{ schedule.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_list' %}">Schedules</a></li>
+<li class="breadcrumb-item"><a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}">{{ schedule.name }}</a></li>
+<li class="breadcrumb-item active">Post to GL</li>
+{% endblock %}
+
+{% block depreciation_schedule_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-journal-check me-2"></i>Post Depreciation to General Ledger
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="alert-heading">Posting to General Ledger</h5>
+                    <p>You are about to post depreciation for the schedule <strong>"{{ schedule.name }}"</strong> to the general ledger.</p>
+                    <hr>
+                    <p class="mb-0">This will create a journal entry and update the asset records. This action cannot be undone.</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Schedule Details</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Schedule Number:</dt>
+                            <dd class="col-sm-8">{{ schedule.schedule_number }}</dd>
+                            
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">{{ schedule.name }}</dd>
+                            
+                            <dt class="col-sm-4">Total Depreciation:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_depreciation|floatformat:2 }}</dd>
+                            
+                            <dt class="col-sm-4">Total Assets:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_assets }}</dd>
+                            
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-{{ schedule.status }} rounded-pill">
+                                    {{ schedule.get_status_display }}
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Journal Entry Details</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">Debit Account:</dt>
+                            <dd class="col-sm-8">{{ schedule.depreciation_expense_account }}</dd>
+                            
+                            <dt class="col-sm-4">Credit Account:</dt>
+                            <dd class="col-sm-8">{{ schedule.accumulated_depreciation_account }}</dd>
+                            
+                            <dt class="col-sm-4">Amount:</dt>
+                            <dd class="col-sm-8">{{ schedule.total_depreciation|floatformat:2 }}</dd>
+                            
+                            <dt class="col-sm-4">Date:</dt>
+                            <dd class="col-sm-8">{{ schedule.end_date|date:"M d, Y" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <hr>
+
+                <form method="post" id="post-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirm-posting" name="confirm_posting" required>
+                                    <label class="form-check-label" for="confirm-posting">
+                                        I confirm that I want to post depreciation to the general ledger
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="post-date" class="form-label">Posting Date</label>
+                                <input type="date" class="form-control" id="post-date" name="post_date" value="{{ schedule.end_date|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="reference" class="form-label">Reference (Optional)</label>
+                                <input type="text" class="form-control" id="reference" name="reference" placeholder="Optional reference for the journal entry">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="2" placeholder="Description for the journal entry">{{ schedule.name }} - Depreciation for {{ schedule.start_date|date:'M Y' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'depreciation_schedule:schedule_detail' schedule.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="post-btn" disabled>
+                            <i class="bi bi-journal-check me-2"></i>Post to General Ledger
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">Posting to General Ledger</h5>
+            </div>
+            <div class="modal-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <p class="text-center" id="progress-text">Creating journal entry...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirm-posting');
+    const postBtn = document.getElementById('post-btn');
+    const postForm = document.getElementById('post-form');
+    const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+    
+    // Enable/disable post button based on confirmation
+    confirmCheckbox.addEventListener('change', function() {
+        postBtn.disabled = !this.checked;
+    });
+    
+    // Show progress modal on form submit
+    postForm.addEventListener('submit', function() {
+        progressModal.show();
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load shipment_filters %}
+
+{% block title %}Delete Shipment{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shipment_tracking/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-trash fa-fw"></i> Delete Shipment
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'shipment_tracking:shipment_detail' object.pk %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Details
+            </a>
+            <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-list"></i> View All
+            </a>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle"></i> Warning!
+                        </h6>
+                        <p class="mb-0">
+                            You are about to delete the shipment <strong>"{{ object.shipment_id }}"</strong>. 
+                            This action cannot be undone and will permanently remove all associated data including:
+                        </p>
+                        <ul class="mb-0 mt-2">
+                            <li>All status updates and tracking history</li>
+                            <li>All attachments and documents</li>
+                            <li>All notification logs</li>
+                            <li>All search history related to this shipment</li>
+                        </ul>
+                    </div>
+
+                    <!-- Shipment Details -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Shipment Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Shipment ID:</strong></td>
+                                    <td>{{ object.shipment_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Container:</strong></td>
+                                    <td>{{ object.container_number|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Booking ID:</strong></td>
+                                    <td>{{ object.booking_id|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer:</strong></td>
+                                    <td>{{ object.customer_name }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Route Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Origin:</strong></td>
+                                    <td>{{ object.origin_port }}, {{ object.origin_country }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Destination:</strong></td>
+                                    <td>{{ object.destination_port }}, {{ object.destination_country }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{{ object.current_status|status_badge_color }}">
+                                            {{ object.current_status|status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ object.created_at|date:"M d, Y" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Associated Data Summary -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-primary">Associated Data to be Deleted</h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="badge badge-info badge-pill">{{ object.status_updates.count }}</div>
+                                        <br><small>Status Updates</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="badge badge-warning badge-pill">{{ object.attachments.count }}</div>
+                                        <br><small>Attachments</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="badge badge-secondary badge-pill">{{ object.notifications.count }}</div>
+                                        <br><small>Notifications</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <div class="badge badge-danger badge-pill">1</div>
+                                        <br><small>Shipment Record</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Form -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="confirmDelete" required>
+                                <label class="custom-control-label" for="confirmDelete">
+                                    I understand that this action is permanent and cannot be undone
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deleteReason">Reason for deletion (optional):</label>
+                            <textarea class="form-control" id="deleteReason" name="delete_reason" rows="3" 
+                                      placeholder="Please provide a reason for deleting this shipment..."></textarea>
+                        </div>
+
+                        <hr>
+                        
+                        <div class="text-right">
+                            <a href="{% url 'shipment_tracking:shipment_detail' object.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                <i class="fas fa-trash"></i> Delete Shipment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Enable delete button only when checkbox is checked
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmCheckbox = document.getElementById('confirmDelete');
+        const deleteBtn = document.getElementById('deleteBtn');
+        
+        if (confirmCheckbox && deleteBtn) {
+            confirmCheckbox.addEventListener('change', function() {
+                deleteBtn.disabled = !this.checked;
+            });
+        }
+    });
+</script>
+{% endblock %}

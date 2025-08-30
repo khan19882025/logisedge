@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Rule{% else %}Create New Rule{% endif %} - Merge Duplicates
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-rules text-primary me-2"></i>
+                    {% if form.instance.pk %}Edit Rule{% else %}Create New Rule{% endif %}
+                </h1>
+                <p class="text-muted">
+                    {% if form.instance.pk %}
+                        Modify deduplication rule configuration
+                    {% else %}
+                        Configure a new deduplication rule
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Rule Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="ruleForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        Rule Name <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.target_model.id_for_label }}" class="form-label">
+                                        Target Model <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.target_model }}
+                                    {% if form.target_model.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.target_model.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.similarity_threshold.id_for_label }}" class="form-label">
+                                        Similarity Threshold <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.similarity_threshold }}
+                                    <small class="form-text text-muted">
+                                        Minimum similarity score (0-100) to consider records as duplicates
+                                    </small>
+                                    {% if form.similarity_threshold.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.similarity_threshold.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                        Priority <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.priority }}
+                                    <small class="form-text text-muted">
+                                        Higher priority rules are processed first
+                                    </small>
+                                    {% if form.priority.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.priority.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.fields.id_for_label }}" class="form-label">
+                                Fields to Compare <span class="text-danger">*</span>
+                            </label>
+                            {{ form.fields }}
+                            <small class="form-text text-muted">
+                                Select the fields to use for duplicate detection
+                            </small>
+                            {% if form.fields.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.fields.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.is_active.id_for_label }}" class="form-label">
+                                        Rule Status
+                                    </label>
+                                    <div class="form-check">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Enable this rule
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.auto_merge.id_for_label }}" class="form-label">
+                                        Auto-merge Options
+                                    </label>
+                                    <div class="form-check">
+                                        {{ form.auto_merge }}
+                                        <label class="form-check-label" for="{{ form.auto_merge.id_for_label }}">
+                                            Enable automatic merging for high-confidence matches
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.merge_strategy.id_for_label }}" class="form-label">
+                                Merge Strategy <span class="text-danger">*</span>
+                            </label>
+                            {{ form.merge_strategy }}
+                            <small class="form-text text-muted">
+                                How to handle conflicts when merging duplicate records
+                            </small>
+                            {% if form.merge_strategy.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.merge_strategy.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'data_cleaning_tool:rules_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Rules
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if form.instance.pk %}Update Rule{% else %}Create Rule{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Help & Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Rule Configuration Tips</h6>
+                        <ul class="mb-0 small">
+                            <li>Choose fields that are most likely to identify duplicates</li>
+                            <li>Set appropriate similarity threshold (70-90% recommended)</li>
+                            <li>Use priority to control rule execution order</li>
+                            <li>Test rules on small datasets first</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Important Notes</h6>
+                        <ul class="mb-0 small">
+                            <li>Rules are processed in priority order</li>
+                            <li>Higher thresholds reduce false positives</li>
+                            <li>Auto-merge should be used carefully</li>
+                            <li>Test thoroughly before production use</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle me-2"></i>Best Practices</h6>
+                        <ul class="mb-0 small">
+                            <li>Start with simple rules and refine</li>
+                            <li>Monitor false positive rates</li>
+                            <li>Use descriptive names and descriptions</li>
+                            <li>Review merge results regularly</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Form validation
+    $('#ruleForm').on('submit', function(e) {
+        var isValid = true;
+        
+        // Check required fields
+        $('[required]').each(function() {
+            if (!$(this).val()) {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+    
+    // Real-time validation
+    $('input, select, textarea').on('blur', function() {
+        if ($(this).prop('required') && !$(this).val()) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+
+    // Dynamic field selection based on target model
+    $('#id_target_model').on('change', function() {
+        var targetModel = $(this).val();
+        if (targetModel) {
+            // This would typically make an AJAX call to get available fields
+            // For now, we'll just show a message
+            console.log('Target model changed to:', targetModel);
+        }
+    });
+});
+</script>
+{% endblock %}

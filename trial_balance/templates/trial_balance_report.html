@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trial Balance Report{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'trial_balance/css/trial_balance.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="trial-balance-container">
+    <!-- Header Section -->
+    <div class="trial-balance-header">
+        <div class="container">
+            <h1>
+                <i class="bi bi-calculator me-3"></i>
+                Trial Balance Report
+            </h1>
+            <p>Comprehensive financial overview with real-time balance calculations</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h3>
+                <i class="bi bi-funnel"></i>
+                Filter Options
+            </h3>
+            
+            <form id="trial-balance-filter-form" method="get" class="filter-form">
+                {% csrf_token %}
+                
+                <!-- Date Range -->
+                <div class="form-group">
+                    <label for="{{ filter_form.from_date.id_for_label }}">From Date</label>
+                    {{ filter_form.from_date }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ filter_form.to_date.id_for_label }}">To Date</label>
+                    {{ filter_form.to_date }}
+                </div>
+                
+                <!-- Company -->
+                <div class="form-group">
+                    <label for="{{ filter_form.company.id_for_label }}">Company</label>
+                    {{ filter_form.company }}
+                </div>
+                
+                <!-- Additional Filters -->
+                <div class="form-group">
+                    <label for="{{ filter_form.account_type.id_for_label }}">Account Type</label>
+                    {{ filter_form.account_type }}
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-check-label">
+                        {{ filter_form.include_zero_balances }}
+                        <span>Include Zero Balances</span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                        Generate Report
+                    </button>
+                    
+                    <button type="button" class="btn btn-secondary" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Reset
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Quick Date Range Selector -->
+            <div id="date-range-quick-select" class="mt-3">
+                <small class="text-muted me-2">Quick Select:</small>
+                <button class="btn btn-sm btn-outline-primary quick-select-btn" data-range="today">Today</button>
+                <button class="btn btn-sm btn-outline-primary quick-select-btn" data-range="yesterday">Yesterday</button>
+                <button class="btn btn-sm btn-outline-primary quick-select-btn" data-range="this-week">This Week</button>
+                <button class="btn btn-sm btn-outline-primary quick-select-btn" data-range="this-month">This Month</button>
+                <button class="btn btn-sm btn-outline-primary quick-select-btn" data-range="last-month">Last Month</button>
+                <button class="btn btn-sm btn-outline-primary quick-select-btn" data-range="this-quarter">This Quarter</button>
+                <button class="btn btn-sm btn-outline-primary quick-select-btn" data-range="this-year">This Year</button>
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        {% if trial_balance_data %}
+        <div class="table-section">
+            <div class="table-header">
+                <h3>
+                    <i class="bi bi-table"></i>
+                    Trial Balance
+                    {% if trial_balance_data %}
+                    <small class="text-muted ms-2" id="row-count">
+                        {{ trial_balance_data|length }} accounts
+                    </small>
+                    {% endif %}
+                </h3>
+                
+                <div class="table-actions">
+                    <!-- Search -->
+                    <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="table-search" class="form-control" placeholder="Search accounts...">
+                    </div>
+                    
+                    <!-- Export Button -->
+                    <button id="export-btn" class="btn btn-success" data-bs-toggle="tooltip" title="Export Report">
+                        <i class="bi bi-download"></i>
+                        Export
+                    </button>
+                    
+                    <!-- Print Button -->
+                    <button id="print-btn" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Print Report">
+                        <i class="bi bi-printer"></i>
+                        Print
+                    </button>
+                    
+                    <!-- Refresh Button -->
+                    <button id="refresh-btn" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Refresh Data">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th data-sortable="true">Account Code</th>
+                            <th data-sortable="true">Account Name</th>
+                            <th data-sortable="true">Account Type</th>
+                            <th data-sortable="true" class="number-cell">Opening Debit</th>
+                            <th data-sortable="true" class="number-cell">Opening Credit</th>
+                            <th data-sortable="true" class="number-cell">Period Debit</th>
+                            <th data-sortable="true" class="number-cell">Period Credit</th>
+                            <th data-sortable="true" class="number-cell">Closing Debit</th>
+                            <th data-sortable="true" class="number-cell">Closing Credit</th>
+                            <th data-sortable="true" class="number-cell">Running Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if trial_balance_data %}
+                            {% for entry in trial_balance_data %}
+                            <tr>
+                                <td><strong>{{ entry.account_code }}</strong></td>
+                                <td>{{ entry.account_name }}</td>
+                                <td><span class="badge bg-secondary">{{ entry.account_type }}</span></td>
+                                <td class="number-cell debit-amount">{{ entry.opening_debit|floatformat:2 }}</td>
+                                <td class="number-cell credit-amount">{{ entry.opening_credit|floatformat:2 }}</td>
+                                <td class="number-cell debit-amount">{{ entry.period_debit|floatformat:2 }}</td>
+                                <td class="number-cell credit-amount">{{ entry.period_credit|floatformat:2 }}</td>
+                                <td class="number-cell debit-amount">{{ entry.closing_debit|floatformat:2 }}</td>
+                                <td class="number-cell credit-amount">{{ entry.closing_credit|floatformat:2 }}</td>
+                                <td class="number-cell balance-amount {% if entry.running_balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                                    {{ entry.running_balance|floatformat:2 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="10" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="bi bi-inbox display-4"></i>
+                                        <p class="mt-3 mb-0">No trial balance data found for the selected criteria.</p>
+                                        <small>Try adjusting your filters or date range.</small>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Table Footer with Totals -->
+            {% if trial_balance_data %}
+            <div class="table-footer">
+                <div class="totals-section">
+                    <div class="total-item">
+                        <span class="total-label">Total Debit</span>
+                        <span class="total-value debit-amount">{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_debit|floatformat:2 }}</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-label">Total Credit</span>
+                        <span class="total-value credit-amount">{% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ total_credit|floatformat:2 }}</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-label">Difference</span>
+                        <span class="total-value {% if difference >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                            {% if default_currency %}{{ default_currency.symbol }} {% endif %}{{ difference|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="balance-status {% if is_balanced %}balance-balanced{% else %}balance-unbalanced{% endif %}">
+                    <i class="bi {% if is_balanced %}bi-check-circle{% else %}bi-exclamation-triangle{% endif %}"></i>
+                    <span>{% if is_balanced %}Balanced{% else %}Unbalanced{% endif %}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Report Information -->
+        {% if trial_balance_data %}
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Report Information
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">From Date:</small>
+                                <p class="mb-1"><strong>{{ from_date }}</strong></p>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">To Date:</small>
+                                <p class="mb-1"><strong>{{ to_date }}</strong></p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Company:</small>
+                                <p class="mb-1"><strong>{{ company_id|default:"All Companies" }}</strong></p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <small class="text-muted">Generated:</small>
+                                <p class="mb-0"><strong>{{ now|date:"F d, Y H:i" }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Summary Statistics
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Total Accounts:</small>
+                                <p class="mb-1"><strong>{{ trial_balance_data|length }}</strong></p>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Debit Accounts:</small>
+                                <p class="mb-1"><strong>{{ trial_balance_data|length }}</strong></p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Credit Accounts:</small>
+                                <p class="mb-1"><strong>0</strong></p>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Zero Balance:</small>
+                                <p class="mb-1"><strong>0</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div id="export-modal" class="export-modal">
+    <div class="export-modal-content">
+        <div class="export-modal-header">
+            <h3>
+                <i class="bi bi-download me-2"></i>
+                Export Trial Balance
+            </h3>
+            <button class="export-modal-close">&times;</button>
+        </div>
+        
+        <form id="export-form" method="post" action="{% url 'trial_balance:export_trial_balance' %}">
+            {% csrf_token %}
+            
+            <!-- Export Format -->
+            <div class="export-options">
+                <h6 class="mb-3">Export Format</h6>
+                {% for choice in export_form.export_format.field.choices %}
+                <div class="export-option">
+                    <input type="radio" name="export_format" value="{{ choice.0 }}" id="format_{{ choice.0 }}" 
+                           {% if choice.0 == export_form.export_format.initial %}checked{% endif %}>
+                    <label for="format_{{ choice.0 }}">
+                        {{ choice.1 }}
+                        <div class="export-option-description">
+                            {% if choice.0 == 'excel' %}
+                                Best for data analysis and calculations
+                            {% elif choice.0 == 'pdf' %}
+                                Best for printing and sharing
+                            {% elif choice.0 == 'csv' %}
+                                Best for importing into other systems
+                            {% endif %}
+                        </div>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Export Options -->
+            <div class="export-options mt-4">
+                <h6 class="mb-3">Export Options</h6>
+                <div class="export-option">
+                    <input type="checkbox" name="include_headers" value="on" id="include_headers" checked>
+                    <label for="include_headers">
+                        Include Headers
+                        <div class="export-option-description">Include column headers in the export</div>
+                    </label>
+                </div>
+                <div class="export-option">
+                    <input type="checkbox" name="include_totals" value="on" id="include_totals" checked>
+                    <label for="include_totals">
+                        Include Totals
+                        <div class="export-option-description">Include summary totals at the bottom</div>
+                    </label>
+                </div>
+                <div class="export-option">
+                    <input type="checkbox" name="include_running_balance" value="on" id="include_running_balance" checked>
+                    <label for="include_running_balance">
+                        Include Running Balance
+                        <div class="export-option-description">Include the running balance column</div>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Hidden fields for current filters -->
+            <input type="hidden" name="from_date" value="{{ from_date }}">
+            <input type="hidden" name="to_date" value="{{ to_date }}">
+            {% if company_id %}<input type="hidden" name="company" value="{{ company_id }}">{% endif %}
+            <input type="hidden" name="include_zero_balances" value="{{ include_zero_balances }}">
+            {% if account_type %}<input type="hidden" name="account_type" value="{{ account_type }}">{% endif %}
+            
+            <!-- Export Button -->
+            <div class="text-end mt-4">
+                <button type="button" class="btn btn-secondary me-2" onclick="hideExportModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-download me-2"></i>
+                    Export Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Notification Container -->
+<div id="notification-container"></div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Loading trial balance data...</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'trial_balance/js/trial_balance.js' %}"></script>
+<script>
+    // Set current date as default if not provided
+    document.addEventListener('DOMContentLoaded', function() {
+        const fromDateInput = document.getElementById('id_from_date');
+        const toDateInput = document.getElementById('id_to_date');
+        
+        if (fromDateInput && !fromDateInput.value) {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            fromDateInput.value = firstDay.toISOString().split('T')[0];
+        }
+        
+        if (toDateInput && !toDateInput.value) {
+            const today = new Date();
+            toDateInput.value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

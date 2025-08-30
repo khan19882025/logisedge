@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Account Types{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/forms.css' %}" rel="stylesheet">
+<style>
+    .import-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .import-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .file-upload-area {
+        border: 2px dashed #ddd;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        background: #f9f9f9;
+        transition: all 0.3s ease;
+    }
+    
+    .file-upload-area:hover {
+        border-color: #007bff;
+        background: #f0f8ff;
+    }
+    
+    .file-upload-area.dragover {
+        border-color: #007bff;
+        background: #e3f2fd;
+    }
+    
+    .upload-icon {
+        font-size: 48px;
+        color: #007bff;
+        margin-bottom: 15px;
+    }
+    
+    .requirements-list {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    
+    .sample-table {
+        margin-top: 20px;
+        font-size: 14px;
+    }
+    
+    .btn-download-template {
+        background: #28a745;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+    
+    .btn-download-template:hover {
+        background: #218838;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="import-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-upload me-2"></i>Import Account Types</h2>
+        <a href="{% url 'chart_of_accounts:account_type_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back to List
+        </a>
+    </div>
+    
+    <div class="import-card">
+        <h4 class="mb-3"><i class="bi bi-info-circle me-2"></i>Import Instructions</h4>
+        
+        <div class="requirements-list">
+            <h6><strong>File Requirements:</strong></h6>
+            <ul class="mb-0">
+                <li>File format: Excel (.xlsx or .xls)</li>
+                <li>Maximum file size: 10MB</li>
+                <li>First row must contain column headers</li>
+                <li>Required columns: Name, Category, Description</li>
+            </ul>
+        </div>
+        
+        <div class="requirements-list">
+            <h6><strong>Valid Categories:</strong></h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>Assets</li>
+                        <li>Liabilities</li>
+                        <li>Equity</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>Revenue</li>
+                        <li>Expenses</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <h6><strong>Sample Excel Format:</strong></h6>
+        <div class="table-responsive">
+            <table class="table table-bordered sample-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Current Assets</td>
+                        <td>Assets</td>
+                        <td>Assets that can be converted to cash within one year</td>
+                    </tr>
+                    <tr>
+                        <td>Operating Revenue</td>
+                        <td>Revenue</td>
+                        <td>Revenue from primary business operations</td>
+                    </tr>
+                    <tr>
+                        <td>Administrative Expenses</td>
+                        <td>Expenses</td>
+                        <td>General administrative and office expenses</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="import-card">
+        <h4 class="mb-3"><i class="bi bi-cloud-upload me-2"></i>Upload File</h4>
+        
+        <form method="post" enctype="multipart/form-data" id="importForm">
+            {% csrf_token %}
+            
+            <div class="file-upload-area" id="fileUploadArea">
+                <div class="upload-icon">
+                    <i class="bi bi-cloud-upload"></i>
+                </div>
+                <h5>Drag and drop your Excel file here</h5>
+                <p class="text-muted mb-3">or click to browse files</p>
+                
+                <input type="file" 
+                       name="excel_file" 
+                       id="excelFile" 
+                       accept=".xlsx,.xls" 
+                       class="d-none" 
+                       required>
+                
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('excelFile').click()">
+                    <i class="bi bi-folder2-open me-1"></i>Choose File
+                </button>
+            </div>
+            
+            <div id="fileInfo" class="mt-3" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="bi bi-file-earmark-excel me-2"></i>
+                    <span id="fileName"></span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="clearFile()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                    <i class="bi bi-upload me-2"></i>Import Account Types
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('excelFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // File input change event
+        fileInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0]);
+        });
+        
+        // Drag and drop events
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+        });
+        
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+        
+        // Click to upload
+        fileUploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        function handleFileSelect(file) {
+            if (file) {
+                // Validate file type
+                const validTypes = ['.xlsx', '.xls'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!validTypes.includes(fileExtension)) {
+                    alert('Please select a valid Excel file (.xlsx or .xls)');
+                    clearFile();
+                    return;
+                }
+                
+                // Validate file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File size must be less than 10MB');
+                    clearFile();
+                    return;
+                }
+                
+                fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+                fileInfo.style.display = 'block';
+                submitBtn.disabled = false;
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        window.clearFile = function() {
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            submitBtn.disabled = true;
+        };
+    });
+</script>
+{% endblock %}

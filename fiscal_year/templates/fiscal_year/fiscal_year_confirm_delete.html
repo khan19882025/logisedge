@@ -1,0 +1,144 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Fiscal Year Settings{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fiscal_year/fiscal_year.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Delete Fiscal Year
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <h4>Are you sure?</h4>
+                        <p class="text-muted">
+                            You are about to delete the fiscal year <strong>"{{ fiscal_year.name }}"</strong>.
+                            This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <!-- Fiscal Year Details -->
+                    <div class="fiscal-year-detail mb-4">
+                        <div class="detail-row">
+                            <span class="detail-label">Name:</span>
+                            <span class="detail-value">{{ fiscal_year.name }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Period:</span>
+                            <span class="detail-value">
+                                {{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }}
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Status:</span>
+                            <span class="detail-value">
+                                <span class="fiscal-year-status {{ fiscal_year.status }}">
+                                    {{ fiscal_year.get_status_display }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Periods:</span>
+                            <span class="detail-value">{{ fiscal_year.periods.count }} periods</span>
+                        </div>
+                        {% if fiscal_year.is_current %}
+                        <div class="detail-row">
+                            <span class="detail-label">Current:</span>
+                            <span class="detail-value">
+                                <span class="current-badge">
+                                    <i class="bi bi-star-fill"></i>Current Fiscal Year
+                                </span>
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Warning Messages -->
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-exclamation-triangle me-2"></i>Warning:</h6>
+                        <ul class="mb-0">
+                            <li>This action will permanently delete the fiscal year and all its data</li>
+                            <li>All periods associated with this fiscal year will also be deleted</li>
+                            {% if fiscal_year.is_current %}
+                            <li>This is the current fiscal year - deleting it may affect system operations</li>
+                            {% endif %}
+                            <li>This action cannot be undone</li>
+                        </ul>
+                    </div>
+
+                    <!-- Associated Periods Warning -->
+                    {% if fiscal_year.periods.exists %}
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle me-2"></i>Associated Periods:</h6>
+                        <p class="mb-2">The following periods will also be deleted:</p>
+                        <ul class="mb-0">
+                            {% for period in fiscal_year.periods.all|slice:":5" %}
+                            <li>{{ period.name }} ({{ period.start_date|date:"M d, Y" }} - {{ period.end_date|date:"M d, Y" }})</li>
+                            {% endfor %}
+                            {% if fiscal_year.periods.count > 5 %}
+                            <li><em>... and {{ fiscal_year.periods.count|add:"-5" }} more periods</em></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'fiscal_year:fiscal_year_detail' fiscal_year.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Delete Fiscal Year
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Alternative Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>Alternative Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Instead of deleting, consider these alternatives:
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'fiscal_year:fiscal_year_update' fiscal_year.pk %}" class="btn btn-outline-warning">
+                            <i class="bi bi-pencil me-2"></i>Edit Fiscal Year
+                        </a>
+                        {% if not fiscal_year.is_current %}
+                        <button class="btn btn-outline-success toggle-fiscal-year-status" 
+                                data-fiscal-year-id="{{ fiscal_year.pk }}">
+                            <i class="bi bi-star me-2"></i>Set as Current
+                        </button>
+                        {% endif %}
+                        <a href="{% url 'fiscal_year:fiscal_year_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list me-2"></i>View All Fiscal Years
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/fiscal_year/fiscal_year.js' %}"></script>
+{% endblock %} 

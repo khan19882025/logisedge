@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cash Transactions - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cash_transactions/css/cash_transactions.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cash-transaction-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-cash-stack text-primary"></i>
+                            Cash Transactions
+                        </h2>
+                        <p class="text-muted mb-0">Manage all cash inflows and outflows</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'cash_transactions:create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> New Transaction
+                        </a>
+                        <a href="{% url 'cash_transactions:quick' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-lightning"></i> Quick Entry
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card stats-cash-in">
+                    <div class="stats-icon">
+                        <i class="bi bi-arrow-down-circle"></i>
+                    </div>
+                    <div class="stats-value">{{ total_cash_in|floatformat:2 }}</div>
+                    <div class="stats-label">Total Cash In</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card stats-cash-out">
+                    <div class="stats-icon">
+                        <i class="bi bi-arrow-up-circle"></i>
+                    </div>
+                    <div class="stats-value">{{ total_cash_out|floatformat:2 }}</div>
+                    <div class="stats-label">Total Cash Out</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card stats-net">
+                    <div class="stats-icon">
+                        <i class="bi bi-arrow-left-right"></i>
+                    </div>
+                    <div class="stats-value {% if net_cash_flow >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ net_cash_flow|floatformat:2 }}
+                    </div>
+                    <div class="stats-label">Net Cash Flow</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-icon" style="background: linear-gradient(135deg, #6c757d, #495057);">
+                        <i class="bi bi-list-ul"></i>
+                    </div>
+                    <div class="stats-value">{{ total_transactions }}</div>
+                    <div class="stats-label">Total Transactions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Form -->
+        <div class="filter-form">
+            <form method="get" id="filterForm">
+                <div class="row">
+                    <div class="col-md-2">
+                        <label class="form-label">From Date</label>
+                        {{ form.date_from }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">To Date</label>
+                        {{ form.date_to }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        {{ form.status }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Type</label>
+                        {{ form.transaction_type }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Category</label>
+                        {{ form.category }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Search</label>
+                        {{ form.search }}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-2">
+                        <label class="form-label">From Account</label>
+                        {{ form.from_account }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">To Account</label>
+                        {{ form.to_account }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Currency</label>
+                        {{ form.currency }}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Location</label>
+                        {{ form.location }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Filter
+                            </button>
+                            <a href="{% url 'cash_transactions:list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Reset
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Transactions List -->
+        <div class="transaction-list">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Transaction #</th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Category</th>
+                                <th>From Account</th>
+                                <th>To Account</th>
+                                <th>Amount</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in page_obj %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'cash_transactions:detail' transaction.pk %}" class="text-decoration-none">
+                                        <strong>{{ transaction.transaction_number }}</strong>
+                                    </a>
+                                </td>
+                                <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="type-badge type-{{ transaction.transaction_type }}">
+                                        {{ transaction.get_transaction_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ transaction.get_category_display }}</td>
+                                <td>
+                                    {% if transaction.from_account %}
+                                        {{ transaction.from_account.account_code }} - {{ transaction.from_account.account_name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if transaction.to_account %}
+                                        {{ transaction.to_account.account_code }} - {{ transaction.to_account.account_name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="fw-bold {% if transaction.is_cash_in %}text-success{% else %}text-danger{% endif %}">
+                                        {{ transaction.amount|floatformat:2 }} {{ transaction.currency.code }}
+                                    </span>
+                                </td>
+                                <td>{{ transaction.location|default:"-" }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ transaction.status }}">
+                                        {{ transaction.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ transaction.created_by.get_full_name|default:transaction.created_by.username }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'cash_transactions:detail' transaction.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if transaction.can_edit %}
+                                        <a href="{% url 'cash_transactions:edit' transaction.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if transaction.can_post %}
+                                        <button class="btn btn-sm btn-outline-success post-btn" 
+                                                data-transaction-id="{{ transaction.pk }}" title="Post Transaction">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if transaction.can_cancel %}
+                                        <button class="btn btn-sm btn-outline-danger cancel-btn" 
+                                                data-transaction-id="{{ transaction.pk }}" title="Cancel Transaction">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Cash transactions pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">No cash transactions found</h4>
+                    <p class="text-muted">Get started by creating your first cash transaction.</p>
+                    <a href="{% url 'cash_transactions:create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create First Transaction
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cash_transactions/js/cash_transactions.js' %}"></script>
+{% endblock %} 

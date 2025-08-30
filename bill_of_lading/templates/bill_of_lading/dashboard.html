@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Bill of Lading Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Create Bill of Lading Button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-file-earmark-text me-2"></i>Bill of Lading Dashboard
+                </h4>
+                <a href="{% url 'bill_of_lading:hbl_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Create Bill of Lading
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <a href="{% url 'bill_of_lading:hbl_list' %}?status=Draft" class="text-decoration-none">
+                <div class="card bg-warning text-white h-100">
+                    <div class="card-body">
+                        <h2 class="card-text">{{ draft_hbl_count }}</h2>
+                        <p class="card-text">Pending HBLs</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'bill_of_lading:hbl_list' %}?status=Original,SEAWAY BILL" class="text-decoration-none">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Confirmed HBL</h5>
+                        <h2 class="card-text">{{ confirmed_hbl_count }}</h2>
+                        <p class="card-text">Original & Seaway Bills</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'bill_of_lading:hbl_list' %}" class="text-decoration-none">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Total HBL</h5>
+                        <h2 class="card-text">{{ total_hbl_count }}</h2>
+                        <p class="card-text">All HBLs</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="#" class="text-decoration-none">
+                <div class="card bg-danger text-white h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Unpaid Invoices</h5>
+                        <h2 class="card-text">{{ unpaid_invoices|length }}</h2>
+                        <p class="card-text">Pending Payment</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Draft HBLs</h5>
+                    <a href="{% url 'bill_of_lading:hbl_list' %}?status=Draft" class="btn btn-light btn-sm">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>HBL Number</th>
+                                    <th>Shipper</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for hbl in recent_hbls %}
+                                <tr>
+                                    <td><a href="{% url 'bill_of_lading:hbl_detail' hbl.id %}">{{ hbl.hbl_number }}</a></td>
+                                    <td>{{ hbl.shipper.name|default:"N/A" }}</td>
+                                    <td>
+                                        <span class="badge {% if hbl.status == 'Draft' %}bg-warning{% elif hbl.status == 'Original' %}bg-success{% else %}bg-info{% endif %}">
+                                            {{ hbl.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ hbl.created_at|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No recent HBLs</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Unpaid Invoices</h5>
+                    <a href="#" class="btn btn-light btn-sm">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Due Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in unpaid_invoices %}
+                                <tr>
+                                    <td><a href="{% url 'invoice' %}?id={{ invoice.id }}">{{ invoice.invoice_number }}</a></td>
+                                    <td>{{ invoice.customer.name }}</td>
+                                    <td>{{ invoice.total_amount }} {{ invoice.currency }}</td>
+                                    <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No unpaid invoices</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

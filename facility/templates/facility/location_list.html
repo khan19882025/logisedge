@@ -1,0 +1,393 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Facility Locations - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/facility/facility.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-geo-alt me-2"></i>Facility Locations Management
+            </h1>
+            <p class="text-muted">Manage storage locations within facilities</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'facility:facility_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-building me-1"></i>Back to Facilities
+            </a>
+            <a href="{% url 'facility:location_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Add Location
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Locations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_locations }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-geo-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Available Locations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ available_locations }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Full Locations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ full_locations }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Active Locations
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_locations }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-gear fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-search me-1"></i>Search & Filter
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    {{ search_form.search_term }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.search_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.facility }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.location_type }}
+                </div>
+                <div class="col-md-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ search_form.status }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ search_form.availability }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                    <a href="{% url 'facility:location_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Locations List Card -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-list me-1"></i>Locations List
+            </h6>
+            <div class="text-muted">
+                {{ locations.count }} location{{ locations.count|pluralize }} found
+            </div>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="locationsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Location Code</th>
+                            <th>Location Name</th>
+                            <th>Facility</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Utilization</th>
+                            <th>Capacity</th>
+                            <th>Features</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for location in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ location.full_location_code }}</strong>
+                                {% if location.location_path %}
+                                <br><small class="text-muted">{{ location.location_path }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ location.location_name }}</div>
+                                {% if location.description %}
+                                <small class="text-muted">{{ location.description|truncatechars:50 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ location.facility.facility_name }}</div>
+                                <small class="text-muted">{{ location.facility.facility_code }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ location.get_location_type_display }}</span>
+                            </td>
+                            <td>
+                                {% if location.status == 'active' %}
+                                <span class="badge bg-success">Active</span>
+                                {% elif location.status == 'inactive' %}
+                                <span class="badge bg-warning">Inactive</span>
+                                {% elif location.status == 'maintenance' %}
+                                <span class="badge bg-info">Maintenance</span>
+                                {% elif location.status == 'reserved' %}
+                                <span class="badge bg-primary">Reserved</span>
+                                {% else %}
+                                <span class="badge bg-danger">Full</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress me-2" style="width: 60px; height: 8px;">
+                                        <div class="progress-bar {% if location.current_utilization >= 90 %}bg-danger{% elif location.current_utilization >= 75 %}bg-warning{% else %}bg-success{% endif %}"
+                                             role="progressbar"
+                                             data-utilization="{{ location.current_utilization }}">
+                                        </div>
+                                    </div>
+                                    <span class="small">{{ location.current_utilization }}%</span>
+                                </div>
+                                {% if location.reserved_capacity > 0 %}
+                                <small class="text-info">+{{ location.reserved_capacity }}% reserved</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if location.capacity %}
+                                <div>{{ location.capacity }} m³</div>
+                                {% if location.available_capacity > 0 %}
+                                <small class="text-success">{{ location.available_capacity|floatformat:1 }} m³ available</small>
+                                {% else %}
+                                <small class="text-danger">No capacity available</small>
+                                {% endif %}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if location.get_location_features %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for key, value in location.get_location_features.items %}
+                                    {% if forloop.counter <= 3 %}
+                                    <span class="badge bg-light text-dark small">{{ key }}</span>
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% if location.get_location_features|length > 3 %}
+                                    <span class="badge bg-light text-dark small">+{{ location.get_location_features|length|add:"-3" }}</span>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary quick-view-location-btn" 
+                                            data-location-id="{{ location.id }}" title="Quick View">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <a href="{% url 'facility:location_detail' location.id %}" 
+                                       class="btn btn-sm btn-outline-info" title="View Details">
+                                        <i class="bi bi-info-circle"></i>
+                                    </a>
+                                    <a href="{% url 'facility:location_update' location.id %}" 
+                                       class="btn btn-sm btn-outline-warning" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-location-btn" 
+                                            data-location-id="{{ location.id }}" 
+                                            data-location-name="{{ location.location_name }}" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Locations pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.facility %}&facility={{ request.GET.facility }}{% endif %}{% if request.GET.location_type %}&location_type={{ request.GET.location_type }}{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.facility %}&facility={{ request.GET.facility }}{% endif %}{% if request.GET.location_type %}&location_type={{ request.GET.location_type }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.facility %}&facility={{ request.GET.facility }}{% endif %}{% if request.GET.location_type %}&location_type={{ request.GET.location_type }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.facility %}&facility={{ request.GET.facility }}{% endif %}{% if request.GET.location_type %}&location_type={{ request.GET.location_type }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.facility %}&facility={{ request.GET.facility }}{% endif %}{% if request.GET.location_type %}&location_type={{ request.GET.location_type }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-geo-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No locations found</h5>
+                <p class="text-muted">Try adjusting your search criteria or create a new location.</p>
+                <a href="{% url 'facility:location_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Add First Location
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick View Modal -->
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickViewModalLabel">Location Quick View</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="quickViewContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" class="btn btn-primary" id="viewDetailsBtn">View Details</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the location "<strong id="deleteLocationName"></strong>"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/facility/facility.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.progress-bar[data-utilization]').forEach(function(bar) {
+        var utilization = bar.getAttribute('data-utilization');
+        if (utilization !== null) {
+            bar.style.width = utilization + '%';
+        }
+    });
+});
+</script>
+{% endblock %} 

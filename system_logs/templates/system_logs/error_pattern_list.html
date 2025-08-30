@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Error Patterns{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-chart-line"></i> Error Patterns
+                    </h1>
+                    <p class="page-subtitle">Identify and analyze recurring error patterns</p>
+                </div>
+                <div>
+                    <a href="{% url 'system_logs:error_pattern_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Pattern
+                    </a>
+                    <a href="{% url 'system_logs:dashboard' %}" class="btn btn-info">
+                        <i class="fas fa-chart-bar"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patterns Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table"></i> Error Patterns ({{ patterns.count }} total)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if patterns %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Pattern Name</th>
+                                        <th>Error Type</th>
+                                        <th>Occurrences</th>
+                                        <th>First Seen</th>
+                                        <th>Last Seen</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pattern in patterns %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ pattern.name }}</strong>
+                                            {% if pattern.description %}
+                                                <br><small class="text-muted">{{ pattern.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if pattern.severity == 'CRITICAL' or pattern.severity == 'FATAL' %}danger{% elif pattern.severity == 'HIGH' %}warning{% elif pattern.severity == 'MEDIUM' %}info{% else %}secondary{% endif %}">
+                                                {{ pattern.error_type }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ pattern.occurrence_count }}</span>
+                                        </td>
+                                        <td>{{ pattern.first_occurrence|date:"M d, Y" }}</td>
+                                        <td>{{ pattern.last_occurrence|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if pattern.status == 'ACTIVE' %}danger{% elif pattern.status == 'INVESTIGATING' %}warning{% elif pattern.status == 'RESOLVED' %}success{% else %}secondary{% endif %}">
+                                                {{ pattern.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'system_logs:error_pattern_detail' pattern.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'system_logs:error_pattern_update' pattern.pk %}" class="btn btn-sm btn-outline-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'system_logs:error_pattern_delete' pattern.pk %}" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No error patterns found</h5>
+                            <p class="text-muted">No error patterns have been created yet.</p>
+                            <a href="{% url 'system_logs:error_pattern_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First Pattern
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

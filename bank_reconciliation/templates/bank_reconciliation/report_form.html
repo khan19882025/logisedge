@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Bank Reconciliation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_reconciliation/css/bank_reconciliation.css' %}">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    .report-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+        text-align: center;
+    }
+    
+    .form-header h2 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 600;
+    }
+    
+    .form-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+    
+    .form-content {
+        padding: 2rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    
+    .form-section h4 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .form-section h4 i {
+        margin-right: 0.5rem;
+        color: #667eea;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control, .form-select {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .form-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+        margin-top: 2rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #4b5563;
+        color: white;
+    }
+    
+    .btn-light {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-light:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    
+    .help-text {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .help-text h5 {
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .help-text ul {
+        margin: 0;
+        padding-left: 1.25rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .help-text li {
+        margin-bottom: 0.25rem;
+    }
+    
+    @media (max-width: 768px) {
+        .report-form-container {
+            margin: 1rem;
+        }
+        
+        .form-content {
+            padding: 1.5rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="report-form-container">
+        <!-- Header -->
+        <div class="form-header">
+            <h2><i class="fas fa-chart-bar"></i> {{ title }}</h2>
+            <p>Generate detailed reports for reconciliation session: {{ session.session_name }}</p>
+        </div>
+
+        <!-- Form Content -->
+        <div class="form-content">
+            <!-- Help Text -->
+            <div class="help-text">
+                <h5><i class="fas fa-info-circle"></i> About Reconciliation Reports</h5>
+                <ul>
+                    <li>Summary Report: Overview of reconciliation status and balances</li>
+                    <li>Detailed Report: Complete list of all transactions with matching details</li>
+                    <li>Unmatched Entries Report: List of transactions that need attention</li>
+                    <li>Reconciliation Statement: Formal statement showing reconciliation process</li>
+                </ul>
+            </div>
+
+            <form method="post" id="report-form">
+                {% csrf_token %}
+                
+                <!-- Report Type Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-file-alt"></i> Report Type</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="{{ form.report_type.id_for_label }}" class="form-label">
+                                Report Type *
+                            </label>
+                            {{ form.report_type }}
+                            {% if form.report_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.report_type.errors.0 }}
+                                </div>
+                            {% endif %}
+                            {% if form.report_type.help_text %}
+                                <div class="form-text">{{ form.report_type.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.export_format.id_for_label }}" class="form-label">
+                                Export Format *
+                            </label>
+                            {{ form.export_format }}
+                            {% if form.export_format.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.export_format.errors.0 }}
+                                </div>
+                            {% endif %}
+                            {% if form.export_format.help_text %}
+                                <div class="form-text">{{ form.export_format.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Options Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-cog"></i> Content Options</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.include_matched_entries }}
+                                <label class="form-check-label" for="{{ form.include_matched_entries.id_for_label }}">
+                                    Include Matched Entries
+                                </label>
+                                {% if form.include_matched_entries.help_text %}
+                                    <div class="form-text">{{ form.include_matched_entries.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.include_unmatched_entries }}
+                                <label class="form-check-label" for="{{ form.include_unmatched_entries.id_for_label }}">
+                                    Include Unmatched Entries
+                                </label>
+                                {% if form.include_unmatched_entries.help_text %}
+                                    <div class="form-text">{{ form.include_unmatched_entries.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.include_notes }}
+                                <label class="form-check-label" for="{{ form.include_notes.id_for_label }}">
+                                    Include Notes
+                                </label>
+                                {% if form.include_notes.help_text %}
+                                    <div class="form-text">{{ form.include_notes.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.include_summary }}
+                                <label class="form-check-label" for="{{ form.include_summary.id_for_label }}">
+                                    Include Summary
+                                </label>
+                                {% if form.include_summary.help_text %}
+                                    <div class="form-text">{{ form.include_summary.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="{% url 'bank_reconciliation:session_detail' session.pk %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-download"></i> {{ submit_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.getElementById('report-form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(function(field) {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+    
+    // Remove validation styling when user starts typing
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(function(input) {
+        input.addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,385 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Data Cleaning Tool{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Page Header -->
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">
+                <i class="fas fa-tachometer-alt text-primary me-2"></i>
+                Data Cleaning Dashboard
+            </h1>
+            <div>
+                <a href="{% url 'data_cleaning_tool:quick_clean' %}" class="btn btn-success me-2">
+                    <i class="fas fa-bolt me-1"></i>Quick Clean
+                </a>
+                <a href="{% url 'data_cleaning_tool:session_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>New Session
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Left Side - Main Content -->
+    <div class="col-xl-9 col-lg-8">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Total Sessions
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_sessions }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Records Cleaned
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_records_cleaned }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Errors Found
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_errors_found }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Active Rules
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_rules }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-rules fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-2"></i>Recent Cleaning Sessions
+                </h6>
+                <a href="{% url 'data_cleaning_tool:session_list' %}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Session Name</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in recent_sessions %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ session.name }}</strong>
+                                        {% if session.description %}
+                                            <br><small class="text-muted">{{ session.description|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ session.get_cleaning_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if session.status == 'completed' %}
+                                            <span class="badge bg-success">{{ session.get_status_display }}</span>
+                                        {% elif session.status == 'running' %}
+                                            <span class="badge bg-warning">{{ session.get_status_display }}</span>
+                                        {% elif session.status == 'failed' %}
+                                            <span class="badge bg-danger">{{ session.get_status_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ session.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ session.created_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'data_cleaning_tool:session_detail' session.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if session.status == 'pending' %}
+                                            <a href="{% url 'data_cleaning_tool:session_configure' session.pk %}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-play"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No cleaning sessions found.</p>
+                        <a href="{% url 'data_cleaning_tool:session_create' %}" class="btn btn-primary">
+                            Create Your First Session
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Data Quality Overview -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-bar me-2"></i>Data Quality Overview
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Master Data Status</h6>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-success" style="width: 85%">85% Clean</div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-users me-1"></i>Customers, Vendors, Items, Locations
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Financial Data Status</h6>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-warning" style="width: 72%">72% Clean</div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-chart-line me-1"></i>Chart of Accounts, Ledgers, Journals
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Transactional Data Status</h6>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-info" style="width: 78%">78% Clean</div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-exchange-alt me-1"></i>Sales, Purchases, Inventory Movements
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Overall System Health</h6>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-primary" style="width: 79%">79% Healthy</div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-heartbeat me-1"></i>Combined data quality score
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side - Data Cleaning Tool Menu -->
+    <div class="col-xl-3 col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'data_cleaning_tool:quick_clean' %}" class="btn btn-success">
+                        <i class="fas fa-broom me-2"></i>Start Quick Clean
+                    </a>
+                    <a href="{% url 'data_cleaning_tool:session_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Session
+                    </a>
+                    <a href="{% url 'data_cleaning_tool:rule_create' %}" class="btn btn-info">
+                        <i class="fas fa-rules me-2"></i>Create New Rule
+                    </a>
+                    <a href="{% url 'data_cleaning_tool:schedule_create' %}" class="btn btn-warning">
+                        <i class="fas fa-clock me-2"></i>Set Up Schedule
+                    </a>
+                    <a href="{% url 'merge_duplicates:merge_duplicates_dashboard' %}" class="btn btn-purple">
+                        <i class="fas fa-object-group me-2"></i>Merge Duplicates
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Cleaning Tool Menu -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-tools me-2"></i>Data Cleaning Tools
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'data_cleaning_tool:session_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-list me-3 text-primary"></i>
+                        <div>
+                            <strong>Sessions</strong>
+                            <small class="d-block text-muted">Manage cleaning sessions</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'data_cleaning_tool:rule_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-rules me-3 text-success"></i>
+                        <div>
+                            <strong>Rules</strong>
+                            <small class="d-block text-muted">Data cleaning rules</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'data_cleaning_tool:schedule_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-clock me-3 text-warning"></i>
+                        <div>
+                            <strong>Schedules</strong>
+                            <small class="d-block text-muted">Automated cleaning</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'data_cleaning_tool:audit_logs' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-history me-3 text-info"></i>
+                        <div>
+                            <strong>Audit Logs</strong>
+                            <small class="d-block text-muted">Activity tracking</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'data_cleaning_tool:reports' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-chart-bar me-3 text-danger"></i>
+                        <div>
+                            <strong>Reports</strong>
+                            <small class="d-block text-muted">Data quality reports</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'merge_duplicates:merge_duplicates_dashboard' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-object-group me-3 text-purple"></i>
+                        <div>
+                            <strong>Merge Duplicates</strong>
+                            <small class="d-block text-muted">Find and merge duplicate records</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-2"></i>Recent Activity
+                </h6>
+                <a href="{% url 'data_cleaning_tool:audit_logs' %}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_audits %}
+                    <div class="timeline">
+                        {% for audit in recent_audits %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="timeline-marker me-3">
+                                    {% if audit.severity == 'critical' %}
+                                        <i class="fas fa-exclamation-circle text-danger"></i>
+                                    {% elif audit.severity == 'high' %}
+                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                    {% elif audit.severity == 'medium' %}
+                                        <i class="fas fa-info-circle text-info"></i>
+                                    {% else %}
+                                        <i class="fas fa-check-circle text-success"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="small text-muted">{{ audit.created_at|timesince }} ago</div>
+                                    <div class="fw-bold">{{ audit.get_action_type_display }}</div>
+                                    <div class="small">{{ audit.target_model }}: {{ audit.target_record_id }}</div>
+                                    {% if audit.description %}
+                                        <div class="small text-muted">{{ audit.description|truncatechars:60 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                        <p class="text-muted small">No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh dashboard every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Export System Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-download"></i> Export System Logs
+                </h1>
+                <p class="page-subtitle">Export system logs in various formats for analysis and reporting</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog"></i> Export Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="row">
+                        {% csrf_token %}
+                        
+                        <!-- Export Format -->
+                        <div class="col-md-6">
+                            <label for="export_format" class="form-label">Export Format</label>
+                            <select name="export_format" id="export_format" class="form-select" required>
+                                <option value="">Select format</option>
+                                <option value="csv">CSV (Comma Separated Values)</option>
+                                <option value="json">JSON (JavaScript Object Notation)</option>
+                                <option value="xml">XML (Extensible Markup Language)</option>
+                                <option value="pdf">PDF (Portable Document Format)</option>
+                            </select>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">Date From</label>
+                            <input type="date" name="date_from" id="date_from" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">Date To</label>
+                            <input type="date" name="date_to" id="date_to" class="form-control">
+                        </div>
+
+                        <!-- Log Type Filter -->
+                        <div class="col-md-3">
+                            <label for="log_type" class="form-label">Log Type</label>
+                            <select name="log_type" id="log_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="ERROR">Error</option>
+                                <option value="WARNING">Warning</option>
+                                <option value="INFO">Info</option>
+                                <option value="DEBUG">Debug</option>
+                            </select>
+                        </div>
+
+                        <!-- Severity Filter -->
+                        <div class="col-md-3">
+                            <label for="severity" class="form-label">Severity</label>
+                            <select name="severity" id="severity" class="form-select">
+                                <option value="">All Severities</option>
+                                <option value="LOW">Low</option>
+                                <option value="MEDIUM">Medium</option>
+                                <option value="HIGH">High</option>
+                                <option value="CRITICAL">Critical</option>
+                                <option value="FATAL">Fatal</option>
+                            </select>
+                        </div>
+
+                        <!-- Module Filter -->
+                        <div class="col-md-3">
+                            <label for="module" class="form-label">Module</label>
+                            <input type="text" name="module" id="module" class="form-control" placeholder="Enter module name">
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="RESOLVED">Resolved</option>
+                                <option value="IGNORED">Ignored</option>
+                            </select>
+                        </div>
+
+                        <!-- Fields to Include -->
+                        <div class="col-12">
+                            <label class="form-label">Fields to Include</label>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="include_headers" id="include_headers" checked>
+                                        <label class="form-check-label" for="include_headers">
+                                            Include Headers
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="include_metadata" id="include_metadata" checked>
+                                        <label class="form-check-label" for="include_metadata">
+                                            Include Metadata
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="include_stack_trace" id="include_stack_trace">
+                                        <label class="form-check-label" for="include_stack_trace">
+                                            Include Stack Trace
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="include_context_data" id="include_context_data">
+                                        <label class="form-check-label" for="include_context_data">
+                                            Include Context Data
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Specific Fields -->
+                        <div class="col-12">
+                            <label class="form-label">Specific Fields</label>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="timestamp" id="field_timestamp" checked>
+                                        <label class="form-check-label" for="field_timestamp">
+                                            Timestamp
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="log_type" id="field_log_type" checked>
+                                        <label class="form-check-label" for="field_log_type">
+                                            Log Type
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="severity" id="field_severity" checked>
+                                        <label class="form-check-label" for="field_severity">
+                                            Severity
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="status" id="field_status" checked>
+                                        <label class="form-check-label" for="field_status">
+                                            Status
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="module" id="field_module" checked>
+                                        <label class="form-check-label" for="field_module">
+                                            Module
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="function" id="field_function" checked>
+                                        <label class="form-check-label" for="field_function">
+                                            Function
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="error_message" id="field_error_message" checked>
+                                        <label class="form-check-label" for="field_error_message">
+                                            Error Message
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="fields_to_include" value="user" id="field_user" checked>
+                                        <label class="form-check-label" for="field_user">
+                                            User
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filename -->
+                        <div class="col-md-6">
+                            <label for="filename_prefix" class="form-label">Filename Prefix</label>
+                            <input type="text" name="filename_prefix" id="filename_prefix" class="form-control" 
+                                   value="system_logs_export" placeholder="Enter filename prefix">
+                        </div>
+
+                        <!-- Max Records -->
+                        <div class="col-md-6">
+                            <label for="max_records" class="form-label">Maximum Records</label>
+                            <input type="number" name="max_records" id="max_records" class="form-control" 
+                                   value="10000" min="1" max="100000" placeholder="Enter max records">
+                            <small class="form-text text-muted">Maximum 100,000 records per export</small>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download"></i> Export Logs
+                            </button>
+                            <a href="{% url 'system_logs:system_log_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Logs
+                            </a>
+                            <a href="{% url 'system_logs:dashboard' %}" class="btn btn-info">
+                                <i class="fas fa-chart-bar"></i> Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export History -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> Recent Exports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Export history will be displayed here once exports are created.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set default date range to last 30 days
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    document.getElementById('date_to').value = today.toISOString().split('T')[0];
+    document.getElementById('date_from').value = thirtyDaysAgo.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}

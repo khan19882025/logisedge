@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'backup_scheduler/css/schedule_form.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-calendar-plus me-2"></i>{{ title }}
+                </h1>
+                <p class="text-muted">Configure backup schedule settings</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Schedule Configuration</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="scheduleForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Basic Information</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        Schedule Name <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.description.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.backup_type.id_for_label }}" class="form-label">
+                                        Backup Type <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.backup_type }}
+                                    {% if form.backup_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.backup_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.backup_scope.id_for_label }}" class="form-label">
+                                        Backup Scope <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.backup_scope }}
+                                    {% if form.backup_scope.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.backup_scope.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.storage_location.id_for_label }}" class="form-label">
+                                        Storage Location <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.storage_location }}
+                                    {% if form.storage_location.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.storage_location.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Scheduling -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Scheduling</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.frequency.id_for_label }}" class="form-label">
+                                        Frequency <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.frequency }}
+                                    {% if form.frequency.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.frequency.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                        Start Date <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.start_date }}
+                                    {% if form.start_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.start_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.start_time.id_for_label }}" class="form-label">
+                                        Start Time <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.start_time }}
+                                    {% if form.start_time.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.start_time.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Dynamic fields based on frequency -->
+                                <div id="weeklyFields" class="mb-3" style="display: none;">
+                                    <label for="{{ form.weekday.id_for_label }}" class="form-label">
+                                        Weekday <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.weekday }}
+                                    {% if form.weekday.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.weekday.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div id="monthlyFields" class="mb-3" style="display: none;">
+                                    <label for="{{ form.day_of_month.id_for_label }}" class="form-label">
+                                        Day of Month <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.day_of_month }}
+                                    {% if form.day_of_month.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.day_of_month.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div id="customFields" class="mb-3" style="display: none;">
+                                    <label for="{{ form.cron_expression.id_for_label }}" class="form-label">
+                                        Cron Expression <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.cron_expression }}
+                                    <small class="form-text text-muted">
+                                        Format: Minute Hour Day Month DayOfWeek (e.g., "0 2 * * 1" for every Monday at 2 AM)
+                                    </small>
+                                    {% if form.cron_expression.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.cron_expression.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Retention & Settings -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Retention & Settings</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.retention_days.id_for_label }}" class="form-label">
+                                        Retention Days <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.retention_days }}
+                                    <small class="form-text text-muted">
+                                        How long to keep backup files (in days)
+                                    </small>
+                                    {% if form.retention_days.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.retention_days.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.max_backups.id_for_label }}" class="form-label">
+                                        Maximum Backups <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.max_backups }}
+                                    <small class="form-text text-muted">
+                                        Maximum number of backup files to keep
+                                    </small>
+                                    {% if form.max_backups.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.max_backups.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Additional Options -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Additional Options</h6>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.allow_parallel }}
+                                        <label class="form-check-label" for="{{ form.allow_parallel.id_for_label }}">
+                                            Allow Parallel Execution
+                                        </label>
+                                        <small class="form-text text-muted d-block">
+                                            Allow multiple backups to run simultaneously
+                                        </small>
+                                    </div>
+                                    {% if form.allow_parallel.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.allow_parallel.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Active Schedule
+                                        </label>
+                                        <small class="form-text text-muted d-block">
+                                            Enable or disable this schedule
+                                        </small>
+                                    </div>
+                                    {% if form.is_active.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.is_active.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'backup_scheduler:schedule_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                                    </a>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Save Schedule
+                                        </button>
+                                        {% if schedule %}
+                                            <a href="{% url 'backup_scheduler:schedule_delete' schedule.pk %}" 
+                                               class="btn btn-danger ms-2">
+                                                <i class="fas fa-trash me-2"></i>Delete
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'backup_scheduler/js/schedule_form.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asset Register - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'asset_register/css/asset_register.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="asset-register-container">
+    <!-- Header -->
+    <div class="asset-register-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-building"></i> Asset Register</h1>
+                <p>Manage and track all company assets with QR/Barcode integration</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline" id="qr-scan-button" title="Scan QR Code">
+                    <i class="fas fa-qrcode"></i> Scan QR
+                </button>
+                <a href="{% url 'asset_register:asset_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Asset
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number" id="total-assets">{{ total_assets|default:0 }}</div>
+            <div class="stat-label">Total Assets</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-number" id="active-assets">{{ active_assets|default:0 }}</div>
+            <div class="stat-label">Active Assets</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-number" id="under-repair">{{ under_repair|default:0 }}</div>
+            <div class="stat-label">Under Repair</div>
+        </div>
+        <div class="stat-card danger">
+            <div class="stat-number" id="disposed-assets">{{ disposed_assets|default:0 }}</div>
+            <div class="stat-label">Disposed Assets</div>
+        </div>
+        <div class="stat-card info">
+            <div class="stat-number" id="total-value">AED {{ total_value|floatformat:2|default:"0.00" }}</div>
+            <div class="stat-label">Total Value</div>
+        </div>
+        <div class="stat-card info">
+            <div class="stat-number" id="total-book-value">AED {{ total_book_value|floatformat:2|default:"0.00" }}</div>
+            <div class="stat-label">Book Value</div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Panel -->
+    <div class="filter-panel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="fas fa-filter"></i> Search & Filters</h3>
+            <button class="btn btn-outline" id="filter-toggle">Show Filters</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-3">
+            <div class="position-relative">
+                <input type="text" id="asset-search" class="form-control" placeholder="Search assets by code, name, serial number...">
+                <div class="position-absolute" style="right: 10px; top: 50%; transform: translateY(-50%);">
+                    <i class="fas fa-search text-muted"></i>
+                </div>
+            </div>
+            <div id="search-results" class="autocomplete-dropdown" style="display: none;"></div>
+        </div>
+
+        <!-- Filter Form -->
+        <form id="filter-form" class="filter-grid">
+            <div class="filter-group">
+                <label for="category">Category</label>
+                <select name="category" id="category" class="form-control">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="location">Location</label>
+                <select name="location" id="location" class="form-control">
+                    <option value="">All Locations</option>
+                    {% for location in locations %}
+                    <option value="{{ location.id }}" {% if request.GET.location == location.id|stringformat:"s" %}selected{% endif %}>
+                        {{ location.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="status">Status</label>
+                <select name="status" id="status" class="form-control">
+                    <option value="">All Statuses</option>
+                    {% for status in statuses %}
+                    <option value="{{ status.id }}" {% if request.GET.status == status.id|stringformat:"s" %}selected{% endif %}>
+                        {{ status.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="assigned_to">Assigned To</label>
+                <select name="assigned_to" id="assigned_to" class="form-control">
+                    <option value="">All Users</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}" {% if request.GET.assigned_to == user.id|stringformat:"s" %}selected{% endif %}>
+                        {{ user.get_full_name|default:user.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="purchase_date_from">Purchase Date From</label>
+                <input type="date" name="purchase_date_from" id="purchase_date_from" class="form-control" 
+                       value="{{ request.GET.purchase_date_from }}">
+            </div>
+
+            <div class="filter-group">
+                <label for="purchase_date_to">Purchase Date To</label>
+                <input type="date" name="purchase_date_to" id="purchase_date_to" class="form-control" 
+                       value="{{ request.GET.purchase_date_to }}">
+            </div>
+
+            <div class="filter-group">
+                <label for="value_min">Min Value</label>
+                <input type="number" name="value_min" id="value_min" class="form-control" step="0.01" min="0" 
+                       placeholder="0.00" value="{{ request.GET.value_min }}">
+            </div>
+
+            <div class="filter-group">
+                <label for="value_max">Max Value</label>
+                <input type="number" name="value_max" id="value_max" class="form-control" step="0.01" min="0" 
+                       placeholder="0.00" value="{{ request.GET.value_max }}">
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+                <a href="{% url 'asset_register:asset_list' %}" class="btn btn-outline">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Export and Bulk Actions -->
+    <div class="asset-card mb-3">
+        <div class="asset-card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline" data-export="excel">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button class="btn btn-outline" data-export="pdf">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                    <button class="btn btn-outline" data-export="csv">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <select id="bulk-action" class="form-control" style="width: auto;">
+                        <option value="">Bulk Actions</option>
+                        <option value="delete">Delete Selected</option>
+                        <option value="export">Export Selected</option>
+                        <option value="dispose">Mark as Disposed</option>
+                    </select>
+                    <button id="bulk-action-submit" class="btn btn-secondary" disabled>
+                        Apply to 0 assets
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assets Table -->
+    <div class="asset-table-container">
+        <div class="asset-card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Assets ({{ page_obj.paginator.count }} total)</h3>
+                <div class="d-flex gap-2">
+                    <span class="text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-auto">
+            <table class="asset-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">
+                            <input type="checkbox" id="select-all">
+                        </th>
+                        <th>Asset Code</th>
+                        <th>Asset Name</th>
+                        <th>Category</th>
+                        <th>Purchase Date</th>
+                        <th>Purchase Value</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Depreciation Method</th>
+                        <th>Book Value</th>
+                        <th>Assigned To</th>
+                        <th>QR/Barcode</th>
+                        <th style="width: 150px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in page_obj %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="asset_ids" value="{{ asset.id }}">
+                        </td>
+                        <td>
+                            <strong>{{ asset.asset_code }}</strong>
+                        </td>
+                        <td>
+                            <div>
+                                <div class="fw-bold">{{ asset.asset_name }}</div>
+                                {% if asset.serial_number %}
+                                <small class="text-muted">SN: {{ asset.serial_number }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>{{ asset.category.name|default:"-" }}</td>
+                        <td>{{ asset.purchase_date|date:"M d, Y" }}</td>
+                        <td>AED {{ asset.purchase_value|floatformat:2 }}</td>
+                        <td>{{ asset.location.name|default:"-" }}</td>
+                        <td>
+                            <span class="status-badge {{ asset.status.name|lower|cut:" " }}">
+                                {{ asset.status.name|default:"Unknown" }}
+                            </span>
+                        </td>
+                        <td>{{ asset.depreciation_method.name|default:"-" }}</td>
+                        <td>AED {{ asset.book_value|floatformat:2 }}</td>
+                        <td>
+                            {% if asset.assigned_to %}
+                            {{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'asset_register:asset_qr_code' asset.id %}" 
+                                   class="qr-barcode-icon" data-qr="{{ asset.id }}" title="View QR Code">
+                                    <i class="fas fa-qrcode"></i>
+                                </a>
+                                <a href="{% url 'asset_register:asset_barcode' asset.id %}" 
+                                   class="qr-barcode-icon" data-barcode="{{ asset.id }}" title="View Barcode">
+                                    <i class="fas fa-barcode"></i>
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'asset_register:asset_detail' asset.id %}" 
+                                   class="btn btn-sm btn-outline" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'asset_register:asset_edit' asset.id %}" 
+                                   class="btn btn-sm btn-outline" title="Edit Asset">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'asset_register:asset_print' asset.id %}" 
+                                   class="btn btn-sm btn-outline" data-print="{{ asset.id }}" title="Print">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                {% if asset.status.name != 'Disposed' %}
+                                <a href="{% url 'asset_register:asset_dispose' asset.id %}" 
+                                   class="btn btn-sm btn-warning" title="Dispose Asset">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="13" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <h5>No assets found</h5>
+                                <p>Try adjusting your search criteria or add a new asset.</p>
+                                <a href="{% url 'asset_register:asset_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add First Asset
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container">
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li>
+                        <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="page-link">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="page-link">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li><span class="page-link active">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li>
+                            <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="page-link">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li>
+                        <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="page-link">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="page-link">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050;"></div>
+
+<!-- Auto-save Indicator -->
+<div id="auto-save-indicator" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1050;" 
+     class="alert alert-success">
+    <i class="fas fa-check"></i> Auto-saved
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'asset_register/js/asset_register.js' %}"></script>
+<script>
+    // Initialize asset register functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update bulk action button when checkboxes change
+        document.querySelectorAll('input[name="asset_ids"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const selectedCount = document.querySelectorAll('input[name="asset_ids"]:checked').length;
+                const bulkActionButton = document.getElementById('bulk-action-submit');
+                if (bulkActionButton) {
+                    bulkActionButton.textContent = `Apply to ${selectedCount} assets`;
+                    bulkActionButton.disabled = selectedCount === 0;
+                }
+            });
+        });
+
+        // Show filter panel by default if filters are applied
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasFilters = Array.from(urlParams.keys()).some(key => key !== 'page');
+        if (hasFilters) {
+            const filterPanel = document.getElementById('filter-panel');
+            const filterToggle = document.getElementById('filter-toggle');
+            if (filterPanel && filterToggle) {
+                filterPanel.classList.add('show');
+                filterToggle.textContent = 'Hide Filters';
+            }
+        }
+    });
+</script>
+{% endblock %} 

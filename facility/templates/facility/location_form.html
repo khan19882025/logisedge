@@ -1,0 +1,462 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/facility/facility.css' %}">
+<style>
+    .form-section {
+        display: none;
+    }
+    .form-section.active {
+        display: block;
+    }
+    .nav-tabs .nav-link {
+        color: #6c757d;
+    }
+    .nav-tabs .nav-link.active {
+        color: #495057;
+        font-weight: 600;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-geo-alt me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted">Configure storage location details and specifications</p>
+            {% if location %}
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'facility:facility_list' %}">Facilities</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'facility:facility_detail' location.facility.id %}">{{ location.facility.facility_name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'facility:facility_locations' location.facility.id %}">Locations</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit Location</li>
+                </ol>
+            </nav>
+            {% else %}
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'facility:facility_list' %}">Facilities</a></li>
+                    {% if request.GET.facility %}
+                    <li class="breadcrumb-item"><a href="{% url 'facility:facility_detail' request.GET.facility %}">Facility</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'facility:facility_locations' request.GET.facility %}">Locations</a></li>
+                    {% else %}
+                    <li class="breadcrumb-item"><a href="{% url 'facility:location_list' %}">Locations</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">Create Location</li>
+                </ol>
+            </nav>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+            {% if location %}
+            <a href="{% url 'facility:facility_locations' location.facility.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Locations
+            </a>
+            {% else %}
+            {% if request.GET.facility %}
+            <a href="{% url 'facility:facility_locations' request.GET.facility %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Locations
+            </a>
+            {% else %}
+            <a href="{% url 'facility:location_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Locations
+            </a>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Location Information Section -->
+    <div class="mb-4">
+        <h6 class="mb-3 font-weight-bold text-primary">
+            <i class="bi bi-geo-alt me-1"></i>Location Information
+        </h6>
+        <form method="post" id="locationForm">
+            {% csrf_token %}
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs mb-4" id="formTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab">
+                        <i class="bi bi-info-circle me-1"></i>Basic Info
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="specs-tab" data-bs-toggle="tab" data-bs-target="#specs" type="button" role="tab">
+                        <i class="bi bi-rulers me-1"></i>Specifications
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="access-tab" data-bs-toggle="tab" data-bs-target="#access" type="button" role="tab">
+                        <i class="bi bi-shield-lock me-1"></i>Access & Security
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab">
+                        <i class="bi bi-tools me-1"></i>Equipment & Features
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+                        <i class="bi bi-sticky me-1"></i>Notes
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="formTabsContent">
+                <!-- Basic Information Tab -->
+                <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.facility.id_for_label }}" class="form-label required-field">Facility</label>
+                                {{ form.facility }}
+                                {% if form.facility.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.facility.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Select the facility where this location is located</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.location_code.id_for_label }}" class="form-label required-field">Location Code</label>
+                                {{ form.location_code }}
+                                {% if form.location_code.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.location_code.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Unique identifier for this location (e.g., A1, B2, RACK-01)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.location_name.id_for_label }}" class="form-label required-field">Location Name</label>
+                                {{ form.location_name }}
+                                {% if form.location_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.location_name.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Descriptive name for this location</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.location_type.id_for_label }}" class="form-label required-field">Location Type</label>
+                                {{ form.location_type }}
+                                {% if form.location_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.location_type.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Type of storage location</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label required-field">Status</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.status.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Current operational status of the location</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.parent_location.id_for_label }}" class="form-label">Parent Location</label>
+                                {{ form.parent_location }}
+                                {% if form.parent_location.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.parent_location.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Parent location if this is a sub-location (optional)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.location_path.id_for_label }}" class="form-label">Location Path</label>
+                                {{ form.location_path }}
+                                {% if form.location_path.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.location_path.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Hierarchical path to this location (e.g., Building A > Floor 1 > Section B)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Detailed description of the location</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Specifications Tab -->
+                <div class="tab-pane fade" id="specs" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity (m³)</label>
+                                {{ form.capacity }}
+                                {% if form.capacity.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.capacity.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Total storage capacity in cubic meters</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.current_utilization.id_for_label }}" class="form-label">Current Utilization (%)</label>
+                                {{ form.current_utilization }}
+                                {% if form.current_utilization.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.current_utilization.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Current percentage of capacity being used</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.reserved_capacity.id_for_label }}" class="form-label">Reserved Capacity (%)</label>
+                                {{ form.reserved_capacity }}
+                                {% if form.reserved_capacity.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.reserved_capacity.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Percentage of capacity reserved for specific purposes</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.length.id_for_label }}" class="form-label">Length (m)</label>
+                                {{ form.length }}
+                                {% if form.length.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.length.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Length of the location in meters</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.width.id_for_label }}" class="form-label">Width (m)</label>
+                                {{ form.width }}
+                                {% if form.width.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.width.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Width of the location in meters</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.height.id_for_label }}" class="form-label">Height (m)</label>
+                                {{ form.height }}
+                                {% if form.height.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.height.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Height of the location in meters</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.weight_limit.id_for_label }}" class="form-label">Weight Limit (kg)</label>
+                                {{ form.weight_limit }}
+                                {% if form.weight_limit.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.weight_limit.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Maximum weight capacity in kilograms</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access & Security Tab -->
+                <div class="tab-pane fade" id="access" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.access_restrictions.id_for_label }}" class="form-label">Access Restrictions</label>
+                                {{ form.access_restrictions }}
+                                {% if form.access_restrictions.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.access_restrictions.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Any access restrictions or requirements</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.security_level.id_for_label }}" class="form-label">Security Level</label>
+                                {{ form.security_level }}
+                                {% if form.security_level.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.security_level.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Security classification for this location</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.environmental_controls.id_for_label }}" class="form-label">Environmental Controls</label>
+                                {{ form.environmental_controls }}
+                                {% if form.environmental_controls.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.environmental_controls.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Environmental control systems (temperature, humidity, etc.)</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.coordinates.id_for_label }}" class="form-label">Coordinates</label>
+                                {{ form.coordinates }}
+                                {% if form.coordinates.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.coordinates.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">GPS coordinates or internal positioning coordinates</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.location_details.id_for_label }}" class="form-label">Location Details</label>
+                                {{ form.location_details }}
+                                {% if form.location_details.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.location_details.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Additional location-specific details</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipment & Features Tab -->
+                <div class="tab-pane fade" id="equipment" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.equipment_features.id_for_label }}" class="form-label">Equipment Features</label>
+                                {{ form.equipment_features }}
+                                {% if form.equipment_features.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.equipment_features.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Available equipment and features (forklifts, pallet jacks, etc.)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.utilization_tracking.id_for_label }}" class="form-label">Utilization Tracking</label>
+                                {{ form.utilization_tracking }}
+                                {% if form.utilization_tracking.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.utilization_tracking.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">How utilization is tracked and monitored</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.physical_specs.id_for_label }}" class="form-label">Physical Specifications</label>
+                                {{ form.physical_specs }}
+                                {% if form.physical_specs.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.physical_specs.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Physical specifications and requirements</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Tab -->
+                <div class="tab-pane fade" id="notes" role="tabpanel">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.notes.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="help-text">Additional notes and comments about this location</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <div>
+                    <span class="text-muted small">* Required fields</span>
+                </div>
+                <div class="d-flex gap-2">
+                    {% if location %}
+                    <a href="{% url 'facility:facility_locations' location.facility.id %}" class="btn btn-outline-secondary">Cancel</a>
+                    {% else %}
+                    {% if request.GET.facility %}
+                    <a href="{% url 'facility:facility_locations' request.GET.facility %}" class="btn btn-outline-secondary">Cancel</a>
+                    {% else %}
+                    <a href="{% url 'facility:location_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    {% endif %}
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/facility/location_form.js' %}"></script>
+{% endblock %} 

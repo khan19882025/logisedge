@@ -1,0 +1,235 @@
+{% extends 'depreciation_schedule/base.html' %}
+{% load static %}
+
+{% block title %}Asset Depreciation Calculator{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Asset Calculator</li>
+{% endblock %}
+
+{% block depreciation_schedule_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Asset Depreciation Calculator</h1>
+            <a href="{% url 'depreciation_schedule:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-calculator me-2"></i>Calculate Asset Depreciation
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="post" id="calculator-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.assets.id_for_label }}" class="form-label fw-bold">Select Assets</label>
+                                {{ form.assets }}
+                                {% if form.assets.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.assets.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Hold Ctrl (or Cmd on Mac) to select multiple assets</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.start_date.id_for_label }}" class="form-label fw-bold">Start Date</label>
+                                {{ form.start_date }}
+                                {% if form.start_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.start_date.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.end_date.id_for_label }}" class="form-label fw-bold">End Date</label>
+                                {{ form.end_date }}
+                                {% if form.end_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.end_date.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.depreciation_method.id_for_label }}" class="form-label fw-bold">Depreciation Method</label>
+                                {{ form.depreciation_method }}
+                                {% if form.depreciation_method.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.depreciation_method.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-calculator me-2"></i>Calculate Depreciation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        {% if results %}
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Calculation Results</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Asset Code</th>
+                                <th>Asset Name</th>
+                                <th>Purchase Value</th>
+                                <th>Salvage Value</th>
+                                <th>Useful Life</th>
+                                <th>Depreciation Amount</th>
+                                <th>Accumulated Depreciation</th>
+                                <th>Book Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                            <tr>
+                                <td>{{ result.asset.asset_code }}</td>
+                                <td>{{ result.asset.asset_name }}</td>
+                                <td>{{ result.asset.purchase_value|floatformat:2 }}</td>
+                                <td>{{ result.asset.salvage_value|floatformat:2 }}</td>
+                                <td>{{ result.asset.useful_life_years }} years</td>
+                                <td class="text-success font-weight-bold">{{ result.depreciation_amount|floatformat:2 }}</td>
+                                <td>{{ result.accumulated_depreciation|floatformat:2 }}</td>
+                                <td>{{ result.book_value|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Summary</h6>
+                        <dl class="row">
+                            <dt class="col-sm-6">Total Assets:</dt>
+                            <dd class="col-sm-6">{{ results|length }}</dd>
+                            
+                            <dt class="col-sm-6">Total Depreciation:</dt>
+                            <dd class="col-sm-6">{{ total_depreciation|floatformat:2 }}</dd>
+                            
+                            <dt class="col-sm-6">Average Depreciation:</dt>
+                            <dd class="col-sm-6">{{ average_depreciation|floatformat:2 }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'depreciation_schedule:schedule_create' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Schedule
+                    </a>
+                    <a href="{% url 'depreciation_schedule:schedule_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list me-2"></i>View Schedules
+                    </a>
+                    <a href="{% url 'depreciation_schedule:settings' %}" class="btn btn-outline-info">
+                        <i class="bi bi-gear me-2"></i>Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Help</h6>
+            </div>
+            <div class="card-body">
+                <h6>How to use:</h6>
+                <ol class="small">
+                    <li>Select one or more assets from the dropdown (hold Ctrl/Cmd for multiple)</li>
+                    <li>Choose the start and end dates for the calculation period</li>
+                    <li>Select the depreciation method (Straight-line or Declining Balance)</li>
+                    <li>Click "Calculate Depreciation" to see the results</li>
+                </ol>
+                
+                <h6>Depreciation Methods:</h6>
+                <ul class="small">
+                    <li><strong>Straight-line:</strong> Equal depreciation each period</li>
+                    <li><strong>Declining Balance:</strong> Higher depreciation in early periods</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calculatorForm = document.getElementById('calculator-form');
+    const assetsSelect = document.getElementById('{{ form.assets.id_for_label }}');
+    const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+    const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+    
+    // Set default dates if not provided
+    if (!startDateInput.value) {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        startDateInput.value = firstDay.toISOString().split('T')[0];
+    }
+    
+    if (!endDateInput.value) {
+        const today = new Date();
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDateInput.value = lastDay.toISOString().split('T')[0];
+    }
+    
+    // Validate date range
+    function validateDates() {
+        const startDate = new Date(startDateInput.value);
+        const endDate = new Date(endDateInput.value);
+        
+        if (startDate >= endDate) {
+            endDateInput.setCustomValidity('End date must be after start date');
+        } else {
+            endDateInput.setCustomValidity('');
+        }
+    }
+    
+    startDateInput.addEventListener('change', validateDates);
+    endDateInput.addEventListener('change', validateDates);
+});
+</script>
+{% endblock %}

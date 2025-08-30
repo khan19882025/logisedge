@@ -1,0 +1,702 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Error & Debug Logs Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-exclamation-triangle"></i> System Error & Debug Logs
+                </h1>
+                <p class="page-subtitle">Comprehensive monitoring and analysis of system errors, warnings, and debug events</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Critical Errors (24h)
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ critical_logs.count }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Active Issues
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_logs|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Error Patterns
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ error_patterns.count }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Debug Sessions
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ active_sessions.count }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-bug fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Selector -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Time Range</h5>
+                        <div class="btn-group" role="group">
+                            <a href="?days=7" class="btn btn-outline-primary {% if days == 7 %}active{% endif %}">7 Days</a>
+                            <a href="?days=30" class="btn btn-outline-primary {% if days == 30 %}active{% endif %}">30 Days</a>
+                            <a href="?days=90" class="btn btn-outline-primary {% if days == 90 %}active{% endif %}">90 Days</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Log Type Distribution -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Log Type Distribution</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Chart Options:</div>
+                            <a class="dropdown-item" href="#" onclick="refreshChart('log-type')">Refresh</a>
+                            <a class="dropdown-item" href="{% url 'system_logs:system_log_list' %}">View All Logs</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="logTypeChart" width="100%" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Severity Distribution -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Severity Distribution</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Chart Options:</div>
+                            <a class="dropdown-item" href="#" onclick="refreshChart('severity')">Refresh</a>
+                            <a class="dropdown-item" href="{% url 'system_logs:system_log_search' %}">Advanced Search</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="severityChart" width="100%" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Activity Chart -->
+    <div class="row mb-4">
+        <div class="col-xl-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Daily Activity Trend</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Chart Options:</div>
+                            <a class="dropdown-item" href="#" onclick="refreshChart('daily')">Refresh</a>
+                            <a class="dropdown-item" href="{% url 'system_logs:system_log_export' %}">Export Data</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="dailyActivityChart" width="100%" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Critical Errors -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Critical Errors</h6>
+                </div>
+                <div class="card-body">
+                    {% if critical_logs %}
+                        <div class="list-group list-group-flush">
+                            {% for log in critical_logs %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <span class="badge bg-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'FATAL' %}dark{% else %}warning{% endif %} me-2">
+                                            {{ log.get_severity_display }}
+                                        </span>
+                                        {{ log.error_type|default:"Unknown Error" }}
+                                    </h6>
+                                    <small class="text-muted">{{ log.timestamp|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1 text-truncate">{{ log.error_message }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-code me-1"></i>{{ log.module|default:"Unknown" }}.{{ log.function|default:"unknown" }}
+                                    {% if log.user %}
+                                        <i class="fas fa-user me-2 ms-2"></i>{{ log.user.username }}
+                                    {% endif %}
+                                </small>
+                                <div class="mt-2">
+                                    <a href="{% url 'system_logs:system_log_detail' log.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                    {% if log.status == 'ACTIVE' %}
+                                        <button class="btn btn-sm btn-outline-success" onclick="resolveLog('{{ log.pk }}')">
+                                            <i class="fas fa-check"></i> Mark Resolved
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'system_logs:system_log_list' %}?severity=CRITICAL&severity=FATAL" class="btn btn-primary">
+                                View All Critical Errors
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5 class="text-success">No Critical Errors</h5>
+                            <p class="text-muted">Great! No critical errors in the last {{ days }} days.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Patterns -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Error Patterns</h6>
+                </div>
+                <div class="card-body">
+                    {% if error_patterns %}
+                        <div class="list-group list-group-flush">
+                            {% for pattern in error_patterns %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <span class="badge bg-info me-2">{{ pattern.pattern_type }}</span>
+                                        {{ pattern.error_type }}
+                                    </h6>
+                                    <small class="text-muted">{{ pattern.occurrence_count }} occurrences</small>
+                                </div>
+                                <p class="mb-1 text-truncate">{{ pattern.error_signature|truncatechars:80 }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-code me-1"></i>{{ pattern.module|default:"Unknown" }}.{{ pattern.function|default:"unknown" }}
+                                    <i class="fas fa-clock me-2 ms-2"></i>Last: {{ pattern.last_occurrence|timesince }} ago
+                                </small>
+                                <div class="mt-2">
+                                    <a href="{% url 'system_logs:error_pattern_detail' pattern.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View Pattern
+                                    </a>
+                                    {% if not pattern.is_resolved %}
+                                        <button class="btn btn-sm btn-outline-success" onclick="resolvePattern('{{ pattern.pk }}')">
+                                            <i class="fas fa-check"></i> Mark Resolved
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'system_logs:error_pattern_list' %}" class="btn btn-primary">
+                                View All Patterns
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                            <h5 class="text-info">No Error Patterns</h5>
+                            <p class="text-muted">No recurring error patterns detected yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Performance -->
+    <div class="row mb-4">
+        <div class="col-xl-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Module Performance Analysis</h6>
+                </div>
+                <div class="card-body">
+                    {% if module_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Module</th>
+                                        <th>Error Count</th>
+                                        <th>Critical Errors</th>
+                                        <th>Avg Execution Time</th>
+                                        <th>Last Error</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in module_stats %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-light text-dark">{{ stat.module }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ stat.count }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-danger">{{ stat.critical_count|default:0 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if stat.avg_execution_time %}
+                                                <span class="badge bg-info">{{ stat.avg_execution_time|floatformat:3 }}s</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ stat.last_error|timesince }} ago</small>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'system_logs:system_log_list' %}?module={{ stat.module }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-search"></i> View Logs
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Module Data</h5>
+                            <p class="text-muted">No module-specific error data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Debug Sessions -->
+    <div class="row mb-4">
+        <div class="col-xl-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Active Debug Sessions</h6>
+                    <a href="{% url 'system_logs:debug_session_create' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> New Session
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if active_sessions %}
+                        <div class="row">
+                            {% for session in active_sessions %}
+                            <div class="col-lg-6 mb-3">
+                                <div class="card border-left-success h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="card-title">{{ session.session_name }}</h6>
+                                                <p class="card-text text-muted">{{ session.description|truncatechars:100 }}</p>
+                                                <div class="small text-muted">
+                                                    <i class="fas fa-user me-1"></i>{{ session.started_by.username }}
+                                                    <i class="fas fa-clock me-2 ms-2"></i>{{ session.started_at|timesince }} ago
+                                                    <i class="fas fa-tag me-2 ms-2"></i>{{ session.session_type }}
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge bg-success">Active</span>
+                                                <div class="mt-2">
+                                                    <a href="{% url 'system_logs:debug_session_detail' session.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i> View
+                                                    </a>
+                                                    <button class="btn btn-sm btn-outline-warning" onclick="endSession('{{ session.pk }}')">
+                                                        <i class="fas fa-stop"></i> End
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'system_logs:debug_session_list' %}" class="btn btn-primary">
+                                View All Sessions
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-bug fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Active Debug Sessions</h5>
+                            <p class="text-muted">Start a new debug session to begin monitoring specific issues.</p>
+                            <a href="{% url 'system_logs:debug_session_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Debug Session
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'system_logs:system_log_list' %}" class="btn btn-outline-primary btn-lg w-100">
+                                <i class="fas fa-list fa-2x mb-2"></i><br>
+                                View All Logs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'system_logs:system_log_search' %}" class="btn btn-outline-info btn-lg w-100">
+                                <i class="fas fa-search fa-2x mb-2"></i><br>
+                                Advanced Search
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'system_logs:system_log_export' %}" class="btn btn-outline-success btn-lg w-100">
+                                <i class="fas fa-download fa-2x mb-2"></i><br>
+                                Export Data
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'system_logs:log_retention_cleanup' %}" class="btn btn-outline-warning btn-lg w-100">
+                                <i class="fas fa-broom fa-2x mb-2"></i><br>
+                                Cleanup Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #e74a3b 0%, #f6c23e 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+    
+    .page-subtitle {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .border-left-danger {
+        border-left: 0.25rem solid #e74a3b !important;
+    }
+    
+    .border-left-warning {
+        border-left: 0.25rem solid #f6c23e !important;
+    }
+    
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    
+    .border-left-success {
+        border-left: 0.25rem solid #1cc88a !important;
+    }
+    
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+    
+    .text-gray-300 {
+        color: #dddfeb !important;
+    }
+    
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-radius: 0 !important;
+    }
+    
+    .list-group-item:first-child {
+        border-top: none;
+    }
+    
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Chart configurations and data
+let logTypeChart, severityChart, dailyActivityChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadChartData();
+});
+
+function initializeCharts() {
+    // Log Type Chart
+    const logTypeCtx = document.getElementById('logTypeChart').getContext('2d');
+    logTypeChart = new Chart(logTypeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#e74a3b', '#f6c23e', '#36b9cc', '#1cc88a', '#6f42c1',
+                    '#fd7e14', '#20c9a6', '#5a5c69', '#858796', '#eaecf4'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Severity Chart
+    const severityCtx = document.getElementById('severityChart').getContext('2d');
+    severityChart = new Chart(severityCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Log Count',
+                data: [],
+                backgroundColor: [
+                    '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#6f42c1'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Daily Activity Chart
+    const dailyCtx = document.getElementById('dailyActivityChart').getContext('2d');
+    dailyActivityChart = new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Log Count',
+                data: [],
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function loadChartData() {
+    fetch(`{% url 'system_logs:system_log_chart_data' %}?days={{ days }}`)
+        .then(response => response.json())
+        .then(data => {
+            updateCharts(data);
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
+        });
+}
+
+function updateCharts(data) {
+    // Update Log Type Chart
+    if (data.log_type_stats) {
+        logTypeChart.data.labels = data.log_type_stats.map(item => item.log_type);
+        logTypeChart.data.datasets[0].data = data.log_type_stats.map(item => item.count);
+        logTypeChart.update();
+    }
+
+    // Update Severity Chart
+    if (data.severity_stats) {
+        severityChart.data.labels = data.severity_stats.map(item => item.severity);
+        severityChart.data.datasets[0].data = data.severity_stats.map(item => item.count);
+        severityChart.update();
+    }
+
+    // Update Daily Activity Chart
+    if (data.daily_stats) {
+        dailyActivityChart.data.labels = data.daily_stats.map(item => item.date);
+        dailyActivityChart.data.datasets[0].data = data.daily_stats.map(item => item.count);
+        dailyActivityChart.update();
+    }
+}
+
+function refreshChart(chartType) {
+    loadChartData();
+}
+
+function resolveLog(logId) {
+    if (confirm('Mark this log as resolved?')) {
+        // This would typically make an AJAX call to resolve the log
+        console.log('Resolving log:', logId);
+        // Reload the page to show updated status
+        location.reload();
+    }
+}
+
+function resolvePattern(patternId) {
+    if (confirm('Mark this error pattern as resolved?')) {
+        // This would typically make an AJAX call to resolve the pattern
+        console.log('Resolving pattern:', patternId);
+        // Reload the page to show updated status
+        location.reload();
+    }
+}
+
+function endSession(sessionId) {
+    if (confirm('End this debug session?')) {
+        // This would typically make an AJAX call to end the session
+        console.log('Ending session:', sessionId);
+        // Reload the page to show updated status
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

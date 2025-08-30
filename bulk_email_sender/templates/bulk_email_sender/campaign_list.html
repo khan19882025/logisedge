@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Campaigns{% endblock %}
+
+{% block extra_css %}
+<style>
+    .campaign-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .campaign-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .campaign-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-draft { background: #e2e3e5; color: #383d41; }
+    .status-scheduled { background: #cce5ff; color: #004085; }
+    .status-queued { background: #fff3cd; color: #856404; }
+    .status-sending { background: #d1ecf1; color: #0c5460; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    .status-paused { background: #fff3cd; color: #856404; }
+    
+    .priority-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .priority-low { background: #d4edda; color: #155724; }
+    .priority-normal { background: #cce5ff; color: #004085; }
+    .priority-high { background: #fff3cd; color: #856404; }
+    .priority-urgent { background: #f8d7da; color: #721c24; }
+    
+    .search-filters {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .campaign-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .campaign-actions .btn {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+    
+    .progress-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #20c997);
+        transition: width 0.6s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-bullhorn fa-fw"></i> Email Campaigns
+        </h1>
+        <a href="{% url 'bulk_email_sender:campaign_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus fa-fw"></i> New Campaign
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filters">
+        <form method="get" class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ filter_form.search.value|default:'' }}" placeholder="Search campaigns...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-control" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        {% for status_code, status_name in campaign_statuses %}
+                        <option value="{{ status_code }}" {% if filter_form.status.value == status_code %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="priority" class="form-label">Priority</label>
+                    <select class="form-control" id="priority" name="priority">
+                        <option value="">All Priorities</option>
+                        {% for priority_code, priority_name in campaign_priorities %}
+                        <option value="{{ priority_code }}" {% if filter_form.priority.value == priority_code %}selected{% endif %}>
+                            {{ priority_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="template" class="form-label">Template</label>
+                    {{ filter_form.template }}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-search fa-fw"></i> Search
+                        </button>
+                        <a href="{% url 'bulk_email_sender:campaign_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-times fa-fw"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Campaigns Grid -->
+    {% if page_obj %}
+        <div class="row">
+            {% for campaign in page_obj %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="campaign-card">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="campaign-status status-{{ campaign.status }}">
+                                {{ campaign.get_status_display }}
+                            </span>
+                            <span class="priority-badge priority-{{ campaign.priority }}">
+                                {{ campaign.get_priority_display }}
+                            </span>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'bulk_email_sender:campaign_detail' campaign.pk %}">
+                                    <i class="fas fa-eye fa-fw"></i> View
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'bulk_email_sender:campaign_edit' campaign.pk %}">
+                                    <i class="fas fa-edit fa-fw"></i> Edit
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'bulk_email_sender:campaign_preview' campaign.pk %}">
+                                    <i class="fas fa-eye fa-fw"></i> Preview
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% if campaign.status == 'draft' %}
+                                <li><a class="dropdown-item text-success" href="{% url 'bulk_email_sender:campaign_start' campaign.pk %}">
+                                    <i class="fas fa-play fa-fw"></i> Start
+                                </a></li>
+                                {% elif campaign.status == 'sending' %}
+                                <li><a class="dropdown-item text-warning" href="{% url 'bulk_email_sender:campaign_pause' campaign.pk %}">
+                                    <i class="fas fa-pause fa-fw"></i> Pause
+                                </a></li>
+                                {% endif %}
+                                {% if campaign.status in 'draft,scheduled,queued,sending,paused' %}
+                                <li><a class="dropdown-item text-danger" href="{% url 'bulk_email_sender:campaign_cancel' campaign.pk %}">
+                                    <i class="fas fa-stop fa-fw"></i> Cancel
+                                </a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h5 class="campaign-title mb-2">
+                        <a href="{% url 'bulk_email_sender:campaign_detail' campaign.pk %}" class="text-decoration-none">
+                            {{ campaign.name }}
+                        </a>
+                    </h5>
+                    
+                    {% if campaign.description %}
+                    <p class="campaign-description mb-3">{{ campaign.description|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <div class="campaign-meta mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-file-alt fa-fw"></i> {{ campaign.template.name }}
+                            <br>
+                            <i class="fas fa-users fa-fw"></i> {{ campaign.total_recipients }} recipients
+                            <br>
+                            <i class="fas fa-calendar fa-fw"></i> {{ campaign.created_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                    
+                    {% if campaign.status == 'sending' or campaign.status == 'completed' %}
+                    <div class="campaign-progress mb-3">
+                        <small class="text-muted">Progress</small>
+                        <div class="progress-bar">
+                            {% if campaign.status == 'completed' %}
+                                <div class="progress-fill" style="width: 100%"></div>
+                            {% else %}
+                                {% widthratio campaign.sent_count campaign.total_recipients 100 as progress %}
+                                <div class="progress-fill" style="width: {{ progress }}%"></div>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">
+                            {{ campaign.sent_count }} of {{ campaign.total_recipients }} sent
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="campaign-actions">
+                        <a href="{% url 'bulk_email_sender:campaign_detail' campaign.pk %}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye fa-fw"></i> View
+                        </a>
+                        <a href="{% url 'bulk_email_sender:campaign_edit' campaign.pk %}" 
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-edit fa-fw"></i> Edit
+                        </a>
+                        <a href="{% url 'bulk_email_sender:campaign_preview' campaign.pk %}" 
+                           class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-eye fa-fw"></i> Preview
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Campaign pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filter_form.search.value %}&search={{ filter_form.search.value }}{% endif %}{% if filter_form.status.value %}&status={{ filter_form.status.value }}{% endif %}{% if filter_form.priority.value %}&priority={{ filter_form.priority.value }}{% endif %}{% if filter_form.template.value %}&template={{ filter_form.template.value }}{% endif %}">
+                        <i class="fas fa-chevron-left fa-fw"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if filter_form.search.value %}&search={{ filter_form.search.value }}{% endif %}{% if filter_form.status.value %}&status={{ filter_form.status.value }}{% endif %}{% if filter_form.priority.value %}&priority={{ filter_form.priority.value }}{% endif %}{% if filter_form.template.value %}&template={{ filter_form.template.value }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filter_form.search.value %}&search={{ filter_form.search.value }}{% endif %}{% if filter_form.status.value %}&status={{ filter_form.status.value }}{% endif %}{% if filter_form.priority.value %}&priority={{ filter_form.priority.value }}{% endif %}{% if filter_form.template.value %}&template={{ filter_form.template.value }}{% endif %}">
+                        Next <i class="fas fa-chevron-right fa-fw"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+    {% else %}
+        <!-- No Campaigns Found -->
+        <div class="text-center py-5">
+            <i class="fas fa-bullhorn fa-5x text-muted mb-4"></i>
+            <h4 class="text-muted">No campaigns found</h4>
+            <p class="text-muted mb-4">
+                {% if filter_form.search.value or filter_form.status.value or filter_form.priority.value or filter_form.template.value %}
+                    No campaigns match your current search criteria. Try adjusting your filters.
+                {% else %}
+                    Get started by creating your first email campaign.
+                {% endif %}
+            </p>
+            <a href="{% url 'bulk_email_sender:campaign_create' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus fa-fw"></i> Create First Campaign
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when filters change
+    const filterSelects = document.querySelectorAll('select[name="status"], select[name="priority"], select[name="template"]');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    });
+    
+    // Search with debounce
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            this.closest('form').submit();
+        }, 500);
+    });
+});
+</script>
+{% endblock %}

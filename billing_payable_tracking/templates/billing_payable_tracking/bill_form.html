@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Bill{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px 15px 0 0;
+        margin: -30px -30px 30px -30px;
+    }
+    .required-field {
+        color: #dc3545;
+    }
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:bill_list' %}">Bills</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'billing_payable_tracking:bill_detail' bill.pk %}">{{ bill.bill_no }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Edit Bill</h2>
+                    <p class="mb-0 opacity-75">Update bill information</p>
+                </div>
+
+                <form id="bill-form" method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bill_no" class="form-label">
+                                    Bill Number <span class="required-field">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="bill_no" name="bill_no" value="{{ bill.bill_no }}" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vendor" class="form-label">
+                                    Vendor <span class="required-field">*</span>
+                                </label>
+                                <select class="form-select" id="vendor" name="vendor" required>
+                                    <option value="">Select Vendor</option>
+                                    {% for vendor in vendors %}
+                                        <option value="{{ vendor.id }}" {% if vendor.id == bill.vendor.id %}selected{% endif %}>
+                                            {{ vendor.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">
+                                    Amount <span class="required-field">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                            {% if bill.currency.symbol and '/static/img/dirham-symbol.png' in bill.currency.symbol %}
+                                <img src="/static/img/dirham-symbol.png" alt="AED" style="width: 12px; height: 12px;">
+                            {% else %}
+                                {{ bill.currency.symbol|default:"$" }}
+                            {% endif %}
+                        </span>
+                                    <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0" value="{{ bill.amount }}" required>
+                                </div>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="currency" class="form-label">Currency</label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="AED" {% if bill.currency.code == 'AED' %}selected{% endif %}>AED</option>
+                        <option value="USD" {% if bill.currency.code == 'USD' %}selected{% endif %}>USD</option>
+                                    <option value="EUR" {% if bill.currency.code == 'EUR' %}selected{% endif %}>EUR</option>
+                                    <option value="GBP" {% if bill.currency.code == 'GBP' %}selected{% endif %}>GBP</option>
+                                    <option value="AED" {% if bill.currency.code == 'AED' %}selected{% endif %}>AED</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bill_date" class="form-label">
+                                    Bill Date <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="bill_date" name="bill_date" value="{{ bill.bill_date|date:'Y-m-d' }}" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">
+                                    Due Date <span class="required-field">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="due_date" name="due_date" value="{{ bill.due_date|date:'Y-m-d' }}" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Enter bill notes...">{{ bill.notes }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="pending" {% if bill.status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="paid" {% if bill.status == 'paid' %}selected{% endif %}>Paid</option>
+                                    <option value="overdue" {% if bill.status == 'overdue' %}selected{% endif %}>Overdue</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="confirmed" name="confirmed" {% if bill.confirmed %}checked{% endif %}>
+                                    <label class="form-check-label" for="confirmed">
+                                        Confirmed
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'billing_payable_tracking:bill_detail' bill.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Bill
+                        </a>
+                        <div>
+                            <a href="{% url 'billing_payable_tracking:bill_list' %}" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-list me-2"></i>All Bills
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Update Bill
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class BillEditForm {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        this.setupFormValidation();
+    }
+
+    setupFormValidation() {
+        const form = document.getElementById('bill-form');
+        
+        // Real-time validation
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('blur', () => this.validateField(input));
+            input.addEventListener('input', () => this.clearFieldError(input));
+        });
+
+        // Date validation
+        document.getElementById('due_date').addEventListener('change', () => {
+            this.validateDates();
+        });
+        
+        document.getElementById('bill_date').addEventListener('change', () => {
+            this.validateDates();
+        });
+    }
+
+    validateField(field) {
+        const value = field.value.trim();
+        let isValid = true;
+        let errorMessage = '';
+
+        // Required field validation
+        if (field.hasAttribute('required') && !value) {
+            isValid = false;
+            errorMessage = 'This field is required';
+        }
+
+        // Specific field validations
+        switch (field.name) {
+            case 'amount':
+                if (value && (isNaN(value) || parseFloat(value) <= 0)) {
+                    isValid = false;
+                    errorMessage = 'Amount must be a positive number';
+                }
+                break;
+            case 'bill_no':
+                if (value && value.length < 2) {
+                    isValid = false;
+                    errorMessage = 'Bill number must be at least 2 characters';
+                }
+                break;
+        }
+
+        this.setFieldValidation(field, isValid, errorMessage);
+        return isValid;
+    }
+
+    validateDates() {
+        const billDate = document.getElementById('bill_date').value;
+        const dueDate = document.getElementById('due_date').value;
+        
+        if (billDate && dueDate) {
+            const billDateObj = new Date(billDate);
+            const dueDateObj = new Date(dueDate);
+            
+            if (dueDateObj < billDateObj) {
+                this.setFieldValidation(
+                    document.getElementById('due_date'),
+                    false,
+                    'Due date cannot be before bill date'
+                );
+                return false;
+            } else {
+                this.clearFieldError(document.getElementById('due_date'));
+            }
+        }
+        return true;
+    }
+
+    setFieldValidation(field, isValid, errorMessage) {
+        const feedbackElement = field.parentNode.querySelector('.invalid-feedback');
+        
+        if (isValid) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+            if (feedbackElement) feedbackElement.textContent = '';
+        } else {
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+            if (feedbackElement) feedbackElement.textContent = errorMessage;
+        }
+    }
+
+    clearFieldError(field) {
+        field.classList.remove('is-invalid', 'is-valid');
+        const feedbackElement = field.parentNode.querySelector('.invalid-feedback');
+        if (feedbackElement) feedbackElement.textContent = '';
+    }
+}
+
+// Initialize form when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new BillEditForm();
+});
+</script>
+{% endblock %}

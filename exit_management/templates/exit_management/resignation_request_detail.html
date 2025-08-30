@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load exit_management_tags %}
+
+{% block title %}Resignation Request - {{ resignation.reference_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'exit_management/css/dashboard.css' %}">
+<style>
+    .detail-section {
+        background: #f8f9fc;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e3e6f0;
+    }
+    
+    .detail-section h5 {
+        color: #4e73df;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e3e6f0;
+    }
+    
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #5a5c69;
+        min-width: 200px;
+    }
+    
+    .detail-value {
+        color: #858796;
+        text-align: right;
+    }
+    
+    .workflow-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e3e6f0;
+    }
+    
+    .workflow-step.completed {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    
+    .workflow-step.current {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+    }
+    
+    .workflow-step.pending {
+        background-color: #f8f9fa;
+        border-color: #e3e6f0;
+    }
+    
+    .workflow-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    .workflow-icon.completed {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .workflow-icon.current {
+        background-color: #ffc107;
+        color: white;
+    }
+    
+    .workflow-icon.pending {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt me-2"></i>Resignation Request
+            <span class="text-primary">{{ resignation.reference_number }}</span>
+        </h1>
+        <div class="action-buttons">
+            <a href="{% url 'exit_management:resignation_request_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+            <a href="{% url 'exit_management:resignation_request_update' resignation.pk %}" class="btn btn-outline-primary">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+            <a href="{% url 'exit_management:dashboard' %}" class="btn btn-outline-info">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Status:</strong> {{ resignation.status|status_badge }}
+                <span class="ms-3">
+                    <strong>Submitted:</strong> {{ resignation.submitted_at|date:"M d, Y H:i" }}
+                </span>
+            </div>
+            <div>
+                {% if resignation.status == 'pending' %}
+                    <a href="{% url 'exit_management:manager_approval' resignation.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-check me-2"></i>Manager Approval
+                    </a>
+                {% elif resignation.status == 'manager_review' %}
+                    <a href="{% url 'exit_management:hr_approval' resignation.pk %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-user-check me-2"></i>HR Approval
+                    </a>
+                {% elif resignation.status == 'approved' and not resignation.clearance_process %}
+                    <a href="{% url 'exit_management:start_clearance_process' resignation.pk %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-clipboard-check me-2"></i>Start Clearance
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Details -->
+        <div class="col-lg-8">
+            <!-- Employee Information -->
+            <div class="detail-section">
+                <h5><i class="fas fa-user me-2"></i>Employee Information</h5>
+                <div class="detail-row">
+                    <span class="detail-label">Employee Name:</span>
+                    <span class="detail-value">{{ resignation.employee.full_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Employee ID:</span>
+                    <span class="detail-value">{{ resignation.employee.employee_id|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Department:</span>
+                    <span class="detail-value">{{ resignation.employee.department.name|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Designation:</span>
+                    <span class="detail-value">{{ resignation.employee.designation|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Exit Type:</span>
+                    <span class="detail-value">{{ resignation.exit_type.name }}</span>
+                </div>
+            </div>
+
+            <!-- Resignation Details -->
+            <div class="detail-section">
+                <h5><i class="fas fa-calendar-alt me-2"></i>Resignation Details</h5>
+                <div class="detail-row">
+                    <span class="detail-label">Resignation Date:</span>
+                    <span class="detail-value">{{ resignation.resignation_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Last Working Day:</span>
+                    <span class="detail-value">{{ resignation.last_working_day|date:"M d, Y" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Notice Period Required:</span>
+                    <span class="detail-value">{{ resignation.notice_period_days }} days</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Notice Period Served:</span>
+                    <span class="detail-value">{{ resignation.notice_period_served }} days</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Remaining Notice:</span>
+                    <span class="detail-value">{{ resignation|notice_period_remaining }} days</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Reason:</span>
+                    <span class="detail-value">{{ resignation.reason }}</span>
+                </div>
+                {% if resignation.additional_comments %}
+                <div class="detail-row">
+                    <span class="detail-label">Additional Notes:</span>
+                    <span class="detail-value">{{ resignation.additional_comments }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Approval Information -->
+            <div class="detail-section">
+                <h5><i class="fas fa-user-tie me-2"></i>Approval Information</h5>
+                <div class="detail-row">
+                    <span class="detail-label">Manager:</span>
+                    <span class="detail-value">{{ resignation.manager.get_full_name|default:"Not Assigned" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">HR Manager:</span>
+                    <span class="detail-value">{{ resignation.hr_manager.get_full_name|default:"Not Assigned" }}</span>
+                </div>
+                {% if resignation.manager_approval_date %}
+                <div class="detail-row">
+                    <span class="detail-label">Manager Approval Date:</span>
+                    <span class="detail-value">{{ resignation.manager_approval_date|date:"M d, Y H:i" }}</span>
+                </div>
+                {% endif %}
+                {% if resignation.hr_approval_date %}
+                <div class="detail-row">
+                    <span class="detail-label">HR Approval Date:</span>
+                    <span class="detail-value">{{ resignation.hr_approval_date|date:"M d, Y H:i" }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Attachments -->
+            {% if resignation.resignation_letter %}
+            <div class="detail-section">
+                <h5><i class="fas fa-paperclip me-2"></i>Resignation Letter</h5>
+                <div class="detail-row">
+                    <span class="detail-label">File:</span>
+                    <span class="detail-value">
+                        <a href="{{ resignation.resignation_letter.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download me-2"></i>Download
+                        </a>
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Workflow Status -->
+            <div class="detail-section">
+                <h5><i class="fas fa-project-diagram me-2"></i>Workflow Status</h5>
+                
+                <div class="workflow-step completed">
+                    <div class="workflow-icon completed">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div>
+                        <strong>Resignation Submitted</strong><br>
+                        <small>{{ resignation.submitted_at|date:"M d, Y" }}</small>
+                    </div>
+                </div>
+
+                <div class="workflow-step {% if resignation.status in 'manager_review,hr_approval,approved,exit_processing,completed' %}completed{% elif resignation.status == 'pending' %}current{% else %}pending{% endif %}">
+                    <div class="workflow-icon {% if resignation.status in 'manager_review,hr_approval,approved,exit_processing,completed' %}completed{% elif resignation.status == 'pending' %}current{% else %}pending{% endif %}">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div>
+                        <strong>Manager Review</strong><br>
+                        <small>{% if resignation.manager_approval_date %}{{ resignation.manager_approval_date|date:"M d, Y" }}{% else %}Pending{% endif %}</small>
+                    </div>
+                </div>
+
+                <div class="workflow-step {% if resignation.status in 'hr_approval,approved,exit_processing,completed' %}completed{% elif resignation.status == 'manager_review' %}current{% else %}pending{% endif %}">
+                    <div class="workflow-icon {% if resignation.status in 'hr_approval,approved,exit_processing,completed' %}completed{% elif resignation.status == 'manager_review' %}current{% else %}pending{% endif %}">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div>
+                        <strong>HR Approval</strong><br>
+                        <small>{% if resignation.hr_approval_date %}{{ resignation.hr_approval_date|date:"M d, Y" }}{% else %}Pending{% endif %}</small>
+                    </div>
+                </div>
+
+                <div class="workflow-step {% if resignation.clearance_process %}completed{% elif resignation.status == 'approved' %}current{% else %}pending{% endif %}">
+                    <div class="workflow-icon {% if resignation.clearance_process %}completed{% elif resignation.status == 'approved' %}current{% else %}pending{% endif %}">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div>
+                        <strong>Clearance Process</strong><br>
+                        <small>{% if resignation.clearance_process %}{{ resignation.clearance_process.completion_percentage }}% Complete{% else %}Pending{% endif %}</small>
+                    </div>
+                </div>
+
+                <div class="workflow-step {% if resignation.gratuity_calculation %}completed{% else %}pending{% endif %}">
+                    <div class="workflow-icon {% if resignation.gratuity_calculation %}completed{% else %}pending{% endif %}">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <div>
+                        <strong>Gratuity Calculation</strong><br>
+                        <small>{% if resignation.gratuity_calculation %}Completed{% else %}Pending{% endif %}</small>
+                    </div>
+                </div>
+
+                <div class="workflow-step {% if resignation.final_settlement %}completed{% else %}pending{% endif %}">
+                    <div class="workflow-icon {% if resignation.final_settlement %}completed{% else %}pending{% endif %}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div>
+                        <strong>Final Settlement</strong><br>
+                        <small>{% if resignation.final_settlement %}Completed{% else %}Pending{% endif %}</small>
+                    </div>
+                </div>
+
+                <div class="workflow-step {% if resignation.status == 'completed' %}completed{% else %}pending{% endif %}">
+                    <div class="workflow-icon {% if resignation.status == 'completed' %}completed{% else %}pending{% endif %}">
+                        <i class="fas fa-flag-checkered"></i>
+                    </div>
+                    <div>
+                        <strong>Exit Completed</strong><br>
+                        <small>{% if resignation.completed_at %}{{ resignation.completed_at|date:"M d, Y" }}{% else %}Pending{% endif %}</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="detail-section">
+                <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    {% if resignation.status == 'pending' %}
+                        <a href="{% url 'exit_management:manager_approval' resignation.pk %}" class="btn btn-primary">
+                            <i class="fas fa-check me-2"></i>Manager Approval
+                        </a>
+                    {% endif %}
+                    {% if resignation.status == 'manager_review' %}
+                        <a href="{% url 'exit_management:hr_approval' resignation.pk %}" class="btn btn-success">
+                            <i class="fas fa-user-check me-2"></i>HR Approval
+                        </a>
+                    {% endif %}
+                    {% if resignation.status == 'approved' and not resignation.clearance_process %}
+                        <a href="{% url 'exit_management:start_clearance_process' resignation.pk %}" class="btn btn-warning">
+                            <i class="fas fa-clipboard-check me-2"></i>Start Clearance
+                        </a>
+                    {% endif %}
+                    {% if resignation.status == 'approved' and not resignation.gratuity_calculation %}
+                        <a href="{% url 'exit_management:calculate_gratuity' resignation.pk %}" class="btn btn-info">
+                            <i class="fas fa-calculator me-2"></i>Calculate Gratuity
+                        </a>
+                    {% endif %}
+                    {% if resignation.gratuity_calculation and not resignation.final_settlement %}
+                        <a href="{% url 'exit_management:create_final_settlement' resignation.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Create Settlement
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'exit_management/js/dashboard.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Receipt Voucher {{ voucher.voucher_number }} - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'receipt_voucher/css/receipt_voucher.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="receipt-voucher-container">
+    <div class="receipt-voucher-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Receipt Voucher <span style="color: #3498db;">{{ voucher.voucher_number }}</span></h2>
+            <div>
+                <a href="{% url 'receipt_voucher:receipt_voucher_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+                <a href="{% url 'receipt_voucher:receipt_voucher_print' voucher.pk %}" class="btn btn-outline" target="_blank">
+                    <i class="fas fa-print"></i> Print
+                </a>
+            </div>
+        </div>
+        <div class="voucher-detail-grid">
+            <div class="voucher-info-section">
+                <h3>Voucher Details</h3>
+                <div class="info-row">
+                    <span class="info-label">Voucher Number:</span>
+                    <span class="info-value">{{ voucher.voucher_number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date:</span>
+                    <span class="info-value">{{ voucher.voucher_date|date:"d/m/Y" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Receipt Mode:</span>
+                    <span class="info-value">{{ voucher.get_receipt_mode_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">
+                        <span class="status-badge status-{{ voucher.status }}">{{ voucher.get_status_display }}</span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Reference Number:</span>
+                    <span class="info-value">{{ voucher.reference_number|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Reference Invoices:</span>
+                    <span class="info-value">{{ voucher.reference_invoices|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Description:</span>
+                    <span class="info-value">{{ voucher.description|linebreaks|default:"-" }}</span>
+                </div>
+            </div>
+            <div class="voucher-info-section">
+                <h3>Payer & Account</h3>
+                <div class="info-row">
+                    <span class="info-label">Payer Name:</span>
+                    <span class="info-value">{{ voucher.payer_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Payer Type:</span>
+                    <span class="info-value">{{ voucher.get_payer_type_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Payer Code:</span>
+                    <span class="info-value">{{ voucher.payer_code|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Contact:</span>
+                    <span class="info-value">{{ voucher.payer_contact|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ voucher.payer_email|default:"-" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Amount:</span>
+                    <span class="info-value"><strong>{{ voucher.currency.code }} {{ voucher.amount|floatformat:2 }}</strong></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Account to Credit:</span>
+                    <span class="info-value">{{ voucher.account_to_credit.account_code }} - {{ voucher.account_to_credit.name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Currency:</span>
+                    <span class="info-value">{{ voucher.currency.code }} - {{ voucher.currency.name }}</span>
+                </div>
+            </div>
+        </div>
+        <!-- Action Buttons -->
+        <div style="margin-top: 30px; text-align: center;">
+            {% if voucher.can_edit %}
+            <a href="{% url 'receipt_voucher:receipt_voucher_edit' voucher.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            {% endif %}
+            {% if voucher.can_approve %}
+            <a href="{% url 'receipt_voucher:receipt_voucher_approve' voucher.pk %}" class="btn btn-success">
+                <i class="fas fa-check"></i> Approve
+            </a>
+            {% endif %}
+            {% if voucher.can_mark_received %}
+            <a href="{% url 'receipt_voucher:receipt_voucher_mark_received' voucher.pk %}" class="btn btn-primary">
+                <i class="fas fa-download"></i> Mark as Received
+            </a>
+            {% endif %}
+            <a href="{% url 'receipt_voucher:receipt_voucher_print' voucher.pk %}" class="btn btn-secondary" target="_blank">
+                <i class="fas fa-print"></i> Print
+            </a>
+            {% if voucher.can_edit %}
+            <a href="{% url 'receipt_voucher:receipt_voucher_delete' voucher.pk %}" class="btn btn-danger delete-btn">
+                <i class="fas fa-trash"></i> Delete
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Attachments Section -->
+    <div class="receipt-voucher-card attachment-section">
+        <h3>Attachments ({{ attachments.count }})
+            <a href="{% url 'receipt_voucher:receipt_voucher_attachment_upload' voucher.pk %}" class="btn btn-outline btn-sm" style="float: right;">
+                <i class="fas fa-upload"></i> Upload Attachment
+            </a>
+        </h3>
+        {% if attachments %}
+        <ul style="list-style: none; padding: 0;">
+            {% for attachment in attachments %}
+            <li class="attachment-item">
+                <div class="attachment-info">
+                    <span class="attachment-icon"><i class="fas fa-paperclip"></i></span>
+                    <div class="attachment-details">
+                        <h4>{{ attachment.filename }}</h4>
+                        <p>{{ attachment.file.size|filesizeformat }} | Uploaded: {{ attachment.uploaded_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ attachment.file.url }}" class="btn btn-sm btn-primary" target="_blank">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                    <a href="{% url 'receipt_voucher:receipt_voucher_attachment_delete' voucher.pk attachment.pk %}" class="btn btn-sm btn-danger delete-btn">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-muted">No attachments uploaded.</div>
+        {% endif %}
+    </div>
+
+    <!-- Audit Trail Section -->
+    <div class="receipt-voucher-card audit-trail">
+        <h3>Audit Trail</h3>
+        {% if audit_trail %}
+        {% for audit in audit_trail %}
+        <div class="audit-item">
+            <div class="audit-header">
+                <span class="audit-action">{{ audit.get_action_display }}</span>
+                <span class="audit-timestamp">{{ audit.timestamp|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="audit-description">{{ audit.description }}</div>
+            <div class="audit-user">By: {{ audit.user.get_full_name }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-muted">No audit trail available.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'receipt_voucher/js/receipt_voucher.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Scheduled Task - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'auto_task_scheduler/css/task_scheduler.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="create-task-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <i class="fas fa-plus"></i>
+                Create New Scheduled Task
+            </h1>
+            <p class="page-subtitle">Set up automated tasks to run on your preferred schedule</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'auto_task_scheduler:task_scheduler_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Create Task Form -->
+    <div class="form-container">
+        <div class="form-card">
+            <form id="createTaskForm" method="post">
+                {% csrf_token %}
+                
+                <!-- Basic Information Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Basic Information
+                    </h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskName">Task Name *</label>
+                            <input type="text" id="taskName" name="name" required 
+                                   placeholder="Enter a descriptive name for your task">
+                            <small class="form-help">Choose a clear, descriptive name for easy identification</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="taskType">Task Type *</label>
+                            <select id="taskType" name="task_type" required onchange="updateTaskTypeHelp()">
+                                <option value="">Select task type</option>
+                                <option value="backup">Database Backup</option>
+                                <option value="report">Report Generation</option>
+                                <option value="email">Email Notification</option>
+                                <option value="sync">Data Synchronization</option>
+                                <option value="custom">Custom Task</option>
+                            </select>
+                            <small class="form-help" id="taskTypeHelp">Select the type of task you want to automate</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="taskDescription">Description</label>
+                        <textarea id="taskDescription" name="description" rows="3" 
+                                  placeholder="Describe what this task does and any important details"></textarea>
+                        <small class="form-help">Optional: Provide additional context about the task</small>
+                    </div>
+                </div>
+
+                <!-- Schedule Configuration Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-clock"></i>
+                        Schedule Configuration
+                    </h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="scheduleType">Schedule Type *</label>
+                            <select id="scheduleType" name="schedule_type" required onchange="toggleScheduleFields()">
+                                <option value="">Select schedule type</option>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="specific_datetime">Specific Date & Time</option>
+                            </select>
+                            <small class="form-help">Choose how often you want the task to run</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="scheduleTime">Time *</label>
+                            <input type="time" id="scheduleTime" name="schedule_time" required>
+                            <small class="form-help">Select the time of day for the task to execute</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Dynamic Schedule Fields -->
+                    <div id="scheduleConfigFields" style="display: none;">
+                        <!-- Weekly Schedule Fields -->
+                        <div id="weeklyFields" class="schedule-fields" style="display: none;">
+                            <label class="field-label">Select Days:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="monday" value="true">
+                                    <span>Monday</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="tuesday" value="true">
+                                    <span>Tuesday</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="wednesday" value="true">
+                                    <span>Wednesday</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="thursday" value="true">
+                                    <span>Thursday</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="friday" value="true">
+                                    <span>Friday</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="saturday" value="true">
+                                    <span>Saturday</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="sunday" value="true">
+                                    <span>Sunday</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Monthly Schedule Fields -->
+                        <div id="monthlyFields" class="schedule-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="dayOfMonth">Day of Month</label>
+                                <select id="dayOfMonth" name="day_of_month">
+                                    {% for day in "12345678910111213141516171819202122232425262728293031"|make_list %}
+                                        <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-help">Select which day of the month to run the task</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Specific DateTime Fields -->
+                        <div id="specificDateTimeFields" class="schedule-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="scheduleDate">Date</label>
+                                <input type="date" id="scheduleDate" name="schedule_date" 
+                                       min="{{ today|date:'Y-m-d' }}">
+                                <small class="form-help">Select the specific date for the task to run</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Configuration Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-cog"></i>
+                        Task Configuration
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="taskParameters">Task Parameters (JSON)</label>
+                        <textarea id="taskParameters" name="task_parameters" rows="4" 
+                                  placeholder='{"param1": "value1", "param2": "value2"}'></textarea>
+                        <small class="form-help">Optional: JSON configuration for the task (leave empty for default settings)</small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maxExecutionTime">Maximum Execution Time (minutes)</label>
+                            <input type="number" id="maxExecutionTime" name="max_execution_time" 
+                                   min="1" max="1440" value="60">
+                            <small class="form-help">Set a timeout to prevent tasks from running indefinitely</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="retryOnFailure">Retry on Failure</label>
+                            <select id="retryOnFailure" name="retry_on_failure">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                            <small class="form-help">Whether to retry the task if it fails</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row" id="retryConfig" style="display: none;">
+                        <div class="form-group">
+                            <label for="maxRetries">Maximum Retries</label>
+                            <input type="number" id="maxRetries" name="max_retries" 
+                                   min="1" max="10" value="3">
+                            <small class="form-help">Maximum number of retry attempts</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="retryDelay">Retry Delay (minutes)</label>
+                            <input type="number" id="retryDelay" name="retry_delay" 
+                                   min="1" max="1440" value="5">
+                            <small class="form-help">Wait time between retry attempts</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goBack()">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-question-circle"></i> Task Type Help</h3>
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="helpContent">
+                <!-- Help content will be loaded dynamically -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeHelpModal()">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'auto_task_scheduler/js/task_scheduler.js' %}"></script>
+<script>
+    // Task type help information
+    const taskTypeHelp = {
+        backup: {
+            title: "Database Backup",
+            description: "Automatically create database backups at scheduled intervals.",
+            parameters: '{"backup_dir": "backups/", "max_backups": 10, "compress": true}',
+            examples: [
+                "Daily database backups at 2:00 AM",
+                "Weekly full backup on Sundays",
+                "Monthly backup on the 1st of each month"
+            ]
+        },
+        report: {
+            title: "Report Generation",
+            description: "Generate and distribute reports automatically.",
+            parameters: '{"report_type": "sales_summary", "format": "pdf", "email_recipients": ["admin@example.com"]}',
+            examples: [
+                "Daily sales reports at 9:00 AM",
+                "Weekly inventory reports on Mondays",
+                "Monthly financial reports on the last day of month"
+            ]
+        },
+        email: {
+            title: "Email Notification",
+            description: "Send automated email notifications and reminders.",
+            parameters: '{"template": "invoice_reminder", "recipients": ["customers"], "subject": "Payment Reminder"}',
+            examples: [
+                "Daily payment reminders at 10:00 AM",
+                "Weekly newsletter on Fridays",
+                "Monthly statement notifications"
+            ]
+        },
+        sync: {
+            title: "Data Synchronization",
+            description: "Synchronize data between different systems or databases.",
+            parameters: '{"source": "main_db", "target": "reporting_db", "tables": ["sales", "inventory"]}',
+            examples: [
+                "Hourly data sync during business hours",
+                "Daily sync at midnight",
+                "Weekly full synchronization"
+            ]
+        },
+        custom: {
+            title: "Custom Task",
+            description: "Execute custom Python functions or scripts.",
+            parameters: '{"function": "my_module.my_function", "args": ["arg1", "arg2"]}',
+            examples: [
+                "Custom data processing functions",
+                "Integration with external APIs",
+                "Complex business logic automation"
+            ]
+        }
+    };
+
+    // Initialize form when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCreateTaskForm();
+        setupFormValidation();
+    });
+
+    function updateTaskTypeHelp() {
+        const taskType = document.getElementById('taskType').value;
+        const helpText = document.getElementById('taskTypeHelp');
+        
+        if (taskType && taskTypeHelp[taskType]) {
+            helpText.textContent = taskTypeHelp[taskType].description;
+        } else {
+            helpText.textContent = 'Select the type of task you want to automate';
+        }
+    }
+
+    function toggleScheduleFields() {
+        const scheduleType = document.getElementById('scheduleType').value;
+        const configFields = document.getElementById('scheduleConfigFields');
+        
+        // Hide all schedule fields first
+        document.querySelectorAll('.schedule-fields').forEach(field => {
+            field.style.display = 'none';
+        });
+        
+        if (scheduleType === 'weekly') {
+            document.getElementById('weeklyFields').style.display = 'block';
+            configFields.style.display = 'block';
+        } else if (scheduleType === 'monthly') {
+            document.getElementById('monthlyFields').style.display = 'block';
+            configFields.style.display = 'block';
+        } else if (scheduleType === 'specific_datetime') {
+            document.getElementById('specificDateTimeFields').style.display = 'block';
+            configFields.style.display = 'block';
+        } else {
+            configFields.style.display = 'none';
+        }
+    }
+
+    function setupFormValidation() {
+        const form = document.getElementById('createTaskForm');
+        const retryOnFailure = document.getElementById('retryOnFailure');
+        const retryConfig = document.getElementById('retryConfig');
+        
+        retryOnFailure.addEventListener('change', function() {
+            if (this.value === 'true') {
+                retryConfig.style.display = 'block';
+            } else {
+                retryConfig.style.display = 'none';
+            }
+        });
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            createTask();
+        });
+    }
+
+    function goBack() {
+        window.history.back();
+    }
+
+    function showHelp(taskType) {
+        if (taskTypeHelp[taskType]) {
+            const help = taskTypeHelp[taskType];
+            const content = document.getElementById('helpContent');
+            
+            content.innerHTML = `
+                <h4>${help.title}</h4>
+                <p>${help.description}</p>
+                <h5>Example Parameters:</h5>
+                <pre><code>${help.parameters}</code></pre>
+                <h5>Common Use Cases:</h5>
+                <ul>
+                    ${help.examples.map(example => `<li>${example}</li>`).join('')}
+                </ul>
+            `;
+            
+            document.getElementById('helpModal').style.display = 'block';
+        }
+    }
+
+    function closeHelpModal() {
+        document.getElementById('helpModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

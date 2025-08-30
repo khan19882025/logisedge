@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bank Accounts Dashboard - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_accounts/css/bank_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="bank-accounts-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-university"></i> Bank Accounts Dashboard</h2>
+                <p class="subtitle">Manage and monitor your company's bank accounts</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'bank_accounts:bank_account_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Bank Account
+                </a>
+                <a href="{% url 'bank_accounts:bank_account_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list"></i> View All
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-section">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ total_accounts }}</div>
+                        <div class="stat-label">Total Accounts</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon active">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ active_accounts }}</div>
+                        <div class="stat-label">Active Accounts</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon balance">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ total_balance|floatformat:2 }}</div>
+                        <div class="stat-label">Total Balance</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon transactions">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ recent_transactions|length }}</div>
+                        <div class="stat-label">Recent Transactions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-content">
+        <div class="row">
+            <!-- Accounts by Currency -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-coins"></i> Accounts by Currency</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if accounts_by_currency %}
+                            <div class="currency-accounts">
+                                {% for currency_code, data in accounts_by_currency.items %}
+                                    <div class="currency-section">
+                                        <div class="currency-header">
+                                            <h6>{{ data.currency.code }} - {{ data.currency.name }}</h6>
+                                            <span class="currency-total">{{ data.currency.symbol }} {{ data.total_balance|floatformat:2 }}</span>
+                                        </div>
+                                        <div class="accounts-list">
+                                            {% for account in data.accounts %}
+                                                <div class="account-item">
+                                                    <div class="account-info">
+                                                        <div class="account-name">{{ account.bank_name }}</div>
+                                                        <div class="account-details">
+                                                            {{ account.masked_account_number }} • {{ account.get_account_type_display }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="account-balance">
+                                                        <span class="balance-amount">{{ account.balance_formatted }}</span>
+                                                        <span class="status-badge status-{{ account.status }}">
+                                                            {{ account.get_status_display }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="account-actions">
+                                                        <a href="{% url 'bank_accounts:bank_account_detail' account.pk %}" 
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="{% url 'bank_accounts:bank_account_edit' account.pk %}" 
+                                                           class="btn btn-sm btn-outline-secondary">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-university"></i>
+                                <h5>No Bank Accounts Found</h5>
+                                <p>Get started by adding your first bank account.</p>
+                                <a href="{% url 'bank_accounts:bank_account_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add Bank Account
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Recent Transactions</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_transactions %}
+                            <div class="recent-transactions">
+                                {% for transaction in recent_transactions %}
+                                    <div class="transaction-item">
+                                        <div class="transaction-icon">
+                                            <i class="fas fa-{% if transaction.transaction_type == 'credit' %}arrow-down text-success{% else %}arrow-up text-danger{% endif %}"></i>
+                                        </div>
+                                        <div class="transaction-info">
+                                            <div class="transaction-amount">
+                                                {{ transaction.bank_account.currency.symbol }} {{ transaction.amount|floatformat:2 }}
+                                            </div>
+                                            <div class="transaction-details">
+                                                {{ transaction.description|truncatechars:30 }}
+                                            </div>
+                                            <div class="transaction-meta">
+                                                {{ transaction.bank_account.bank_name }} • {{ transaction.transaction_date }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="text-center mt-3">
+                                <a href="#" class="btn btn-outline-primary btn-sm">View All Transactions</a>
+                            </div>
+                        {% else %}
+                            <div class="empty-state small">
+                                <i class="fas fa-exchange-alt"></i>
+                                <p>No recent transactions</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="quick-actions">
+                            <a href="{% url 'bank_accounts:bank_account_create' %}" class="quick-action-item">
+                                <i class="fas fa-plus"></i>
+                                <span>Add New Account</span>
+                            </a>
+                            <a href="{% url 'bank_accounts:export_bank_accounts' %}" class="quick-action-item">
+                                <i class="fas fa-download"></i>
+                                <span>Export Accounts</span>
+                            </a>
+                            <a href="{% url 'bank_accounts:bank_account_list' %}" class="quick-action-item">
+                                <i class="fas fa-list"></i>
+                                <span>View All Accounts</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_accounts/js/bank_accounts.js' %}"></script>
+{% endblock %} 

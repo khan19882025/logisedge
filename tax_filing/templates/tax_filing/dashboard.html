@@ -1,0 +1,292 @@
+{% extends 'tax_filing/base.html' %}
+{% load static %}
+
+{% block title %}Tax Filing Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block tax_filing_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-invoice-dollar"></i>
+            Tax Filing Dashboard
+        </h1>
+        <a href="{% url 'tax_filing:report_create' %}" class="d-none d-sm-inline-block btn btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i>
+            Create New Report
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row">
+        <!-- Total Reports -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Reports
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_reports }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Tax -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Output Tax
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_output_tax|floatformat:2 }} AED
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-upload fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Tax -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Input Tax
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ total_input_tax|floatformat:2 }} AED
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-download fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Tax Payable -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Net Tax Payable
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ net_tax_payable|floatformat:2 }} AED
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calculator fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Recent Reports -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Reports</h6>
+                    <a href="{% url 'tax_filing:report_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Report Name</th>
+                                    <th>Period</th>
+                                    <th>Status</th>
+                                    <th>Net Tax</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in recent_reports %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'tax_filing:report_detail' pk=report.pk %}">
+                                            {{ report.report_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if report.status == 'draft' %}
+                                            <span class="badge badge-warning">Draft</span>
+                                        {% elif report.status == 'generated' %}
+                                            <span class="badge badge-success">Generated</span>
+                                        {% elif report.status == 'reviewed' %}
+                                            <span class="badge badge-info">Reviewed</span>
+                                        {% elif report.status == 'submitted' %}
+                                            <span class="badge badge-primary">Submitted</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ report.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ report.net_tax_payable|floatformat:2 }} {{ report.currency }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No reports found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation Issues -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Validation Issues</h6>
+                    <a href="#" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if validation_issues %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Severity</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for validation in validation_issues %}
+                                <tr>
+                                    <td>{{ validation.get_validation_type_display }}</td>
+                                    <td>
+                                        {% if validation.severity == 'critical' %}
+                                            <span class="badge badge-danger">Critical</span>
+                                        {% elif validation.severity == 'high' %}
+                                            <span class="badge badge-warning">High</span>
+                                        {% elif validation.severity == 'medium' %}
+                                            <span class="badge badge-info">Medium</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ validation.description|truncatechars:50 }}</td>
+                                    <td>
+                                        {% if validation.is_resolved %}
+                                            <span class="badge badge-success">Resolved</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No validation issues found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Summary Chart -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Monthly Summary ({{ current_year }})</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="monthlySummaryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Monthly Summary Chart
+var ctx = document.getElementById('monthlySummaryChart').getContext('2d');
+var monthlyData = {{ monthly_summary|safe }};
+
+var labels = [];
+var outputData = [];
+var inputData = [];
+var adjustmentData = [];
+
+monthlyData.forEach(function(item) {
+    var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    labels.push(monthNames[item.month - 1]);
+    outputData.push(parseFloat(item.total_output));
+    inputData.push(parseFloat(item.total_input));
+    adjustmentData.push(parseFloat(item.total_adjustments));
+});
+
+var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Output Tax',
+            data: outputData,
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }, {
+            label: 'Input Tax',
+            data: inputData,
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+        }, {
+            label: 'Adjustments',
+            data: adjustmentData,
+            borderColor: 'rgb(255, 205, 86)',
+            backgroundColor: 'rgba(255, 205, 86, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

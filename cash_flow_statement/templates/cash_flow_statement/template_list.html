@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cash_flow_statement/css/report.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        Cash Flow Templates
+                    </h4>
+                    <div class="btn-group">
+                        <a href="{% url 'cash_flow_statement:template_create' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>New Template
+                        </a>
+                        <a href="{% url 'cash_flow_statement:report_list' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Reports
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">Use predefined templates to create consistent cash flow statements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-collection me-2"></i>
+                        Available Templates
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if templates %}
+                    <div class="row">
+                        {% for template in templates %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ template.name }}</h6>
+                                        <span class="badge bg-{% if template.template_type == 'STANDARD' %}primary{% elif template.template_type == 'CUSTOM' %}warning{% else %}success{% endif %}">
+                                            {{ template.get_template_type_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small">{{ template.description|default:"No description available" }}</p>
+                                    
+                                    <div class="mb-3">
+                                        <small class="text-muted">
+                                            <strong>Includes:</strong><br>
+                                            {% if template.include_operating_activities %}
+                                            <i class="bi bi-check-circle text-success me-1"></i>Operating Activities<br>
+                                            {% endif %}
+                                            {% if template.include_investing_activities %}
+                                            <i class="bi bi-check-circle text-success me-1"></i>Investing Activities<br>
+                                            {% endif %}
+                                            {% if template.include_financing_activities %}
+                                            <i class="bi bi-check-circle text-success me-1"></i>Financing Activities<br>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            Created by {{ template.created_by.get_full_name|default:template.created_by.username }}
+                                        </small>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'cash_flow_statement:template_use' template.pk %}" 
+                                               class="btn btn-primary"
+                                               data-bs-toggle="tooltip" 
+                                               title="Use Template">
+                                                <i class="bi bi-play-circle me-1"></i>Use
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-earmark-text text-muted" style="font-size: 4rem;"></i>
+                        <h5 class="text-muted mt-3">No Templates Found</h5>
+                        <p class="text-muted">No cash flow statement templates are available.</p>
+                        <div class="mt-4">
+                            <a href="{% url 'cash_flow_statement:template_create' %}" class="btn btn-success">
+                                <i class="bi bi-plus-circle me-1"></i>Create Template
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cash_flow_statement/js/report.js' %}"></script>
+{% endblock %} 

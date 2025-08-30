@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt - {{ payment.id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .company-details {
+            flex: 1;
+            text-align: left;
+        }
+        .company-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 5px;
+        }
+        .company-code {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .company-info {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #555;
+        }
+        .receipt-title-section {
+            flex: 1;
+            text-align: right;
+        }
+        .receipt-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        .receipt-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .payment-info {
+            margin-bottom: 30px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+        }
+        .info-value {
+            flex: 1;
+        }
+        .invoices-section {
+            margin-top: 30px;
+        }
+        .invoices-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .invoices-table th,
+        .invoices-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .invoices-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-details">
+            {% if company %}
+            <div class="company-name">{{ company.name }}</div>
+            <div class="company-info">
+                {{ company.address|linebreaksbr }}<br>
+                Phone: {{ company.phone }}<br>
+                Email: {{ company.email }}
+            </div>
+            {% else %}
+            <div class="company-name">logisEdge</div>
+            <div class="company-info">
+                Logistics Management System<br>
+                Payment Receipt
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="receipt-title-section">
+            <div class="receipt-title">PAYMENT RECEIPT</div>
+            <div class="receipt-subtitle">{{ payment.formatted_payment_id }}</div>
+            <div class="receipt-subtitle">{{ payment.payment_date }}</div>
+        </div>
+    </div>
+
+    <div class="payment-info">
+        <div class="info-row">
+            <div class="info-label">Customer:</div>
+            <div class="info-value">{{ payment.customer }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Amount:</div>
+            <div class="info-value amount">{{ payment.amount }}</div>
+        </div>
+        {% if payment.notes %}
+        <div class="info-row">
+            <div class="info-label">Notes:</div>
+            <div class="info-value">{{ payment.notes }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if payment_invoices %}
+    <div class="invoices-section">
+        <h3>Applied to Invoices</h3>
+        <table class="invoices-table">
+            <thead>
+                <tr>
+                    <th>Invoice Number</th>
+                    <th>Amount Applied</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment_invoice in payment_invoices %}
+                <tr>
+                    <td>{{ payment_invoice.invoice.invoice_number }}</td>
+                    <td>{{ payment_invoice.amount_received }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="invoices-section">
+        <p><em>This is a general payment not applied to specific invoices.</em></p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Thank you for your business!</p>
+        <p>Generated on {{ payment.payment_date }}</p>
+    </div>
+</body>
+</html> 

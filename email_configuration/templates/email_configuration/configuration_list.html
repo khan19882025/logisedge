@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Email Configurations{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'email_configuration/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-gear me-2"></i>Email Configurations
+                </h1>
+                <div>
+                    <a href="{% url 'email_configuration:dashboard' %}" class="btn btn-secondary me-2">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <a href="{% url 'email_configuration:configuration_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create Configuration
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ request.GET.name }}" placeholder="Search by name">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="protocol" class="form-label">Protocol</label>
+                            <select class="form-select" id="protocol" name="protocol">
+                                <option value="">All</option>
+                                <option value="smtp" {% if request.GET.protocol == 'smtp' %}selected{% endif %}>SMTP</option>
+                                <option value="imap" {% if request.GET.protocol == 'imap' %}selected{% endif %}>IMAP</option>
+                                <option value="pop3" {% if request.GET.protocol == 'pop3' %}selected{% endif %}>POP3</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All</option>
+                                <option value="success" {% if request.GET.status == 'success' %}selected{% endif %}>Success</option>
+                                <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Failed</option>
+                                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="encryption" class="form-label">Encryption</label>
+                            <select class="form-select" id="encryption" name="encryption">
+                                <option value="">All</option>
+                                <option value="none" {% if request.GET.encryption == 'none' %}selected{% endif %}>None</option>
+                                <option value="ssl" {% if request.GET.encryption == 'ssl' %}selected{% endif %}>SSL</option>
+                                <option value="tls" {% if request.GET.encryption == 'tls' %}selected{% endif %}>TLS</option>
+                                <option value="starttls" {% if request.GET.encryption == 'starttls' %}selected{% endif %}>STARTTLS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-search me-2"></i>Search
+                            </button>
+                            <a href="{% url 'email_configuration:configuration_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-list me-2"></i>All Configurations
+                            </h5>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-primary">{{ configurations|length }} configuration{{ configurations|length|pluralize }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if configurations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Protocol</th>
+                                        <th>Server</th>
+                                        <th>Port</th>
+                                        <th>Encryption</th>
+                                        <th>Status</th>
+                                        <th>Last Test</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for config in configurations %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ config.name }}</strong>
+                                            {% if config.description %}
+                                                <br><small class="text-muted">{{ config.description }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ config.protocol|upper }}</span>
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-server me-1"></i>
+                                            {{ config.host }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ config.port }}</span>
+                                        </td>
+                                        <td>
+                                            {% if config.encryption == 'none' %}
+                                                <span class="badge bg-warning">None</span>
+                                            {% elif config.encryption == 'ssl' %}
+                                                <span class="badge bg-success">SSL</span>
+                                            {% elif config.encryption == 'tls' %}
+                                                <span class="badge bg-primary">TLS</span>
+                                            {% elif config.encryption == 'starttls' %}
+                                                <span class="badge bg-info">STARTTLS</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if config.is_active %}
+                                                {% if config.last_test_status == 'success' %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% elif config.last_test_status == 'failed' %}
+                                                    <span class="badge bg-danger">Failed</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if config.last_tested %}
+                                                <small class="text-muted">
+                                                    {{ config.last_tested|date:"M d, Y" }}
+                                                    <br>{{ config.last_tested|time:"H:i" }}
+                                                </small>
+                                            {% else %}
+                                                <span class="text-muted">Never</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'email_configuration:configuration_detail' config.id %}" 
+                                                   class="btn btn-sm btn-outline-primary" 
+                                                   title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'email_configuration:configuration_update' config.id %}" 
+                                                   class="btn btn-sm btn-outline-warning" 
+                                                   title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="{% url 'email_configuration:test_configuration' config.id %}" 
+                                                   class="btn btn-sm btn-outline-info" 
+                                                   title="Test">
+                                                    <i class="bi bi-play-circle"></i>
+                                                </a>
+                                                <a href="{% url 'email_configuration:configuration_delete' config.id %}" 
+                                                   class="btn btn-sm btn-outline-danger" 
+                                                   title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Configurations pagination" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">
+                                            <i class="bi bi-chevron-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                            <i class="bi bi-chevron-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-gear display-1 text-muted"></i>
+                            <h4 class="mt-3">No configurations found</h4>
+                            <p class="text-muted">Create your first email configuration to get started.</p>
+                            <a href="{% url 'email_configuration:configuration_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Create Configuration
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'email_configuration/js/dashboard.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation for delete actions
+    const deleteButtons = document.querySelectorAll('a[href*="delete"]');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to delete this configuration? This action cannot be undone.')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

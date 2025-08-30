@@ -1,0 +1,319 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Configure Session - {{ session.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-cog text-primary me-2"></i>
+                        Configure Session
+                    </h1>
+                    <p class="text-muted mb-0">{{ session.name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'data_cleaning_tool:session_detail' session.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Session
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-sliders-h me-2"></i>
+                                Session Configuration
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="sessionConfigForm">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_name" class="form-label">Session Name</label>
+                                            <input type="text" class="form-control" id="id_name" name="name" value="{{ session.name }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_cleaning_type" class="form-label">Cleaning Type</label>
+                                            <select class="form-select" id="id_cleaning_type" name="cleaning_type" required>
+                                                <option value="master" {% if session.cleaning_type == 'master' %}selected{% endif %}>Master Data</option>
+                                                <option value="transactional" {% if session.cleaning_type == 'transactional' %}selected{% endif %}>Transactional Data</option>
+                                                <option value="financial" {% if session.cleaning_type == 'financial' %}selected{% endif %}>Financial Data</option>
+                                                <option value="comprehensive" {% if session.cleaning_type == 'comprehensive' %}selected{% endif %}>Comprehensive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="id_description" name="description" rows="3">{{ session.description }}</textarea>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <h6 class="mb-3">
+                                    <i class="fas fa-filter me-2"></i>
+                                    Data Selection Criteria
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_date_from" class="form-label">Date From</label>
+                                            <input type="date" class="form-control" id="id_date_from" name="date_from" value="{{ session.date_from|date:'Y-m-d' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_date_to" class="form-label">Date To</label>
+                                            <input type="date" class="form-control" id="id_date_to" name="date_to" value="{{ session.date_to|date:'Y-m-d' }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_priority" class="form-label">Priority</label>
+                                            <select class="form-select" id="id_priority" name="priority">
+                                                <option value="low" {% if session.priority == 'low' %}selected{% endif %}>Low</option>
+                                                <option value="medium" {% if session.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                                <option value="high" {% if session.priority == 'high' %}selected{% endif %}>High</option>
+                                                <option value="critical" {% if session.priority == 'critical' %}selected{% endif %}>Critical</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_batch_size" class="form-label">Batch Size</label>
+                                            <input type="number" class="form-control" id="id_batch_size" name="batch_size" value="{{ session.batch_size|default:1000 }}" min="100" max="10000">
+                                            <div class="form-text">Number of records to process in each batch</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <h6 class="mb-3">
+                                    <i class="fas fa-tools me-2"></i>
+                                    Cleaning Options
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_remove_duplicates" name="remove_duplicates" {% if session.remove_duplicates %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_remove_duplicates">
+                                                Remove Duplicates
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_fill_mandatory" name="fill_mandatory" {% if session.fill_mandatory %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_fill_mandatory">
+                                                Fill Mandatory Fields
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_standardize_format" name="standardize_format" {% if session.standardize_format %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_standardize_format">
+                                                Standardize Format
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_validate_data" name="validate_data" {% if session.validate_data %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_validate_data">
+                                                Validate Data
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_archive_old" name="archive_old" {% if session.archive_old %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_archive_old">
+                                                Archive Old Records
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_create_backup" name="create_backup" {% if session.create_backup %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_create_backup">
+                                                Create Backup
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_custom_rules" class="form-label">Custom Rules (JSON)</label>
+                                    <textarea class="form-control" id="id_custom_rules" name="custom_rules" rows="4" placeholder='{"field": "value", "condition": "equals"}'>{{ session.custom_rules|default:'' }}</textarea>
+                                    <div class="form-text">Advanced: Custom JSON rules for specific cleaning logic</div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <h6 class="mb-3">
+                                    <i class="fas fa-bell me-2"></i>
+                                    Notification Settings
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_email_notifications" name="email_notifications" {% if session.email_notifications %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_email_notifications">
+                                                Email Notifications
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="id_sms_notifications" name="sms_notifications" {% if session.sms_notifications %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_sms_notifications">
+                                                SMS Notifications
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_notification_email" class="form-label">Notification Email</label>
+                                            <input type="email" class="form-control" id="id_notification_email" name="notification_email" value="{{ session.notification_email|default:'' }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Configuration
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Configuration Help
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="text-primary">Cleaning Types</h6>
+                                <ul class="list-unstyled small">
+                                    <li><strong>Master Data:</strong> Customer, supplier, item master files</li>
+                                    <li><strong>Transactional:</strong> Orders, invoices, shipments</li>
+                                    <li><strong>Financial:</strong> Journal entries, payments, receipts</li>
+                                    <li><strong>Comprehensive:</strong> All data types</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="text-primary">Batch Processing</h6>
+                                <p class="small text-muted mb-0">
+                                    Larger batch sizes process more records per cycle but may use more memory. 
+                                    Recommended: 1000-5000 records per batch.
+                                </p>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6 class="text-primary">Custom Rules</h6>
+                                <p class="small text-muted mb-0">
+                                    Define specific cleaning logic using JSON format. 
+                                    Example: {"field": "email", "action": "validate_format"}
+                                </p>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Start with basic options and gradually add advanced features as needed.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i>
+                                Recent Changes
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-primary"></div>
+                                    <div class="timeline-content">
+                                        <small class="text-muted">2 hours ago</small>
+                                        <p class="mb-0">Session created</p>
+                                    </div>
+                                </div>
+                                {% if session.last_modified %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-info"></div>
+                                    <div class="timeline-content">
+                                        <small class="text-muted">{{ session.last_modified|timesince }} ago</small>
+                                        <p class="mb-0">Last modified</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -25px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    padding-left: 10px;
+}
+
+.timeline-content p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+</style>
+{% endblock %}

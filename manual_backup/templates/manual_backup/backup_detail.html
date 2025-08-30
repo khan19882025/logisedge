@@ -1,0 +1,764 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Backup Details - {{ backup.name }} - Manual Backup{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'manual_backup/css/dashboard.css' %}">
+<style>
+    .backup-detail-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .page-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2.5rem;
+        font-weight: 300;
+    }
+    
+    .page-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .backup-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 4px solid #007bff;
+    }
+    
+    .info-card h3 {
+        margin: 0 0 20px 0;
+        color: #495057;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .info-card h3 i {
+        color: #007bff;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        min-width: 120px;
+    }
+    
+    .info-value {
+        color: #495057;
+        text-align: right;
+        flex: 1;
+    }
+    
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-in_progress { background: #cce5ff; color: #004085; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-cancelled { background: #e2e3e5; color: #383d41; }
+    
+    .priority-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .priority-low { background: #e9ecef; color: #6c757d; }
+    .priority-normal { background: #d1ecf1; color: #0c5460; }
+    .priority-high { background: #fff3cd; color: #856404; }
+    .priority-critical { background: #f8d7da; color: #721c24; }
+    
+    .progress-section {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .progress-bar {
+        background: #e9ecef;
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #0056b3);
+        border-radius: 10px;
+        transition: width 0.3s ease;
+        position: relative;
+    }
+    
+    .progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    .progress-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #007bff;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .steps-section {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .step-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .step-item:last-child {
+        border-bottom: none;
+    }
+    
+    .step-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 18px;
+    }
+    
+    .step-icon.pending { background: #e9ecef; color: #6c757d; }
+    .step-icon.in_progress { background: #cce5ff; color: #004085; }
+    .step-icon.completed { background: #d4edda; color: #155724; }
+    .step-icon.failed { background: #f8d7da; color: #721c24; }
+    
+    .step-info {
+        flex: 1;
+    }
+    
+    .step-name {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .step-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .step-status {
+        margin-left: 15px;
+    }
+    
+    .actions-section {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary { background: #007bff; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-warning { background: #ffc107; color: #212529; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .log-section {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .log-content {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        max-height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    
+    .log-entry {
+        margin-bottom: 8px;
+        padding: 5px 0;
+    }
+    
+    .log-entry.info { color: #0c5460; }
+    .log-entry.warning { color: #856404; }
+    .log-entry.error { color: #721c24; }
+    .log-entry.success { color: #155724; }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="backup-detail-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1><i class="fas fa-database"></i> {{ backup.name }}</h1>
+        <p>{{ backup.description|default:"Backup session details and progress" }}</p>
+    </div>
+
+    <!-- Backup Information Grid -->
+    <div class="backup-info-grid">
+        <!-- Basic Information -->
+        <div class="info-card">
+            <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+            <div class="info-row">
+                <span class="info-label">Backup ID:</span>
+                <span class="info-value"><code>{{ backup.backup_id }}</code></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value">{{ backup.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Description:</span>
+                <span class="info-value">{{ backup.description|default:"No description" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Reason:</span>
+                <span class="info-value">
+                    <span class="badge badge-info">{{ backup.get_reason_display }}</span>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Priority:</span>
+                <span class="info-value">
+                    <span class="priority-badge priority-{{ backup.priority }}">
+                        {{ backup.get_priority_display }}
+                    </span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Status and Progress -->
+        <div class="info-card">
+            <h3><i class="fas fa-chart-line"></i> Status & Progress</h3>
+            <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span class="info-value">
+                    <span class="status-badge status-{{ backup.status }}">
+                        {{ backup.get_status_display }}
+                    </span>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Progress:</span>
+                <span class="info-value">{{ backup.progress }}%</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Current Step:</span>
+                <span class="info-value">{{ backup.current_step|default:"Not started" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Total Steps:</span>
+                <span class="info-value">{{ backup.total_steps }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Estimated Time:</span>
+                <span class="info-value">{{ backup.estimated_time|default:"Calculating..." }}</span>
+            </div>
+        </div>
+
+        <!-- Timing Information -->
+        <div class="info-card">
+            <h3><i class="fas fa-clock"></i> Timing Information</h3>
+            <div class="info-row">
+                <span class="info-label">Created:</span>
+                <span class="info-value">{{ backup.created_at|date:"M d, Y H:i:s" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Started:</span>
+                <span class="info-value">
+                    {% if backup.started_at %}
+                        {{ backup.started_at|date:"M d, Y H:i:s" }}
+                    {% else %}
+                        <span class="text-muted">Not started</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Completed:</span>
+                <span class="info-value">
+                    {% if backup.completed_at %}
+                        {{ backup.completed_at|date:"M d, Y H:i:s" }}
+                    {% else %}
+                        <span class="text-muted">Not completed</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Duration:</span>
+                <span class="info-value">{{ backup.duration_formatted|default:"N/A" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Updated:</span>
+                <span class="info-value">{{ backup.updated_at|date:"M d, Y H:i:s" }}</span>
+            </div>
+        </div>
+
+        <!-- File Information -->
+        <div class="info-card">
+            <h3><i class="fas fa-file-archive"></i> File Information</h3>
+            <div class="info-row">
+                <span class="info-label">File Path:</span>
+                <span class="info-value">
+                    {% if backup.file_path %}
+                        <code>{{ backup.file_path|truncatechars:30 }}</code>
+                    {% else %}
+                        <span class="text-muted">Not generated yet</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">File Size:</span>
+                <span class="info-value">{{ backup.file_size_formatted|default:"N/A" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Compression:</span>
+                <span class="info-value">{{ backup.compression_ratio|default:"N/A" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Checksum:</span>
+                <span class="info-value">
+                    {% if backup.checksum %}
+                        <code>{{ backup.checksum|truncatechars:16 }}</code>
+                    {% else %}
+                        <span class="text-muted">Not calculated</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Created By:</span>
+                <span class="info-value">
+                    {% if backup.created_by %}
+                        {{ backup.created_by.username }}
+                    {% else %}
+                        <span class="text-muted">System</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="progress-section">
+        <div class="progress-header">
+            <h3><i class="fas fa-tasks"></i> Backup Progress</h3>
+            <span class="progress-percentage">{{ backup.progress }}% Complete</span>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ backup.progress }}%"></div>
+        </div>
+        
+        <div class="progress-stats">
+            <div class="stat-item">
+                <div class="stat-value">{{ backup.completed_steps }}</div>
+                <div class="stat-label">Steps Completed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ backup.total_steps }}</div>
+                <div class="stat-label">Total Steps</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ backup.failed_steps }}</div>
+                <div class="stat-label">Failed Steps</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ backup.retry_count }}</div>
+                <div class="stat-label">Retry Count</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Steps -->
+    <div class="steps-section">
+        <h3><i class="fas fa-list-ol"></i> Backup Steps</h3>
+        {% if backup_steps %}
+            {% for step in backup_steps %}
+            <div class="step-item">
+                <div class="step-icon {{ step.status }}">
+                    {% if step.status == 'pending' %}
+                        <i class="fas fa-clock"></i>
+                    {% elif step.status == 'in_progress' %}
+                        <i class="fas fa-spinner fa-spin"></i>
+                    {% elif step.status == 'completed' %}
+                        <i class="fas fa-check"></i>
+                    {% elif step.status == 'failed' %}
+                        <i class="fas fa-times"></i>
+                    {% endif %}
+                </div>
+                <div class="step-info">
+                    <div class="step-name">{{ step.step_name }}</div>
+                    <div class="step-description">{{ step.description|default:"No description" }}</div>
+                </div>
+                <div class="step-status">
+                    <span class="status-badge status-{{ step.status }}">
+                        {{ step.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-list"></i>
+                <h4>No steps defined</h4>
+                <p>This backup doesn't have any defined steps yet.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Backup Log -->
+    <div class="log-section">
+        <h3><i class="fas fa-file-alt"></i> Backup Log</h3>
+        {% if backup_logs %}
+            <div class="log-content">
+                {% for log in backup_logs %}
+                <div class="log-entry {{ log.level|lower }}">
+                    [{{ log.timestamp|date:"Y-m-d H:i:s" }}] {{ log.level|upper }}: {{ log.message }}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-file-alt"></i>
+                <h4>No logs available</h4>
+                <p>No log entries have been generated for this backup yet.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions Section -->
+    <div class="actions-section">
+        <h3><i class="fas fa-cogs"></i> Actions</h3>
+        <div class="action-buttons">
+            {% if backup.status == 'pending' %}
+                <button class="btn btn-success" onclick="startBackup('{{ backup.backup_id }}')">
+                    <i class="fas fa-play"></i> Start Backup
+                </button>
+            {% endif %}
+            
+            {% if backup.status == 'in_progress' %}
+                <button class="btn btn-warning" onclick="pauseBackup('{{ backup.backup_id }}')">
+                    <i class="fas fa-pause"></i> Pause Backup
+                </button>
+                <button class="btn btn-danger" onclick="cancelBackup('{{ backup.backup_id }}')">
+                    <i class="fas fa-stop"></i> Cancel Backup
+                </button>
+            {% endif %}
+            
+            {% if backup.status == 'paused' %}
+                <button class="btn btn-success" onclick="resumeBackup('{{ backup.backup_id }}')">
+                    <i class="fas fa-play"></i> Resume Backup
+                </button>
+                <button class="btn btn-danger" onclick="cancelBackup('{{ backup.backup_id }}')">
+                    <i class="fas fa-stop"></i> Cancel Backup
+                </button>
+            {% endif %}
+            
+            {% if backup.status == 'completed' and backup.file_path %}
+                <a href="{% url 'manual_backup:download_backup' backup.backup_id %}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Download Backup
+                </a>
+                <button class="btn btn-success" onclick="restoreBackup('{{ backup.backup_id }}')">
+                    <i class="fas fa-undo"></i> Restore from Backup
+                </button>
+            {% endif %}
+            
+            <a href="{% url 'manual_backup:backup_history' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to History
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startBackup(backupId) {
+    if (confirm('Are you sure you want to start this backup?')) {
+        fetch(`/manual-backup/api/start/${backupId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error starting backup: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error starting backup');
+        });
+    }
+}
+
+function pauseBackup(backupId) {
+    if (confirm('Are you sure you want to pause this backup?')) {
+        fetch(`/manual-backup/api/pause/${backupId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error pausing backup: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error pausing backup');
+        });
+    }
+}
+
+function resumeBackup(backupId) {
+    if (confirm('Are you sure you want to resume this backup?')) {
+        fetch(`/manual-backup/api/resume/${backupId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error resuming backup: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error resuming backup');
+        });
+    }
+}
+
+function cancelBackup(backupId) {
+    if (confirm('Are you sure you want to cancel this backup? This action cannot be undone.')) {
+        fetch(`/manual-backup/api/cancel/${backupId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error cancelling backup: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error cancelling backup');
+        });
+    }
+}
+
+function restoreBackup(backupId) {
+    if (confirm('Are you sure you want to restore from this backup? This will overwrite current data.')) {
+        if (confirm('This action will overwrite your current data. Are you absolutely sure?')) {
+            fetch(`/manual-backup/api/restore/${backupId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Restore process started. You will be notified when it completes.');
+                } else {
+                    alert('Error starting restore: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error starting restore');
+            });
+        }
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Auto-refresh if backup is in progress
+{% if backup.status == 'in_progress' %}
+setInterval(function() {
+    location.reload();
+}, 5000); // Refresh every 5 seconds
+{% endif %}
+</script>
+{% endblock %}

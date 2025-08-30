@@ -1,0 +1,216 @@
+{% extends 'payment_scheduling/base.html' %}
+
+{% block title %}Payment Reports{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Reports</li>
+{% endblock %}
+
+{% block payment_scheduling_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Payment Scheduling Reports</h6>
+            </div>
+            <div class="card-body">
+                <!-- Report Filters -->
+                <form method="get" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="report_type" class="form-label">Report Type</label>
+                            <select name="type" id="report_type" class="form-select">
+                                <option value="summary" {% if report_type == 'summary' %}selected{% endif %}>Summary Report</option>
+                                <option value="vat_summary" {% if report_type == 'vat_summary' %}selected{% endif %}>VAT Summary</option>
+                                <option value="overdue" {% if report_type == 'overdue' %}selected{% endif %}>Overdue Report</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">From Date</label>
+                            <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">To Date</label>
+                            <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Report Content -->
+                {% if report_data %}
+                    {% if report_type == 'summary' %}
+                        <!-- Summary Report -->
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card border-left-primary shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                    Total Schedules</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ report_data.total_schedules|default:0 }}</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-success shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                    Total Amount</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                                    {{ report_data.total_amount|default:0|floatformat:2 }} AED
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-info shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                    Total VAT</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                                    {{ report_data.total_vat|default:0|floatformat:2 }} AED
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-left-warning shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                    Outstanding Amount</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                                    {{ report_data.outstanding_amount|default:0|floatformat:2 }} AED
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    {% elif report_type == 'vat_summary' %}
+                        <!-- VAT Summary Report -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Currency</th>
+                                        <th>Total Taxable Amount</th>
+                                        <th>Total VAT Amount</th>
+                                        <th>Number of Schedules</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in report_data %}
+                                    <tr>
+                                        <td>{{ item.currency }}</td>
+                                        <td>{{ item.total_taxable|floatformat:2 }}</td>
+                                        <td>{{ item.total_vat|floatformat:2 }}</td>
+                                        <td>{{ item.schedule_count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                    {% elif report_type == 'overdue' %}
+                        <!-- Overdue Report -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Customer/Vendor</th>
+                                        <th>Total Overdue Amount</th>
+                                        <th>Number of Overdue Schedules</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in report_data %}
+                                    <tr>
+                                        <td>
+                                            {% if item.customer__customer_name %}
+                                                <i class="fas fa-user text-primary"></i> {{ item.customer__customer_name }}
+                                            {% elif item.vendor %}
+                                                <i class="fas fa-building text-success"></i> {{ item.vendor }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-danger fw-bold">{{ item.total_overdue|floatformat:2 }} AED</td>
+                                        <td>{{ item.count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+
+                    <!-- Export Buttons -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button class="btn btn-success" onclick="exportToExcel()">
+                                    <i class="fas fa-file-excel"></i> Export to Excel
+                                </button>
+                                <button class="btn btn-danger" onclick="exportToPDF()">
+                                    <i class="fas fa-file-pdf"></i> Export to PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Select report type and filters to generate a report.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportToExcel() {
+    // Implementation for Excel export
+    alert('Excel export functionality will be implemented here.');
+}
+
+function exportToPDF() {
+    // Implementation for PDF export
+    alert('PDF export functionality will be implemented here.');
+}
+</script>
+{% endblock %}

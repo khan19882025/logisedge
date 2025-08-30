@@ -1,0 +1,344 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-graph-up me-2"></i>Dunning Letters Dashboard
+                        </h4>
+                        <a href="{% url 'dunning_letters:list' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-list me-1"></i>View All Letters
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Statistics Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-envelope display-4 text-primary"></i>
+                                    <h3 class="mt-2">{{ total_letters }}</h3>
+                                    <p class="text-muted mb-0">Total Letters</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-envelope-check display-4 text-success"></i>
+                                    <h3 class="mt-2">{{ sent_letters }}</h3>
+                                    <p class="text-muted mb-0">Letters Sent</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-currency-dollar display-4 text-warning"></i>
+                                    <h3 class="mt-2">AED {{ total_overdue_amount|floatformat:2 }}</h3>
+                                    <p class="text-muted mb-0">Total Overdue</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-check-circle display-4 text-info"></i>
+                                    <h3 class="mt-2">{{ paid_letters }}</h3>
+                                    <p class="text-muted mb-0">Paid Letters</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Level and Status Breakdown -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-pie-chart me-2"></i>Level Breakdown
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for level, count in level_breakdown.items %}
+                                        <div class="col-4 mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="level-indicator level-{{ level }} me-2"></div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ count }}</h6>
+                                                    <small class="text-muted">
+                                                        {% for choice_level, choice_label in letter.LEVEL_CHOICES %}
+                                                            {% if choice_level == level %}
+                                                                {{ choice_label }}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-bar-chart me-2"></i>Status Breakdown
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for status, count in status_breakdown.items %}
+                                        <div class="col-4 mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="status-indicator status-{{ status }} me-2"></div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ count }}</h6>
+                                                    <small class="text-muted">
+                                                        {% for choice_status, choice_label in letter.STATUS_CHOICES %}
+                                                            {% if choice_status == status %}
+                                                                {{ choice_label }}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overdue Invoices -->
+                    {% if overdue_invoices %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>Overdue Invoices Requiring Dunning Letters
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Customer</th>
+                                                    <th>Invoice</th>
+                                                    <th>Due Date</th>
+                                                    <th>Amount</th>
+                                                    <th>Days Overdue</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for invoice in overdue_invoices %}
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ invoice.customer.customer_name }}</strong>
+                                                        {% if invoice.customer.email %}
+                                                            <br><small class="text-muted">{{ invoice.customer.email }}</small>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-primary">{{ invoice.invoice_number }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <i class="bi bi-calendar-event me-1"></i>
+                                                        {{ invoice.due_date|date:"M d, Y" }}
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-danger">
+                                                            AED {{ invoice.total_amount|floatformat:2 }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-warning text-dark">
+                                                            {{ invoice.days_overdue }} days
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="{% url 'dunning_letters:create' %}" 
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-plus-circle me-1"></i>Create Letter
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Customers with Most Overdue -->
+                    {% if customer_overdue %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-people me-2"></i>Customers with Most Overdue Invoices
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for customer_name, data in customer_overdue.items %}
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card border-secondary">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ customer_name }}</h6>
+                                                    <p class="mb-1">
+                                                        <strong>Overdue Invoices:</strong> {{ data.count }}
+                                                    </p>
+                                                    <p class="mb-0">
+                                                        <strong>Total Amount:</strong> 
+                                                        <span class="badge bg-danger">
+                                                            AED {{ data.amount|floatformat:2 }}
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Recent Activity -->
+                    {% if recent_letters %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-clock-history me-2"></i>Recent Activity
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline">
+                                        {% for letter in recent_letters %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker bg-primary"></div>
+                                            <div class="timeline-content">
+                                                <h6 class="mb-1">
+                                                    {{ letter.get_level_display }} sent to {{ letter.customer.customer_name }}
+                                                </h6>
+                                                <p class="text-muted mb-0">
+                                                    Invoice: {{ letter.invoice.invoice_number }} | 
+                                                    Amount: AED {{ letter.overdue_amount|floatformat:2 }}
+                                                </p>
+                                                <small class="text-muted">
+                                                    {{ letter.created_at|date:"M d, Y H:i" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+    
+    .level-indicator, .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    
+    .level-friendly { background-color: #17a2b8; }
+    .level-firm { background-color: #ffc107; }
+    .level-final { background-color: #dc3545; }
+    
+    .status-draft { background-color: #6c757d; }
+    .status-sent { background-color: #28a745; }
+    .status-viewed { background-color: #17a2b8; }
+    .status-paid { background-color: #28a745; }
+    .status-cancelled { background-color: #343a40; }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -2.5rem;
+        top: 0.25rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
+    
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        border-left: 3px solid #007bff;
+    }
+    
+    .timeline-content h6 {
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .badge {
+        font-weight: 500;
+    }
+</style>
+{% endblock %} 

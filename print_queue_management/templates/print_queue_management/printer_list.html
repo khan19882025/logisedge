@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Printers - Print Queue Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="fas fa-print"></i> Printers
+                    </h4>
+                    <div class="card-tools">
+                        <a href="{% url 'print_queue_management:printer_create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> New Printer
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Active Jobs</th>
+                                    <th>Max Jobs</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for printer in printers %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ printer.name }}</strong>
+                                        {% if printer.description %}
+                                            <br><small class="text-muted">{{ printer.description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ printer.get_printer_type_display }}</span>
+                                    </td>
+                                    <td>{{ printer.location|default:"Not specified" }}</td>
+                                    <td>
+                                        {% if printer.get_status == 'idle' %}
+                                            <span class="badge badge-success">Idle</span>
+                                        {% elif printer.get_status == 'busy' %}
+                                            <span class="badge badge-warning">Busy</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">Queue Full</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ printer.print_jobs.count }}</span>
+                                    </td>
+                                    <td>{{ printer.max_job_size }}</td>
+                                    <td>{{ printer.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'print_queue_management:printer_detail' printer.id %}" class="btn btn-info" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'print_queue_management:printer_update' printer.id %}" class="btn btn-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if printer.is_active %}
+                                                <button class="btn btn-danger" title="Deactivate" onclick="togglePrinter('{{ printer.id }}', false)">
+                                                    <i class="fas fa-pause"></i>
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-success" title="Activate" onclick="togglePrinter('{{ printer.id }}', true)">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">
+                                        <i class="fas fa-print fa-3x mb-3"></i>
+                                        <p>No printers found.</p>
+                                        <a href="{% url 'print_queue_management:printer_create' %}" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Add First Printer
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePrinter(printerId, activate) {
+    const action = activate ? 'activate' : 'deactivate';
+    if (confirm(`Are you sure you want to ${action} this printer?`)) {
+        // Add AJAX call to toggle printer status
+        console.log(`${action} printer:`, printerId);
+    }
+}
+</script>
+
+<style>
+.badge {
+    font-size: 0.75em;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.table th {
+    border-top: none;
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

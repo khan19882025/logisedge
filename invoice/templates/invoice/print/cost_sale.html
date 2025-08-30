@@ -1,0 +1,254 @@
+{% load invoice_extras %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Cost & Sale Analysis - {{ invoice.invoice_number }}</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 15mm;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 10px;
+      font-size: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 5px;
+    }
+    table, th, td {
+      border: 1px solid #000;
+    }
+    th, td {
+      padding: 5px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    .header-table td {
+      border: none;
+      padding: 15px 10px;
+      vertical-align: middle;
+    }
+    .header-title {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      padding: 15px 5px;
+    }
+    .info-table th {
+      text-align: left;
+      vertical-align: top;
+      background-color: #f8f9fa;
+    }
+    .cost-header {
+      background-color: #fff3cd;
+    }
+    .sale-header {
+      background-color: #d1ecf1;
+    }
+    .totals-row {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
+    .totals-row td {
+      text-align: center;
+    }
+    .totals-row .cost-amount, .totals-row .cost-total,
+    .totals-row .sale-amount, .totals-row .sale-total {
+      text-align: right;
+    }
+    .description-cell {
+      text-align: left;
+      vertical-align: top;
+      width: 200px;
+    }
+    .vendor-cell {
+      text-align: left;
+      vertical-align: top;
+      width: 150px;
+    }
+    .numeric-cell {
+      text-align: right;
+    }
+    .remark-cell {
+      text-align: center;
+    }
+    .qty-cell {
+      width: 40px;
+      text-align: center;
+    }
+    .sr-no-cell {
+      width: 50px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <table class="header-table" width="100%" style="margin: 20px 0;">
+    <tr>
+      <td align="left">
+        {% if company %}
+          <strong>{{ company.name }}</strong><br>
+          {% if company.address %}{{ company.address|linebreaks }}{% endif %}
+        {% else %}
+          <strong>Company Name</strong><br>
+          Address: ________________________
+        {% endif %}
+      </td>
+      <td class="header-title">COST & SALE ANALYSIS</td>
+      <td align="right">
+        Invoice No: {{ invoice.invoice_number }}<br>
+        Date: {{ invoice.invoice_date|date:"d/m/Y" }}
+      </td>
+    </tr>
+  </table>
+  <hr>
+
+  <!-- SECOND INFO ROW -->
+  <table class="info-table">
+    <tr>
+      <th width="33%">
+        Customer Name: {{ invoice.customer_name.customer_name }}<br>
+        Job No: {% for job in invoice.jobs.all %}{{ job.job_code }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>
+        Shipper / Consignee
+      </th>
+      <th width="34%">
+        Origin: {% for job in invoice.jobs.all %}{% if job.origin %}{{ job.origin }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}<br>
+        Destination: {% for job in invoice.jobs.all %}{% if job.destination %}{{ job.destination }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}<br>
+        Total Qty: {% for job in invoice.jobs.all %}{% for cargo in job.cargo_items.all %}{% if cargo.quantity %}{{ cargo.quantity|floatformat:2 }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}<br>
+        Delivery Order: {% for job in invoice.jobs.all %}{% if job.delivery_order %}{{ job.delivery_order }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}
+      </th>
+      <th width="33%">
+        BL: {% for job in invoice.jobs.all %}{% if job.bl_number %}{{ job.bl_number }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}<br>
+        ED: {% for job in invoice.jobs.all %}{% if job.ed_number %}{{ job.ed_number }}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}<br>
+        CNTR<br>
+        Items: {% for job in invoice.jobs.all %}{% for cargo in job.cargo_items.all %}{% if cargo.item and cargo.item.item_name %}{{ cargo.item.item_name }}{% elif cargo.item_code %}{{ cargo.item_code }}{% else %}Cargo Item{% endif %}{% if cargo.quantity %}({{ cargo.quantity|floatformat:2 }}){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endfor %}
+      </th>
+    </tr>
+  </table>
+
+  <!-- MAIN COST/SALE TABLE -->
+  <table>
+    <tr>
+      <th rowspan="2">Sr No</th>
+      <th rowspan="2">Description</th>
+      <th colspan="5" class="cost-header">COST</th>
+      <th colspan="6" class="sale-header">SALE</th>
+      <th rowspan="2">Remark</th>
+    </tr>
+    <tr>
+      <!-- COST columns -->
+      <th class="cost-header">Qty</th>
+      <th class="cost-header">Rate</th>
+      <th class="cost-header">Amount</th>
+      <th class="cost-header">VAT</th>
+      <th class="cost-header">T-Amount</th>
+      <!-- SALE columns -->
+      <th class="sale-header">Vendor</th>
+      <th class="sale-header">Qty</th>
+      <th class="sale-header">Rate</th>
+      <th class="sale-header">Amount</th>
+      <th class="sale-header">VAT</th>
+      <th class="sale-header">T-Amount</th>
+    </tr>
+
+    <!-- DATA ROWS -->
+    {% if invoice.invoice_items %}
+      {% for item in invoice.invoice_items %}
+      <tr>
+        <td class="sr-no-cell">{{ forloop.counter }}</td>
+        <td class="description-cell">
+          {% if item.description %}
+            {% if item.description|slice:":7" == "CUS0001" %}
+              {{ item.description|slice:"7:"|default:"N/A" }}
+            {% else %}
+              {{ item.description|default:"N/A" }}
+            {% endif %}
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+        <td class="qty-cell">{{ item.cost_qty|default:"0" }}</td>
+        <td class="numeric-cell">{{ item.cost_rate|default:"0.00"|floatformat:2 }}</td>
+        <td class="numeric-cell">{{ item.cost_amount|default:"0.00"|floatformat:2 }}</td>
+        <td class="numeric-cell">{{ item.cost_vat|default:"0.00"|floatformat:2 }}</td>
+        <td class="numeric-cell">{{ item.cost_total|default:"0.00"|floatformat:2 }}</td>
+        <td class="vendor-cell">{{ item.vendor|default:"-" }}</td>
+        <td class="qty-cell">{{ item.sale_qty|default:"0" }}</td>
+        <td class="numeric-cell">{{ item.sale_rate|default:"0.00"|floatformat:2 }}</td>
+        <td class="numeric-cell">{{ item.sale_amount|default:"0.00"|floatformat:2 }}</td>
+        <td class="numeric-cell">{{ item.sale_vat|default:"0.00"|floatformat:2 }}</td>
+        <td class="numeric-cell">{{ item.sale_total|default:"0.00"|floatformat:2 }}</td>
+        <td class="remark-cell">{{ item.remark|default:"-" }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <!-- Fallback to job-based items if invoice_items is empty -->
+      {% for job in invoice.jobs.all %}
+        {% for cargo in job.cargo_items.all %}
+        <tr>
+          <td class="sr-no-cell">{{ forloop.parentloop.counter }}{{ forloop.counter|stringformat:"02d" }}</td>
+          <td class="description-cell">
+            {% if cargo.item and cargo.item.item_name %}
+              {{ cargo.item.item_name }}
+            {% elif cargo.item_code %}
+              {% if cargo.item_code|slice:":7" == "CUS0001" %}
+                {{ cargo.item_code|slice:"7:"|default:"Cargo Item" }}
+              {% else %}
+                {{ cargo.item_code }}
+              {% endif %}
+            {% else %}
+              Cargo Item
+            {% endif %}
+          </td>
+          <td class="qty-cell">{{ cargo.quantity|default:"0" }}</td>
+          <td class="numeric-cell">{{ cargo.cost|default:"0.00"|floatformat:2 }}</td>
+          <td class="numeric-cell">{{ cargo.cost|default:"0.00"|floatformat:2 }}</td>
+          <td class="numeric-cell">0.00</td>
+          <td class="numeric-cell">{{ cargo.cost|default:"0.00"|floatformat:2 }}</td>
+          <td class="vendor-cell">-</td>
+          <td class="qty-cell">{{ cargo.quantity|default:"0" }}</td>
+          <td class="numeric-cell">{{ cargo.sale_price|default:"0.00"|floatformat:2 }}</td>
+          <td class="numeric-cell">{{ cargo.sale_price|default:"0.00"|floatformat:2 }}</td>
+          <td class="numeric-cell">0.00</td>
+          <td class="numeric-cell">{{ cargo.sale_price|default:"0.00"|floatformat:2 }}</td>
+          <td class="remark-cell">{{ job.job_code }}</td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+    {% endif %}
+    
+    <!-- TOTALS ROW -->
+    <tr class="totals-row">
+      <td colspan="2"><strong>Total</strong></td>
+      <td class="qty-cell"><strong>{{ invoice.total_cost_qty|default:"0" }}</strong></td>
+      <td>-</td>
+      <td class="numeric-cell"><strong>{{ invoice.total_cost_amount|default:"0.00"|floatformat:2 }}</strong></td>
+      <td class="numeric-cell"><strong>{{ invoice.total_cost_vat|default:"0.00"|floatformat:2 }}</strong></td>
+      <td class="numeric-cell"><strong>{{ invoice.total_cost|default:"0.00"|floatformat:2 }}</strong></td>
+      <td>-</td>
+      <td class="qty-cell"><strong>{{ invoice.total_sale_qty|default:"0" }}</strong></td>
+      <td>-</td>
+      <td class="numeric-cell"><strong>{{ invoice.total_sale_amount|default:"0.00"|floatformat:2 }}</strong></td>
+      <td class="numeric-cell"><strong>{{ invoice.total_sale_vat|default:"0.00"|floatformat:2 }}</strong></td>
+      <td class="numeric-cell"><strong>{{ invoice.total_amount|default:"0.00"|floatformat:2 }}</strong></td>
+      <td class="remark-cell"><strong>Profit: {{ invoice.total_profit|default:"0.00"|floatformat:2 }}</strong></td>
+    </tr>
+  </table>
+
+  {% if invoice.notes %}
+  <div style="margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 3px; font-size: 9px;">
+    <strong>Remarks:</strong> {{ invoice.notes|linebreaks }}
+  </div>
+  {% endif %}
+
+</body>
+</html> 

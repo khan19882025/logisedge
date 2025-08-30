@@ -1,0 +1,429 @@
+{% extends 'location_transfer/base.html' %}
+{% load static %}
+{% load location_transfer_filters %}
+
+{% block location_transfer_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="page-title">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    {% if object %}Edit{% else %}Create{% endif %} Location Transfer
+                </h1>
+                <p class="text-muted">Transfer pallets between warehouse locations</p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'location_transfer:location_transfer_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>Transfer Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="location-transfer-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.pallet.id_for_label }}" class="form-label required-field">
+                                    Pallet ID
+                                </label>
+                                {{ form.pallet }}
+                                {% if form.pallet.errors %}
+                                    <div class="text-danger mt-1">{{ form.pallet.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Select the pallet to transfer</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.transfer_type.id_for_label }}" class="form-label required-field">
+                                    Transfer Type
+                                </label>
+                                {{ form.transfer_type }}
+                                {% if form.transfer_type.errors %}
+                                    <div class="text-danger mt-1">{{ form.transfer_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.source_location.id_for_label }}" class="form-label required-field">
+                                    Source Location
+                                </label>
+                                {{ form.source_location }}
+                                {% if form.source_location.errors %}
+                                    <div class="text-danger mt-1">{{ form.source_location.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.destination_location.id_for_label }}" class="form-label required-field">
+                                    Destination Location
+                                </label>
+                                {{ form.destination_location }}
+                                {% if form.destination_location.errors %}
+                                    <div class="text-danger mt-1">{{ form.destination_location.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                    Priority
+                                </label>
+                                {{ form.priority }}
+                                {% if form.priority.errors %}
+                                    <div class="text-danger mt-1">{{ form.priority.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.estimated_completion_date.id_for_label }}" class="form-label">
+                                    Estimated Completion Date
+                                </label>
+                                {{ form.estimated_completion_date }}
+                                {% if form.estimated_completion_date.errors %}
+                                    <div class="text-danger mt-1">{{ form.estimated_completion_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                Notes
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger mt-1">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Optional notes about this transfer</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'location_transfer:location_transfer_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check me-1"></i>
+                                {% if object %}Update{% else %}Create{% endif %} Transfer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Pallet Details Card -->
+            <div class="card mb-4" id="pallet-details-card" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-box me-2"></i>Pallet Details
+                    </h5>
+                </div>
+                <div class="card-body" id="pallet-details-content">
+                    <!-- Pallet details will be loaded here via AJAX -->
+                </div>
+            </div>
+
+            <!-- Available Locations Card -->
+            <div class="card" id="available-locations-card" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>Available Locations
+                    </h5>
+                </div>
+                <div class="card-body" id="available-locations-content">
+                    <!-- Available locations will be loaded here via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 mb-0">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form functionality
+    initializeLocationTransferForm();
+});
+
+function initializeLocationTransferForm() {
+    const palletSelect = document.getElementById('{{ form.pallet.id_for_label }}');
+    const sourceLocationSelect = document.getElementById('{{ form.source_location.id_for_label }}');
+    const destinationLocationSelect = document.getElementById('{{ form.destination_location.id_for_label }}');
+    
+    // Load pallet details when pallet is selected
+    if (palletSelect) {
+        palletSelect.addEventListener('change', function() {
+            const palletId = this.value;
+            if (palletId) {
+                loadPalletDetails(palletId);
+                loadAvailableLocations();
+            } else {
+                hideElement('pallet-details-card');
+                hideElement('available-locations-card');
+            }
+        });
+    }
+    
+    // Update source location when pallet changes
+    if (palletSelect && sourceLocationSelect) {
+        palletSelect.addEventListener('change', function() {
+            const palletId = this.value;
+            if (palletId) {
+                updateSourceLocation(palletId);
+            }
+        });
+    }
+    
+    // Form validation
+    const form = document.getElementById('location-transfer-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+}
+
+function loadPalletDetails(palletId) {
+    setLoadingState(true);
+    
+    fetch(`/location-transfer/ajax/pallet/${palletId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayPalletDetails(data.pallet);
+                showElement('pallet-details-card');
+            } else {
+                showNotification('Error loading pallet details', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error loading pallet details', 'error');
+        })
+        .finally(() => {
+            setLoadingState(false);
+        });
+}
+
+function displayPalletDetails(pallet) {
+    const content = document.getElementById('pallet-details-content');
+    if (!content) return;
+    
+    content.innerHTML = `
+        <div class="mb-3">
+            <strong>Pallet ID:</strong> ${pallet.pallet_id}
+        </div>
+        <div class="mb-3">
+            <strong>Current Location:</strong> ${pallet.current_location || 'Not assigned'}
+        </div>
+        <div class="mb-3">
+            <strong>Weight:</strong> ${pallet.weight} kg
+        </div>
+        <div class="mb-3">
+            <strong>Volume:</strong> ${pallet.volume} m³
+        </div>
+        <div class="mb-3">
+            <strong>Status:</strong> 
+            <span class="badge bg-${getStatusBadgeColor(pallet.status)}">${pallet.status}</span>
+        </div>
+        ${pallet.items && pallet.items.length > 0 ? `
+        <div class="mb-3">
+            <strong>Items:</strong>
+            <ul class="list-unstyled mt-2">
+                ${pallet.items.map(item => `
+                    <li class="small text-muted">
+                        ${item.item_name} - Qty: ${item.quantity}
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+        ` : ''}
+    `;
+}
+
+function loadAvailableLocations() {
+    setLoadingState(true);
+    
+    fetch('/location-transfer/ajax/locations/available/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayAvailableLocations(data.locations);
+                showElement('available-locations-card');
+            } else {
+                showNotification('Error loading available locations', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error loading available locations', 'error');
+        })
+        .finally(() => {
+            setLoadingState(false);
+        });
+}
+
+function displayAvailableLocations(locations) {
+    const content = document.getElementById('available-locations-content');
+    if (!content) return;
+    
+    if (locations.length === 0) {
+        content.innerHTML = '<p class="text-muted">No available locations found.</p>';
+        return;
+    }
+    
+    const locationList = locations.map(location => `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small">${location.location_name}</span>
+            <span class="badge bg-${getCapacityBadgeColor(location.capacity_percentage)} small">
+                ${location.capacity_percentage}%
+            </span>
+        </div>
+    `).join('');
+    
+    content.innerHTML = locationList;
+}
+
+function updateSourceLocation(palletId) {
+    fetch(`/location-transfer/ajax/pallet/${palletId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.pallet.current_location_id) {
+                const sourceLocationSelect = document.getElementById('{{ form.source_location.id_for_label }}');
+                if (sourceLocationSelect) {
+                    sourceLocationSelect.value = data.pallet.current_location_id;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error updating source location:', error);
+        });
+}
+
+function validateForm() {
+    let isValid = true;
+    
+    // Validate required fields
+    const requiredFields = [
+        '{{ form.pallet.id_for_label }}',
+        '{{ form.source_location.id_for_label }}',
+        '{{ form.destination_location.id_for_label }}',
+        '{{ form.transfer_type.id_for_label }}'
+    ];
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field && !field.value) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else if (field) {
+            field.classList.remove('is-invalid');
+        }
+    });
+    
+    // Validate source and destination are different
+    const sourceLocation = document.getElementById('{{ form.source_location.id_for_label }}');
+    const destinationLocation = document.getElementById('{{ form.destination_location.id_for_label }}');
+    
+    if (sourceLocation && destinationLocation && 
+        sourceLocation.value && destinationLocation.value && 
+        sourceLocation.value === destinationLocation.value) {
+        destinationLocation.classList.add('is-invalid');
+        showNotification('Source and destination locations must be different', 'error');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+function getStatusBadgeColor(status) {
+    const colors = {
+        'active': 'success',
+        'inactive': 'secondary',
+        'maintenance': 'warning',
+        'damaged': 'danger'
+    };
+    return colors[status] || 'secondary';
+}
+
+function getCapacityBadgeColor(percentage) {
+    if (percentage >= 90) return 'danger';
+    if (percentage >= 75) return 'warning';
+    if (percentage >= 50) return 'info';
+    return 'success';
+}
+
+function setLoadingState(loading) {
+    const modal = document.getElementById('loadingModal');
+    if (modal) {
+        if (loading) {
+            new bootstrap.Modal(modal).show();
+        } else {
+            bootstrap.Modal.getInstance(modal)?.hide();
+        }
+    }
+}
+
+function showElement(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.style.display = 'block';
+    }
+}
+
+function hideElement(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.style.display = 'none';
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Simple notification - you can enhance this with a proper notification system
+    alert(message);
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Template{% else %}Create Template{% endif %} - Master Data Import
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'master_data_import/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            {% if form.instance.pk %}Edit Template{% else %}Create New Template{% endif %}
+        </h1>
+        <a href="{% url 'master_data_import_utilities:template_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left fa-sm"></i> Back to Templates
+        </a>
+    </div>
+
+    <!-- Template Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        {% if form.instance.pk %}Edit Template Details{% else %}Template Information{% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="templateForm">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.name.id_for_label }}" class="font-weight-bold">
+                                        Template Name <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">A unique name for this import template</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.data_type.id_for_label }}" class="font-weight-bold">
+                                        Data Type <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.data_type }}
+                                    {% if form.data_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.data_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">The type of data this template will import</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.description.id_for_label }}" class="font-weight-bold">
+                                Description
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Optional description of what this template is used for</small>
+                        </div>
+
+                        <!-- Fields Configuration -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Fields Configuration</label>
+                            <div id="fieldsContainer">
+                                <div class="field-row border rounded p-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="font-weight-bold">Field Name</label>
+                                            <input type="text" class="form-control" name="field_names[]" placeholder="e.g., First Name" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="font-weight-bold">Field Type</label>
+                                            <select class="form-control" name="field_types[]" required>
+                                                <option value="">Select Type</option>
+                                                <option value="text">Text</option>
+                                                <option value="number">Number</option>
+                                                <option value="date">Date</option>
+                                                <option value="email">Email</option>
+                                                <option value="phone">Phone</option>
+                                                <option value="boolean">Boolean</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="font-weight-bold">Required</label>
+                                            <select class="form-control" name="field_required[]">
+                                                <option value="false">No</option>
+                                                <option value="true">Yes</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="font-weight-bold">Actions</label>
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-field" title="Remove Field">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="addField">
+                                <i class="fas fa-plus"></i> Add Field
+                            </button>
+                        </div>
+
+                        <!-- Validation Rules -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Validation Rules</label>
+                            <div id="validationContainer">
+                                <div class="validation-row border rounded p-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="font-weight-bold">Field</label>
+                                            <select class="form-control" name="validation_fields[]">
+                                                <option value="">Select Field</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="font-weight-bold">Rule Type</label>
+                                            <select class="form-control" name="validation_rules[]">
+                                                <option value="">Select Rule</option>
+                                                <option value="min_length">Min Length</option>
+                                                <option value="max_length">Max Length</option>
+                                                <option value="regex">Regex Pattern</option>
+                                                <option value="range">Range</option>
+                                                <option value="unique">Unique</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="font-weight-bold">Value</label>
+                                            <input type="text" class="form-control" name="validation_values[]" placeholder="Rule value">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="font-weight-bold">Actions</label>
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-validation" title="Remove Rule">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-info btn-sm" id="addValidation">
+                                <i class="fas fa-plus"></i> Add Validation Rule
+                            </button>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                {% if form.instance.pk %}Update Template{% else %}Create Template{% endif %}
+                            </button>
+                            <a href="{% url 'master_data_import_utilities:template_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Help -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Template Help</h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="font-weight-bold">Creating Templates</h6>
+                    <p class="small text-muted">
+                        Import templates define the structure and validation rules for your data imports.
+                    </p>
+                    
+                    <h6 class="font-weight-bold">Field Types</h6>
+                    <ul class="small text-muted">
+                        <li><strong>Text:</strong> General text input</li>
+                        <li><strong>Number:</strong> Numeric values only</li>
+                        <li><strong>Date:</strong> Date format validation</li>
+                        <li><strong>Email:</strong> Email format validation</li>
+                        <li><strong>Phone:</strong> Phone number format</li>
+                        <li><strong>Boolean:</strong> Yes/No or True/False</li>
+                    </ul>
+
+                    <h6 class="font-weight-bold">Validation Rules</h6>
+                    <ul class="small text-muted">
+                        <li><strong>Min/Max Length:</strong> Character count limits</li>
+                        <li><strong>Regex:</strong> Custom pattern matching</li>
+                        <li><strong>Range:</strong> Numeric value ranges</li>
+                        <li><strong>Unique:</strong> Ensure no duplicates</li>
+                    </ul>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Tip:</strong> Start with a simple template and add complexity as needed.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'master_data_import/js/dashboard.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Add new field
+    $('#addField').click(function() {
+        const fieldRow = $('.field-row:first').clone();
+        fieldRow.find('input, select').val('');
+        fieldRow.find('.remove-field').show();
+        $('#fieldsContainer').append(fieldRow);
+        updateValidationFields();
+    });
+
+    // Remove field
+    $(document).on('click', '.remove-field', function() {
+        if ($('.field-row').length > 1) {
+            $(this).closest('.field-row').remove();
+            updateValidationFields();
+        }
+    });
+
+    // Add validation rule
+    $('#addValidation').click(function() {
+        const validationRow = $('.validation-row:first').clone();
+        validationRow.find('input, select').val('');
+        validationRow.find('.remove-validation').show();
+        $('#validationContainer').append(validationRow);
+        updateValidationFields();
+    });
+
+    // Remove validation rule
+    $(document).on('click', '.remove-validation', function() {
+        if ($('.validation-row').length > 1) {
+            $(this).closest('.validation-row').remove();
+        }
+    });
+
+    // Update validation field options when fields change
+    function updateValidationFields() {
+        const fieldNames = [];
+        $('input[name="field_names[]"]').each(function() {
+            const name = $(this).val();
+            if (name) fieldNames.push(name);
+        });
+
+        $('select[name="validation_fields[]"]').each(function() {
+            const currentValue = $(this).val();
+            $(this).empty().append('<option value="">Select Field</option>');
+            fieldNames.forEach(name => {
+                const option = $('<option></option>').val(name).text(name);
+                if (name === currentValue) option.prop('selected', true);
+                $(this).append(option);
+            });
+        });
+    }
+
+    // Initialize form styling
+    $('input, select, textarea').addClass('form-control');
+    $('textarea').addClass('form-control');
+    
+    // Show/hide remove buttons for first items
+    $('.field-row:first .remove-field').hide();
+    $('.validation-row:first .remove-validation').hide();
+
+    // Form validation
+    $('#templateForm').submit(function(e) {
+        let isValid = true;
+        
+        // Check required fields
+        $('input[required], select[required]').each(function() {
+            if (!$(this).val()) {
+                $(this).addClass('is-invalid');
+                isValid = false;
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+
+        if (!isValid) {
+            e.preventDefault();
+            $('html, body').animate({
+                scrollTop: $('.is-invalid:first').offset().top - 100
+            }, 500);
+        }
+    });
+});
+</script>
+{% endblock %}

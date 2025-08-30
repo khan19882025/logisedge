@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Actions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-tasks"></i> Bulk Actions
+                </h1>
+                <p class="page-subtitle">Perform actions on multiple system logs at once</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Action Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog"></i> Bulk Action Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="row">
+                        {% csrf_token %}
+                        
+                        <!-- Action Type -->
+                        <div class="col-md-6">
+                            <label for="action_type" class="form-label">Action Type</label>
+                            <select name="action_type" id="action_type" class="form-select" required>
+                                <option value="">Select action</option>
+                                <option value="update_status">Update Status</option>
+                                <option value="assign_user">Assign User</option>
+                                <option value="add_tags">Add Tags</option>
+                                <option value="export_selected">Export Selected</option>
+                                <option value="delete_selected">Delete Selected</option>
+                            </select>
+                        </div>
+
+                        <!-- Log Selection -->
+                        <div class="col-md-6">
+                            <label for="log_selection" class="form-label">Log Selection</label>
+                            <select name="log_selection" id="log_selection" class="form-select" required>
+                                <option value="">Select logs</option>
+                                <option value="all">All Logs</option>
+                                <option value="filtered">Filtered Logs</option>
+                                <option value="selected">Selected Logs</option>
+                            </select>
+                        </div>
+
+                        <!-- Status Update (conditional) -->
+                        <div class="col-md-6" id="status_update_section" style="display: none;">
+                            <label for="new_status" class="form-label">New Status</label>
+                            <select name="new_status" id="new_status" class="form-select">
+                                <option value="">Select status</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="RESOLVED">Resolved</option>
+                                <option value="IGNORED">Ignored</option>
+                            </select>
+                        </div>
+
+                        <!-- User Assignment (conditional) -->
+                        <div class="col-md-6" id="user_assignment_section" style="display: none;">
+                            <label for="assigned_user" class="form-label">Assign To User</label>
+                            <select name="assigned_user" id="assigned_user" class="form-select">
+                                <option value="">Select user</option>
+                                <!-- Users will be populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Tags (conditional) -->
+                        <div class="col-md-6" id="tags_section" style="display: none;">
+                            <label for="tags" class="form-label">Add Tags</label>
+                            <input type="text" name="tags" id="tags" class="form-control" 
+                                   placeholder="Enter tags separated by commas">
+                        </div>
+
+                        <!-- Export Format (conditional) -->
+                        <div class="col-md-6" id="export_format_section" style="display: none;">
+                            <label for="export_format" class="form-label">Export Format</label>
+                            <select name="export_format" id="export_format" class="form-select">
+                                <option value="csv">CSV</option>
+                                <option value="json">JSON</option>
+                                <option value="xml">XML</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="col-12">
+                            <h6 class="mt-3">Apply Filters</h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="filter_log_type" class="form-label">Log Type</label>
+                                    <select name="filter_log_type" id="filter_log_type" class="form-select">
+                                        <option value="">All Types</option>
+                                        <option value="ERROR">Error</option>
+                                        <option value="WARNING">Warning</option>
+                                        <option value="INFO">Info</option>
+                                        <option value="DEBUG">Debug</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filter_severity" class="form-label">Severity</label>
+                                    <select name="filter_severity" id="filter_severity" class="form-select">
+                                        <option value="">All Severities</option>
+                                        <option value="LOW">Low</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HIGH">High</option>
+                                        <option value="CRITICAL">Critical</option>
+                                        <option value="FATAL">Fatal</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filter_status" class="form-label">Status</label>
+                                    <select name="filter_status" id="filter_status" class="form-select">
+                                        <option value="">All Statuses</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="IN_PROGRESS">In Progress</option>
+                                        <option value="RESOLVED">Resolved</option>
+                                        <option value="IGNORED">Ignored</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filter_module" class="form-label">Module</label>
+                                    <input type="text" name="filter_module" id="filter_module" class="form-control" 
+                                           placeholder="Enter module name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="col-12">
+                            <h6 class="mt-3">Date Range</h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="date_from" class="form-label">Date From</label>
+                                    <input type="date" name="date_from" id="date_from" class="form-control">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="date_to" class="form-label">Date To</label>
+                                    <input type="date" name="date_to" id="date_to" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="date_preset" class="form-label">Quick Presets</label>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDateRange('today')">Today</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDateRange('yesterday')">Yesterday</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDateRange('week')">This Week</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDateRange('month')">This Month</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDateRange('quarter')">This Quarter</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Count -->
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Note:</strong> This action will affect <span id="affected_count">0</span> logs based on your current filters.
+                                <button type="button" class="btn btn-sm btn-outline-info ml-2" onclick="previewAction()">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-primary" id="submit_btn" disabled>
+                                <i class="fas fa-play"></i> Execute Action
+                            </button>
+                            <a href="{% url 'system_logs:system_log_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Logs
+                            </a>
+                            <a href="{% url 'system_logs:dashboard' %}" class="btn btn-info">
+                                <i class="fas fa-chart-bar"></i> Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Results -->
+    <div class="row mt-4" id="preview_section" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye"></i> Preview Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="preview_content">
+                        <!-- Preview content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide conditional sections based on action type
+document.getElementById('action_type').addEventListener('change', function() {
+    const actionType = this.value;
+    
+    // Hide all conditional sections
+    document.getElementById('status_update_section').style.display = 'none';
+    document.getElementById('user_assignment_section').style.display = 'none';
+    document.getElementById('tags_section').style.display = 'none';
+    document.getElementById('export_format_section').style.display = 'none';
+    
+    // Show relevant section
+    if (actionType === 'update_status') {
+        document.getElementById('status_update_section').style.display = 'block';
+    } else if (actionType === 'assign_user') {
+        document.getElementById('user_assignment_section').style.display = 'block';
+    } else if (actionType === 'add_tags') {
+        document.getElementById('tags_section').style.display = 'block';
+    } else if (actionType === 'export_selected') {
+        document.getElementById('export_format_section').style.display = 'block';
+    }
+    
+    // Enable/disable submit button
+    document.getElementById('submit_btn').disabled = !actionType;
+});
+
+// Set date range presets
+function setDateRange(preset) {
+    const today = new Date();
+    let fromDate = new Date();
+    
+    switch(preset) {
+        case 'today':
+            fromDate = today;
+            break;
+        case 'yesterday':
+            fromDate = new Date(today.getTime() - (24 * 60 * 60 * 1000));
+            break;
+        case 'week':
+            fromDate = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+            break;
+        case 'month':
+            fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            break;
+        case 'quarter':
+            const quarter = Math.floor(today.getMonth() / 3);
+            fromDate = new Date(today.getFullYear(), quarter * 3, 1);
+            break;
+    }
+    
+    document.getElementById('date_from').value = fromDate.toISOString().split('T')[0];
+    document.getElementById('date_to').value = today.toISOString().split('T')[0];
+}
+
+// Preview action
+function previewAction() {
+    // This would typically make an AJAX call to preview the action
+    const previewSection = document.getElementById('preview_section');
+    const previewContent = document.getElementById('preview_content');
+    
+    previewContent.innerHTML = `
+        <div class="text-center py-3">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+            <p class="text-muted">Loading preview...</p>
+        </div>
+    `;
+    
+    previewSection.style.display = 'block';
+    
+    // Simulate preview loading
+    setTimeout(() => {
+        previewContent.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Preview:</strong> This action would affect approximately <strong>25</strong> logs based on your current filters.
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Module</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025-08-11 13:30:00</td>
+                            <td><span class="badge badge-danger">ERROR</span></td>
+                            <td><span class="badge badge-warning">HIGH</span></td>
+                            <td>user</td>
+                            <td>Sample error message...</td>
+                        </tr>
+                        <tr>
+                            <td>2025-08-11 13:25:00</td>
+                            <td><span class="badge badge-warning">WARNING</span></td>
+                            <td><span class="badge badge-info">MEDIUM</span></td>
+                            <td>auth</td>
+                            <td>Sample warning message...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Set default date range to last 30 days
+document.addEventListener('DOMContentLoaded', function() {
+    setDateRange('month');
+});
+</script>
+{% endblock %}

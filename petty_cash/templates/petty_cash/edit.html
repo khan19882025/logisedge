@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Petty Cash - {{ petty_cash_day.entry_date|date:"F d, Y" }} - logisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'petty_cash/css/petty_cash.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="petty-cash-container">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-pencil-square text-primary"></i>
+                            Edit Petty Cash Day
+                        </h2>
+                        <p class="text-muted mb-0">{{ petty_cash_day.entry_date|date:"F d, Y" }} - {{ petty_cash_day.get_status_display }}</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'petty_cash:detail' petty_cash_day.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                        <a href="{% url 'petty_cash:list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="petty-cash-card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-pencil me-2"></i>Edit Day Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="editForm">
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.entry_date.id_for_label }}" class="form-label">
+                                            <i class="bi bi-calendar-event"></i> Entry Date
+                                        </label>
+                                        {{ form.entry_date }}
+                                        {% if form.entry_date.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.entry_date.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.opening_balance.id_for_label }}" class="form-label">
+                                            <i class="bi bi-wallet2"></i> Opening Balance
+                                        </label>
+                                        {{ form.opening_balance }}
+                                        {% if form.opening_balance.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.opening_balance.errors.0 }}</div>
+                                        {% endif %}
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle"></i> 
+                                            Previous day closing balance: {{ petty_cash_day.get_previous_day_balance|floatformat:2 }} AED
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                    <i class="bi bi-chat-text"></i> Day Notes
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Current Status -->
+                            <div class="alert alert-info">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Current Status:</strong> 
+                                        <span class="status-badge status-{{ petty_cash_day.status }}">
+                                            {{ petty_cash_day.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Total Expenses:</strong> 
+                                        <span class="fw-bold text-danger">{{ petty_cash_day.total_expenses|floatformat:2 }} AED</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Closing Balance:</strong> 
+                                        <span class="fw-bold {% if petty_cash_day.closing_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                            {{ petty_cash_day.closing_balance|floatformat:2 }} AED
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{% url 'petty_cash:detail' petty_cash_day.pk %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> Cancel
+                                    </a>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle"></i> Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Warning -->
+                {% if not petty_cash_day.can_edit %}
+                <div class="petty-cash-card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5><i class="bi bi-exclamation-triangle me-2"></i>Warning</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">
+                            <i class="bi bi-info-circle"></i> 
+                            This petty cash day cannot be edited because it is {{ petty_cash_day.get_status_display|lower }}.
+                            {% if petty_cash_day.is_locked %}It has been locked and cannot be modified.{% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Quick Actions -->
+                <div class="petty-cash-card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="{% url 'petty_cash:register' %}?date={{ petty_cash_day.entry_date|date:'Y-m-d' }}" class="btn btn-outline-primary w-100 mb-2">
+                                    <i class="bi bi-pencil"></i> Edit Entries
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{% url 'petty_cash:detail' petty_cash_day.pk %}" class="btn btn-outline-info w-100 mb-2">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'petty_cash/js/petty_cash.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Form validation
+    $('#editForm').on('submit', function(e) {
+        if (!validateEditForm()) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Update opening balance suggestion on date change
+    $('#id_entry_date').on('change', function() {
+        updateOpeningBalanceSuggestion();
+    });
+});
+
+function validateEditForm() {
+    let isValid = true;
+    
+    // Clear previous errors
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').remove();
+    
+    // Validate opening balance
+    const openingBalance = parseFloat($('#id_opening_balance').val()) || 0;
+    if (openingBalance < 0) {
+        $('#id_opening_balance').addClass('is-invalid');
+        $('#id_opening_balance').after('<div class="invalid-feedback">Opening balance cannot be negative.</div>');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+</script>
+{% endblock %} 

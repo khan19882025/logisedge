@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Email Template{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .form-section h6 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    .editor-tabs {
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 15px;
+    }
+    
+    .editor-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .editor-tabs .nav-link.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+        background: none;
+    }
+    
+    .editor-content {
+        display: none;
+    }
+    
+    .editor-content.active {
+        display: block;
+    }
+    
+    .placeholder-list {
+        background: #e9ecef;
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+    
+    .placeholder-item {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        margin: 2px;
+        cursor: pointer;
+    }
+    
+    .placeholder-item:hover {
+        background: #0056b3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-file-alt fa-fw"></i> {{ action }} Email Template
+        </h1>
+        <a href="{% url 'bulk_email_sender:template_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left fa-fw"></i> Back to Templates
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Template Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="template-form">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-info-circle fa-fw"></i> Basic Information</h6>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.name.id_for_label }}" class="form-label required-field">
+                                    Template Name
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label for="{{ form.subject.id_for_label }}" class="form-label required-field">
+                                            Email Subject
+                                        </label>
+                                        {{ form.subject }}
+                                        {% if form.subject.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.subject.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.template_type.id_for_label }}" class="form-label">
+                                            Template Type
+                                        </label>
+                                        {{ form.template_type }}
+                                        {% if form.template_type.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.template_type.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    Description
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Content Editor -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-edit fa-fw"></i> Content Editor</h6>
+                            
+                            <!-- Editor Tabs -->
+                            <ul class="nav nav-tabs editor-tabs" id="editorTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab">
+                                        <i class="fas fa-code fa-fw"></i> HTML Content
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-content" type="button" role="tab">
+                                        <i class="fas fa-font fa-fw"></i> Plain Text
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <!-- HTML Content -->
+                            <div class="editor-content active" id="html-content">
+                                <div class="form-group">
+                                    <label for="{{ form.html_content.id_for_label }}" class="form-label required-field">
+                                        HTML Content
+                                    </label>
+                                    {{ form.html_content }}
+                                    {% if form.html_content.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.html_content.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">
+                                        Use HTML tags for formatting. Available placeholders: {{customer_name}}, {{company_name}}, etc.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Plain Text Content -->
+                            <div class="editor-content" id="text-content">
+                                <div class="form-group">
+                                    <label for="{{ form.plain_text_content.id_for_label }}" class="form-label required-field">
+                                        Plain Text Content
+                                    </label>
+                                    {{ form.plain_text_content }}
+                                    {% if form.plain_text_content.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.plain_text_content.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="help-text">
+                                        Plain text version for email clients that don't support HTML.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sender Information -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-user fa-fw"></i> Sender Information</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.sender_name.id_for_label }}" class="form-label">
+                                            Default Sender Name
+                                        </label>
+                                        {{ form.sender_name }}
+                                        {% if form.sender_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.sender_name.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.sender_email.id_for_label }}" class="form-label">
+                                            Default Sender Email
+                                        </label>
+                                        {{ form.sender_email }}
+                                        {% if form.sender_email.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.sender_email.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.reply_to_email.id_for_label }}" class="form-label">
+                                    Reply-to Email
+                                </label>
+                                {{ form.reply_to_email }}
+                                {% if form.reply_to_email.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.reply_to_email.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Metadata -->
+                        <div class="form-section">
+                            <h6><i class="fas fa-tags fa-fw"></i> Metadata</h6>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.tags.id_for_label }}" class="form-label">
+                                    Tags
+                                </label>
+                                {{ form.tags }}
+                                <div class="help-text">Separate tags with commas</div>
+                                {% if form.tags.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.tags.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    Template is Active
+                                </label>
+                                <div class="help-text">Inactive templates cannot be used in campaigns</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save fa-fw"></i> {{ action }} Template
+                            </button>
+                            <a href="{% url 'bulk_email_sender:template_list' %}" class="btn btn-secondary btn-lg ml-2">
+                                <i class="fas fa-times fa-fw"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Template Tips</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-lightbulb fa-fw"></i> Best Practices</h6>
+                        <ul class="mb-0">
+                            <li>Keep subject lines under 50 characters</li>
+                            <li>Use responsive HTML design</li>
+                            <li>Include plain text fallback</li>
+                            <li>Test across different email clients</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle fa-fw"></i> Important Notes</h6>
+                        <ul class="mb-0">
+                            <li>Always provide plain text version</li>
+                            <li>Use web-safe fonts</li>
+                            <li>Keep images under 1MB</li>
+                            <li>Test unsubscribe functionality</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="placeholder-list">
+                        <h6><i class="fas fa-code fa-fw"></i> Common Placeholders</h6>
+                        <div class="placeholder-item" onclick="insertPlaceholder('{{customer_name}}')">customer_name</div>
+                        <div class="placeholder-item" onclick="insertPlaceholder('{{company_name}}')">company_name</div>
+                        <div class="placeholder-item" onclick="insertPlaceholder('{{email}}')">email</div>
+                        <div class="placeholder-item" onclick="insertPlaceholder('{{unsubscribe_link}}')">unsubscribe_link</div>
+                        <div class="placeholder-item" onclick="insertPlaceholder('{{campaign_name}}')">campaign_name</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle editor tabs
+    const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+    const contents = document.querySelectorAll('.editor-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            const target = this.getAttribute('data-bs-target');
+            document.querySelector(target).classList.add('active');
+        });
+    });
+    
+    // Character counter for subject line
+    const subjectField = document.getElementById('{{ form.subject.id_for_label }}');
+    if (subjectField) {
+        const counter = document.createElement('small');
+        counter.className = 'text-muted';
+        counter.textContent = '0/50 characters';
+        subjectField.parentNode.appendChild(counter);
+        
+        subjectField.addEventListener('input', function() {
+            const length = this.value.length;
+            counter.textContent = `${length}/50 characters`;
+            counter.className = length > 50 ? 'text-danger' : 'text-muted';
+        });
+    }
+});
+
+// Function to insert placeholders
+function insertPlaceholder(placeholder) {
+    const activeTab = document.querySelector('.editor-content.active');
+    const textarea = activeTab.querySelector('textarea');
+    
+    if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        
+        textarea.value = text.substring(0, start) + placeholder + text.substring(end);
+        textarea.focus();
+        textarea.setSelectionRange(start + placeholder.length, start + placeholder.length);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}HBL Report{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">HBL Report</h5>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light btn-sm" onclick="exportToExcel()">
+                    <i class="bi bi-file-excel"></i> Export to Excel
+                </button>
+                <button type="button" class="btn btn-light btn-sm" onclick="exportToPDF()">
+                    <i class="bi bi-file-pdf"></i> Export to PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Filters -->
+            <form id="filterForm" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="dateFrom" class="form-label">Date From</label>
+                        <input type="date" class="form-control" id="dateFrom" name="date_from">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateTo" class="form-label">Date To</label>
+                        <input type="date" class="form-control" id="dateTo" name="date_to">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="mblNumber" class="form-label">MBL Number</label>
+                        <select class="form-select" id="mblNumber" name="mbl_number">
+                            <option value="">All MBL Numbers</option>
+                            {% for mbl in mbl_numbers %}
+                            <option value="{{ mbl }}">{{ mbl }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="hblNumber" class="form-label">HBL Number</label>
+                        <select class="form-select" id="hblNumber" name="hbl_number">
+                            <option value="">All HBL Numbers</option>
+                            {% for hbl in hbl_numbers %}
+                            <option value="{{ hbl }}">{{ hbl }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="containerNo" class="form-label">Container No</label>
+                        <select class="form-select" id="containerNo" name="container_no">
+                            <option value="">All Containers</option>
+                            {% for container in container_numbers %}
+                            <option value="{{ container }}">{{ container }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="customer" class="form-label">Customer</label>
+                        <select class="form-select" id="customer" name="customer">
+                            <option value="">All Customers</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="shipper" class="form-label">Shipper</label>
+                        <select class="form-select" id="shipper" name="shipper">
+                            <option value="">All Shippers</option>
+                            {% for shipper in shippers %}
+                            <option value="{{ shipper.id }}">{{ shipper.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="consignee" class="form-label">Consignee</label>
+                        <select class="form-select" id="consignee" name="consignee">
+                            <option value="">All Consignees</option>
+                            {% for consignee in consignees %}
+                            <option value="{{ consignee.id }}">{{ consignee.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="description" class="form-label">Description</label>
+                        <select class="form-select" id="description" name="description">
+                            <option value="">All Descriptions</option>
+                            {% for desc in descriptions %}
+                            <option value="{{ desc }}">{{ desc }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="portLoading" class="form-label">Port of Loading</label>
+                        <select class="form-select" id="portLoading" name="port_loading">
+                            <option value="">All Ports</option>
+                            {% for port in ports_loading %}
+                            <option value="{{ port }}">{{ port }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Report Table -->
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="hblReportTable">
+                    <thead>
+                        <tr>
+                            <th>HBL Number</th>
+                            <th>MBL Number</th>
+                            <th>Container No</th>
+                            <th>Shipper</th>
+                            <th>Consignee</th>
+                            <th>Description</th>
+                            <th>Port of Loading</th>
+                            <th>Port of Discharge</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default date range (current month)
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
+        document.getElementById('dateFrom').value = firstDay.toISOString().split('T')[0];
+        document.getElementById('dateTo').value = lastDay.toISOString().split('T')[0];
+        
+        // Load initial data
+        loadHBLReport();
+    });
+
+    function loadHBLReport() {
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams(formData);
+        
+        fetch(`/hbl/report/data/?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('#hblReportTable tbody');
+                tbody.innerHTML = '';
+
+                data.hbls.forEach(hbl => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${hbl.hbl_number}</td>
+                        <td>${hbl.mbl_number}</td>
+                        <td>${hbl.container_no}</td>
+                        <td>${hbl.shipper}</td>
+                        <td>${hbl.consignee}</td>
+                        <td>${hbl.description}</td>
+                        <td>${hbl.port_of_loading}</td>
+                        <td>${hbl.port_of_discharge}</td>
+                        <td>${hbl.date}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading HBL report data');
+            });
+    }
+
+    function resetFilters() {
+        document.getElementById('filterForm').reset();
+        loadHBLReport();
+    }
+
+    function exportToExcel() {
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams(formData);
+        window.location.href = `/hbl/report/export/excel/?${params.toString()}`;
+    }
+
+    function exportToPDF() {
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams(formData);
+        window.location.href = `/hbl/report/export/pdf/?${params.toString()}`;
+    }
+
+    // Handle form submission
+    document.getElementById('filterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        loadHBLReport();
+    });
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ campaign.name }} - Campaign Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-bullhorn fa-fw"></i> {{ campaign.name }}
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'bulk_email_sender:campaign_edit' campaign.pk %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit fa-fw"></i> Edit
+            </a>
+            <a href="{% url 'bulk_email_sender:campaign_preview' campaign.pk %}" class="btn btn-info btn-sm">
+                <i class="fas fa-eye fa-fw"></i> Preview
+            </a>
+            <a href="{% url 'bulk_email_sender:campaign_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left fa-fw"></i> Back to Campaigns
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Campaign Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaign Information</h6>
+                </div>
+                <div class="card-body">
+                    {% if campaign.description %}
+                    <p class="text-muted">{{ campaign.description }}</p>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Template:</strong> {{ campaign.template.name }}<br>
+                            <strong>Status:</strong> 
+                            <span class="badge badge-{{ campaign.status }}">
+                                {{ campaign.get_status_display }}
+                            </span><br>
+                            <strong>Priority:</strong> {{ campaign.get_priority_display }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Created:</strong> {{ campaign.created_at|date:"M d, Y H:i" }}<br>
+                            <strong>Created by:</strong> {{ campaign.created_by.get_full_name|default:campaign.created_by.username }}<br>
+                            {% if campaign.scheduled_at %}
+                            <strong>Scheduled:</strong> {{ campaign.scheduled_at|date:"M d, Y H:i" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campaign Statistics -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaign Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="h4 text-primary">{{ total_recipients }}</div>
+                            <small class="text-muted">Total Recipients</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-success">{{ sent_count }}</div>
+                            <small class="text-muted">Sent</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-info">{{ delivered_count }}</div>
+                            <small class="text-muted">Delivered</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 text-warning">{{ opened_count }}</div>
+                            <small class="text-muted">Opened</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row text-center mt-3">
+                        <div class="col-md-4">
+                            <div class="h5 text-success">{{ delivery_rate|floatformat:1 }}%</div>
+                            <small class="text-muted">Delivery Rate</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 text-info">{{ open_rate|floatformat:1 }}%</div>
+                            <small class="text-muted">Open Rate</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 text-primary">{{ click_rate|floatformat:1 }}%</div>
+                            <small class="text-muted">Click Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Recipient</th>
+                                        <th>Event</th>
+                                        <th>Time</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in recent_activity %}
+                                    <tr>
+                                        <td>{{ event.recipient.email }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ event.tracking_type }}">
+                                                {{ event.get_tracking_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ event.timestamp|timesince }} ago</td>
+                                        <td>
+                                            {% if event.tracking_type == 'click' and event.clicked_url %}
+                                                Clicked: {{ event.clicked_url }}
+                                            {% elif event.tracking_type == 'bounce' and event.bounce_reason %}
+                                                {{ event.bounce_reason }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-activity fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">No recent activity</h6>
+                            <p class="text-muted">Activity will appear here once the campaign starts sending.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Campaign Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaign Actions</h6>
+                </div>
+                <div class="card-body">
+                    {% if campaign.status == 'draft' %}
+                        <a href="{% url 'bulk_email_sender:campaign_start' campaign.pk %}" 
+                           class="btn btn-success btn-block mb-2">
+                            <i class="fas fa-play fa-fw"></i> Start Campaign
+                        </a>
+                    {% elif campaign.status == 'sending' %}
+                        <a href="{% url 'bulk_email_sender:campaign_pause' campaign.pk %}" 
+                           class="btn btn-warning btn-block mb-2">
+                            <i class="fas fa-pause fa-fw"></i> Pause Campaign
+                        </a>
+                    {% elif campaign.status == 'paused' %}
+                        <a href="{% url 'bulk_email_sender:campaign_start' campaign.pk %}" 
+                           class="btn btn-success btn-block mb-2">
+                            <i class="fas fa-play fa-fw"></i> Resume Campaign
+                        </a>
+                    {% endif %}
+                    
+                    {% if campaign.status in 'draft,scheduled,queued,sending,paused' %}
+                        <a href="{% url 'bulk_email_sender:campaign_cancel' campaign.pk %}" 
+                           class="btn btn-danger btn-block">
+                            <i class="fas fa-stop fa-fw"></i> Cancel Campaign
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Campaign Settings -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Campaign Settings</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Sender:</strong> {{ campaign.sender_name }} &lt;{{ campaign.sender_email }}&gt;
+                    </div>
+                    {% if campaign.reply_to_email %}
+                    <div class="mb-3">
+                        <strong>Reply-to:</strong> {{ campaign.reply_to_email }}
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <strong>Send Speed:</strong> {{ campaign.send_speed }} emails/minute
+                    </div>
+                    <div class="mb-3">
+                        <strong>Batch Size:</strong> {{ campaign.batch_size }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Tracking:</strong><br>
+                        <small class="text-muted">
+                            Opens: {% if campaign.track_opens %}✓{% else %}✗{% endif %}<br>
+                            Clicks: {% if campaign.track_clicks %}✓{% else %}✗{% endif %}<br>
+                            Unsubscribes: {% if campaign.track_unsubscribes %}✓{% else %}✗{% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Links</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'bulk_email_sender:campaign_edit' campaign.pk %}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit fa-fw"></i> Edit Campaign
+                        </a>
+                        <a href="{% url 'bulk_email_sender:campaign_preview' campaign.pk %}" class="btn btn-outline-info">
+                            <i class="fas fa-eye fa-fw"></i> Preview Email
+                        </a>
+                        <a href="{% url 'bulk_email_sender:template_detail' campaign.template.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-file-alt fa-fw"></i> View Template
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

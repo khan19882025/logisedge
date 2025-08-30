@@ -1,0 +1,245 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Exchange Rates - Multi-Currency Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/multi_currency/multi_currency.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-graph-up me-2"></i>Exchange Rates
+            </h1>
+            <p class="text-muted mb-0">Manage currency exchange rates</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'multi_currency:exchange_rate_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add Exchange Rate
+            </a>
+            <a href="{% url 'multi_currency:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-search me-2"></i>Search Exchange Rates
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="search-form">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        {{ search_form.from_currency.label_tag }}
+                        {{ search_form.from_currency }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ search_form.to_currency.label_tag }}
+                        {{ search_form.to_currency }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        {{ search_form.rate_type.label_tag }}
+                        {{ search_form.rate_type }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="form-check mt-4">
+                            {{ search_form.is_active }}
+                            {{ search_form.is_active.label_tag }}
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{% url 'multi_currency:exchange_rate_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        {{ search_form.effective_date_from.label_tag }}
+                        {{ search_form.effective_date_from }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        {{ search_form.effective_date_to.label_tag }}
+                        {{ search_form.effective_date_to }}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="text-muted">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_rates }} exchange rates</span>
+        </div>
+        <div>
+            <button class="btn btn-outline-success btn-sm" onclick="exportToCSV('exchange-rates-table', 'exchange_rates.csv')">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Exchange Rates Table -->
+    <div class="card shadow">
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="exchange-rates-table">
+                    <thead>
+                        <tr>
+                            <th data-sortable>From Currency</th>
+                            <th data-sortable>To Currency</th>
+                            <th data-sortable>Rate</th>
+                            <th data-sortable>Type</th>
+                            <th data-sortable>Effective Date</th>
+                            <th data-sortable>Expiry Date</th>
+                            <th data-sortable>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ rate.from_currency.code }}</strong>
+                                {% if rate.from_currency.is_base_currency %}
+                                <i class="bi bi-star-fill text-warning ms-1"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ rate.to_currency.code }}</strong>
+                                {% if rate.to_currency.is_base_currency %}
+                                <i class="bi bi-star-fill text-warning ms-1"></i>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ rate.rate }}</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ rate.get_rate_type_display }}</span>
+                            </td>
+                            <td>{{ rate.effective_date|date:"M d, Y" }}</td>
+                            <td>
+                                {% if rate.expiry_date %}
+                                {{ rate.expiry_date|date:"M d, Y" }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if rate.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'multi_currency:exchange_rate_detail' rate.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       data-bs-toggle="tooltip" 
+                                       title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'multi_currency:exchange_rate_update' rate.pk %}" 
+                                       class="btn btn-sm btn-outline-warning" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button class="btn btn-sm {% if rate.is_active %}btn-outline-success{% else %}btn-outline-secondary{% endif %} toggle-exchange-rate-status"
+                                            data-rate-id="{{ rate.pk }}"
+                                            data-bs-toggle="tooltip" 
+                                            title="Toggle Status">
+                                        {% if rate.is_active %}
+                                        <i class="bi bi-check-circle"></i>
+                                        {% else %}
+                                        <i class="bi bi-x-circle"></i>
+                                        {% endif %}
+                                    </button>
+                                    <a href="{% url 'multi_currency:exchange_rate_delete' rate.pk %}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Exchange rate pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-graph-up fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No exchange rates found</h5>
+                <p class="text-muted">Get started by adding your first exchange rate.</p>
+                <a href="{% url 'multi_currency:exchange_rate_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add Exchange Rate
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/multi_currency/multi_currency.js' %}"></script>
+{% endblock %} 

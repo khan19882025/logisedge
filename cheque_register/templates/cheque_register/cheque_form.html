@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cheque_register/css/cheque_register.css' %}">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    .cheque-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+        text-align: center;
+    }
+    
+    .form-header h2 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 600;
+    }
+    
+    .form-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+    
+    .form-content {
+        padding: 2rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    
+    .form-section h4 {
+        color: #374151;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .form-section h4 i {
+        margin-right: 0.5rem;
+        color: #667eea;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control, .form-select {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .form-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #4b5563;
+        color: white;
+    }
+    
+    .btn-outline {
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-outline:hover {
+        background: #f8fafc;
+        border-color: #9ca3af;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    @media (max-width: 768px) {
+        .cheque-form-container {
+            margin: 1rem;
+        }
+        
+        .form-content {
+            padding: 1.5rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cheque-form-container">
+    <!-- Form Header -->
+    <div class="form-header">
+        <h2><i class="fas fa-university"></i> {{ title }}</h2>
+        <p>
+            {% if cheque %}
+                Editing cheque {{ cheque.cheque_number }}
+            {% else %}
+                Register a new cheque in the system
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Form Content -->
+    <div class="form-content">
+        <form method="post" id="cheque-form" data-autosave="true" data-form-id="cheque_form"
+            {% if cheque %}
+                data-party-type="{{ cheque.party_type }}"
+                data-customer-id="{{ cheque.customer.id|default:'' }}"
+                data-supplier="{{ cheque.supplier|default:'' }}"
+            {% endif %}
+        >
+            {% csrf_token %}
+            
+            <!-- Basic Information Section -->
+            <div class="form-section">
+                <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="{{ form.cheque_number.id_for_label }}" class="form-label">
+                            Cheque Number *
+                        </label>
+                        {{ form.cheque_number }}
+                        {% if form.cheque_number.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cheque_number.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Enter the cheque number as it appears on the cheque</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.cheque_date.id_for_label }}" class="form-label">
+                            Cheque Date *
+                        </label>
+                        {{ form.cheque_date }}
+                        {% if form.cheque_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cheque_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Date written on the cheque</div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.cheque_type.id_for_label }}" class="form-label">
+                            Cheque Type *
+                        </label>
+                        {{ form.cheque_type }}
+                        {% if form.cheque_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cheque_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.bank_account.id_for_label }}" class="form-label">
+                            Bank Account *
+                        </label>
+                        {{ form.bank_account }}
+                        {% if form.bank_account.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.bank_account.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Party Information Section -->
+            <div class="form-section">
+                <h4><i class="fas fa-users"></i> Party Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="{{ form.party_type.id_for_label }}" class="form-label">
+                            Party Type *
+                        </label>
+                        {{ form.party_type }}
+                        {% if form.party_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.party_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">
+                            Amount *
+                        </label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.amount.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6" id="customer-field">
+                        <label for="{{ form.customer.id_for_label }}" class="form-label">
+                            Customer
+                        </label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.customer.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6" id="supplier-field">
+                        <label for="{{ form.supplier.id_for_label }}" class="form-label">
+                            Supplier
+                        </label>
+                        {{ form.supplier }}
+                        {% if form.supplier.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.supplier.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Information Section -->
+            <div class="form-section">
+                <h4><i class="fas fa-exchange-alt"></i> Transaction Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="{{ form.related_transaction.id_for_label }}" class="form-label">
+                            Related Transaction
+                        </label>
+                        {{ form.related_transaction }}
+                        {% if form.related_transaction.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.related_transaction.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Reference to payment/receipt voucher</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.transaction_reference.id_for_label }}" class="form-label">
+                            Transaction Reference
+                        </label>
+                        {{ form.transaction_reference }}
+                        {% if form.transaction_reference.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.transaction_reference.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Information Section -->
+            <div class="form-section">
+                <h4><i class="fas fa-tasks"></i> Status Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">
+                            Status *
+                        </label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.status.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.clearing_date.id_for_label }}" class="form-label">
+                            Clearing Date
+                        </label>
+                        {{ form.clearing_date }}
+                        {% if form.clearing_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.clearing_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Date when cheque was cleared (if applicable)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information Section -->
+            <div class="form-section">
+                <h4><i class="fas fa-sticky-note"></i> Additional Information</h4>
+                <div class="row">
+                    <div class="col-12">
+                        <label for="{{ form.remarks.id_for_label }}" class="form-label">
+                            Remarks
+                        </label>
+                        {{ form.remarks }}
+                        {% if form.remarks.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.remarks.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Any additional notes or remarks about this cheque</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="{% url 'cheque_register:cheque_list' %}" class="btn btn-outline">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% if cheque %}
+                    <a href="{% url 'cheque_register:cheque_detail' cheque.pk %}" class="btn btn-outline">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {{ submit_text }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cheque_register/js/cheque_register.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize party type selection
+    initializePartySelection();
+    
+    // Load saved form data if available
+    loadFormData(document.getElementById('cheque-form'));
+    
+    // Party type change handler
+    $('select[name="party_type"]').on('change', function() {
+        const partyType = $(this).val();
+        const customerField = $('#customer-field');
+        const supplierField = $('#supplier-field');
+        
+        // Hide both fields initially
+        customerField.hide();
+        supplierField.hide();
+        
+        // Show relevant field
+        if (partyType === 'customer') {
+            customerField.show();
+            $('select[name="customer"]').prop('required', true);
+            $('input[name="supplier"]').prop('required', false);
+        } else if (partyType === 'supplier') {
+            supplierField.show();
+            $('input[name="supplier"]').prop('required', true);
+            $('select[name="customer"]').prop('required', false);
+        }
+    });
+    
+    // Trigger change event on load to set initial state
+    $('select[name="party_type"]').trigger('change');
+    
+    // Set initial values for edit mode using data attributes
+    var $form = $('#cheque-form');
+    var partyType = $form.data('party-type');
+    var customerId = $form.data('customer-id');
+    var supplier = $form.data('supplier');
+    if (partyType) {
+        $('select[name="party_type"]').val(partyType).trigger('change');
+    }
+    if (customerId) {
+        $('select[name="customer"]').val(customerId);
+    }
+    if (supplier) {
+        $('input[name="supplier"]').val(supplier);
+    }
+    
+    // Form validation
+    $('#cheque-form').on('submit', function(e) {
+        const partyType = $('select[name="party_type"]').val();
+        const customer = $('select[name="customer"]').val();
+        const supplier = $('input[name="supplier"]').val();
+        
+        // Validate party selection
+        if (partyType === 'customer' && !customer) {
+            e.preventDefault();
+            alert('Please select a customer.');
+            return false;
+        } else if (partyType === 'supplier' && !supplier) {
+            e.preventDefault();
+            alert('Please enter a supplier name.');
+            return false;
+        }
+        
+        // Validate cheque number uniqueness (basic check)
+        const chequeNumber = $('input[name="cheque_number"]').val();
+        const bankAccount = $('select[name="bank_account"]').val();
+        
+        if (chequeNumber && bankAccount) {
+            // This would typically be an AJAX call to check uniqueness
+            // For now, we'll just do basic validation
+        }
+    });
+    
+    // Auto-save functionality
+    let autoSaveTimeout;
+    $('input, select, textarea').on('input change', function() {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(function() {
+            saveFormData(document.getElementById('cheque-form'));
+        }, 2000);
+    });
+});
+</script>
+{% endblock %} 

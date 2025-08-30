@@ -1,0 +1,589 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Balance Sheet Report{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/balance_sheet/balance_sheet.css' %}">
+<style>
+    .balance-sheet-professional {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-top: 20px;
+    }
+    
+    .company-header {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .company-name {
+        font-size: 28px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .company-address {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+    
+    .report-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #34495e;
+        margin-bottom: 10px;
+    }
+    
+    .report-date {
+        font-size: 16px;
+        color: #7f8c8d;
+        margin-bottom: 5px;
+    }
+    
+    .balance-sheet-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .balance-sheet-table th,
+    .balance-sheet-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ecf0f1;
+    }
+    
+    .balance-sheet-table th {
+        background-color: #34495e;
+        color: white;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 14px;
+    }
+    
+    .section-header {
+        background-color: #3498db !important;
+        color: white !important;
+        font-weight: bold;
+        font-size: 16px;
+    }
+    
+    .subsection-header {
+        background-color: #ecf0f1 !important;
+        color: #2c3e50 !important;
+        font-weight: bold;
+        padding-left: 20px;
+    }
+    
+    .account-row {
+        padding-left: 40px;
+    }
+    
+    .total-row {
+        background-color: #f8f9fa !important;
+        font-weight: bold;
+        border-top: 2px solid #34495e;
+    }
+    
+    .grand-total-row {
+        background-color: #2c3e50 !important;
+        color: white !important;
+        font-weight: bold;
+        border-top: 3px solid #2c3e50;
+    }
+    
+    .amount {
+        text-align: right;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .export-section {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+    
+    .signature-section {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .signature-box {
+        border: 1px solid #dee2e6;
+        padding: 15px;
+        margin: 10px 0;
+        background-color: #f8f9fa;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .balance-sheet-professional {
+            box-shadow: none;
+            margin: 0;
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid balance-sheet-container">
+    <!-- Report Generation Form -->
+    <div class="row no-print">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+                        Generate Balance Sheet Report
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'balance_sheet:balance_sheet_report' %}" id="balanceSheetForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.as_of_date.id_for_label }}" class="form-label">
+                                        {{ form.as_of_date.label }}
+                                    </label>
+                                    {{ form.as_of_date }}
+                                    {% if form.as_of_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.as_of_date.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.company.id_for_label }}" class="form-label">
+                                        {{ form.company.label }}
+                                    </label>
+                                    {{ form.company }}
+                                    {% if form.company.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.company.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.branch.id_for_label }}" class="form-label">
+                                        {{ form.branch.label }}
+                                    </label>
+                                    {{ form.branch }}
+                                    {% if form.branch.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.branch.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="{{ form.department.id_for_label }}" class="form-label">
+                                        {{ form.department.label }}
+                                    </label>
+                                    {{ form.department }}
+                                    {% if form.department.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.department.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.comparison_type.id_for_label }}" class="form-label">
+                                        {{ form.comparison_type.label }}
+                                    </label>
+                                    {{ form.comparison_type }}
+                                    {% if form.comparison_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.comparison_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Options</label>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                {{ form.include_zero_balances }}
+                                                <label class="form-check-label" for="{{ form.include_zero_balances.id_for_label }}">
+                                                    {{ form.include_zero_balances.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                {{ form.show_percentages }}
+                                                <label class="form-check-label" for="{{ form.show_percentages.id_for_label }}">
+                                                    {{ form.show_percentages.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                {{ form.include_headers }}
+                                                <label class="form-check-label" for="{{ form.include_headers.id_for_label }}">
+                                                    {{ form.include_headers.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                {{ form.include_totals }}
+                                                <label class="form-check-label" for="{{ form.include_totals.id_for_label }}">
+                                                    {{ form.include_totals.label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary" id="generateReportBtn">
+                                <i class="bi bi-search me-1"></i>
+                                Generate Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Balance Sheet Report Display -->
+    {% if report_data %}
+    <div class="row">
+        <div class="col-12">
+            <div class="balance-sheet-professional">
+                <!-- Company Header -->
+                <div class="company-header text-center mb-4">
+                    <div class="company-name">{{ company.name|default:"Your Company Name" }}</div>
+                    <div class="company-address">
+                        {% if company.address %}
+                            {{ company.address }}<br>
+                        {% endif %}
+                        {% if company.city %}{{ company.city }}, {% endif %}
+                        {% if company.state %}{{ company.state }} {% endif %}
+                        {% if company.zip_code %}{{ company.zip_code }}{% endif %}
+                        {% if company.phone %}<br>Phone: {{ company.phone }}{% endif %}
+                        {% if company.email %} | Email: {{ company.email }}{% endif %}
+                    </div>
+                    <div class="report-title">BALANCE SHEET</div>
+                    <div class="report-date">As of {{ as_of_date|date:"F d, Y" }}</div>
+                    {% if branch %}<div class="report-date">Branch: {{ branch }}</div>{% endif %}
+                    {% if department %}<div class="report-date">Department: {{ department }}</div>{% endif %}
+                </div>
+
+                <!-- Balance Sheet Table -->
+                <table class="balance-sheet-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%;">Particulars</th>
+                            <th style="width: 15%;">Notes</th>
+                            <th style="width: 20%;">Amount (USD)</th>
+                            {% if show_percentages %}
+                            <th style="width: 15%;">%</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- ASSETS -->
+                        <tr class="section-header">
+                            <td colspan="{% if show_percentages %}4{% else %}3{% endif %}">ASSETS</td>
+                        </tr>
+                        
+                        <!-- Current Assets -->
+                        {% if report_data.current_assets %}
+                        <tr class="subsection-header">
+                            <td>Current Assets</td>
+                            <td></td>
+                            <td></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% for account in report_data.current_assets %}
+                        <tr>
+                            <td class="account-row">{{ account.name }}</td>
+                            <td>{{ account.code|default:"-" }}</td>
+                            <td class="amount">{{ account.balance|floatformat:2 }}</td>
+                            {% if show_percentages %}
+                            <td class="amount">{{ account.percentage|default:"-" }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td><strong>Total Current Assets</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_current_assets|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        
+                        <!-- Non-Current Assets -->
+                        {% if report_data.non_current_assets %}
+                        <tr class="subsection-header">
+                            <td>Non-Current Assets</td>
+                            <td></td>
+                            <td></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% for account in report_data.non_current_assets %}
+                        <tr>
+                            <td class="account-row">{{ account.name }}</td>
+                            <td>{{ account.code|default:"-" }}</td>
+                            <td class="amount">{{ account.balance|floatformat:2 }}</td>
+                            {% if show_percentages %}
+                            <td class="amount">{{ account.percentage|default:"-" }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td><strong>Total Non-Current Assets</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_non_current_assets|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        
+                        <!-- Total Assets -->
+                        <tr class="grand-total-row">
+                            <td><strong>TOTAL ASSETS</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_assets|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        
+                        <!-- LIABILITIES & EQUITY -->
+                        <tr class="section-header">
+                            <td colspan="{% if show_percentages %}4{% else %}3{% endif %}">LIABILITIES & EQUITY</td>
+                        </tr>
+                        
+                        <!-- Current Liabilities -->
+                        {% if report_data.current_liabilities %}
+                        <tr class="subsection-header">
+                            <td>Current Liabilities</td>
+                            <td></td>
+                            <td></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% for account in report_data.current_liabilities %}
+                        <tr>
+                            <td class="account-row">{{ account.name }}</td>
+                            <td>{{ account.code|default:"-" }}</td>
+                            <td class="amount">{{ account.balance|floatformat:2 }}</td>
+                            {% if show_percentages %}
+                            <td class="amount">{{ account.percentage|default:"-" }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td><strong>Total Current Liabilities</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_current_liabilities|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        
+                        <!-- Non-Current Liabilities -->
+                        {% if report_data.non_current_liabilities %}
+                        <tr class="subsection-header">
+                            <td>Non-Current Liabilities</td>
+                            <td></td>
+                            <td></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% for account in report_data.non_current_liabilities %}
+                        <tr>
+                            <td class="account-row">{{ account.name }}</td>
+                            <td>{{ account.code|default:"-" }}</td>
+                            <td class="amount">{{ account.balance|floatformat:2 }}</td>
+                            {% if show_percentages %}
+                            <td class="amount">{{ account.percentage|default:"-" }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td><strong>Total Non-Current Liabilities</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_non_current_liabilities|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        
+                        <!-- Total Liabilities -->
+                        <tr class="total-row">
+                            <td><strong>TOTAL LIABILITIES</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_liabilities|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        
+                        <!-- Equity -->
+                        {% if report_data.equity %}
+                        <tr class="subsection-header">
+                            <td>Equity</td>
+                            <td></td>
+                            <td></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% for account in report_data.equity %}
+                        <tr>
+                            <td class="account-row">{{ account.name }}</td>
+                            <td>{{ account.code|default:"-" }}</td>
+                            <td class="amount">{{ account.balance|floatformat:2 }}</td>
+                            {% if show_percentages %}
+                            <td class="amount">{{ account.percentage|default:"-" }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td><strong>Total Equity</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_equity|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                        {% endif %}
+                        
+                        <!-- Total Liabilities & Equity -->
+                        <tr class="grand-total-row">
+                            <td><strong>TOTAL LIABILITIES & EQUITY</strong></td>
+                            <td></td>
+                            <td class="amount"><strong>{{ report_data.total_liabilities_equity|floatformat:2 }}</strong></td>
+                            {% if show_percentages %}<td></td>{% endif %}
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Professional Notes Section -->
+                <div class="mt-4">
+                    <h6><strong>Notes:</strong></h6>
+                    <p class="small text-muted">
+                        1. This balance sheet has been prepared in accordance with applicable accounting standards.<br>
+                        2. All amounts are presented in USD unless otherwise stated.<br>
+                        3. Figures have been rounded to the nearest dollar.
+                    </p>
+                </div>
+                
+                <!-- Signature Section -->
+                <div class="signature-section">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="signature-box text-center">
+                                <div style="height: 50px; border-bottom: 1px solid #000; margin-bottom: 10px;"></div>
+                                <strong>Prepared By</strong><br>
+                                <small>Finance Manager</small><br>
+                                <small>Date: ___________</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="signature-box text-center">
+                                <div style="height: 50px; border-bottom: 1px solid #000; margin-bottom: 10px;"></div>
+                                <strong>Reviewed By</strong><br>
+                                <small>Chief Financial Officer</small><br>
+                                <small>Date: ___________</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="signature-box text-center">
+                                <div style="height: 50px; border-bottom: 1px solid #000; margin-bottom: 10px;"></div>
+                                <strong>Approved By</strong><br>
+                                <small>Chief Executive Officer</small><br>
+                                <small>Date: ___________</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Section -->
+    {% if report_data %}
+    <div class="row no-print">
+        <div class="col-12">
+            <div class="export-section">
+                <h6><i class="bi bi-download me-2"></i>Export Options</h6>
+                <form method="post" action="{% url 'balance_sheet:export_balance_sheet' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="as_of_date" value="{{ as_of_date|date:'Y-m-d' }}">
+                    <input type="hidden" name="company" value="{{ company.id|default:'' }}">
+                    <input type="hidden" name="branch" value="{{ branch|default:'' }}">
+                    <input type="hidden" name="department" value="{{ department|default:'' }}">
+                    
+                    {{ export_form.export_format }}
+                    {{ export_form.include_headers }}
+                    {{ export_form.include_totals }}
+                    
+                    <button type="submit" class="btn btn-success btn-sm ms-2">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>
+                        Export PDF
+                    </button>
+                </form>
+                
+                <form method="post" action="{% url 'balance_sheet:export_balance_sheet' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="as_of_date" value="{{ as_of_date|date:'Y-m-d' }}">
+                    <input type="hidden" name="company" value="{{ company.id|default:'' }}">
+                    <input type="hidden" name="branch" value="{{ branch|default:'' }}">
+                    <input type="hidden" name="department" value="{{ department|default:'' }}">
+                    <input type="hidden" name="export_format" value="excel">
+                    <input type="hidden" name="include_headers" value="true">
+                    <input type="hidden" name="include_totals" value="true">
+                    
+                    <button type="submit" class="btn btn-info btn-sm ms-2">
+                        <i class="bi bi-file-earmark-excel me-1"></i>
+                        Export Excel
+                    </button>
+                </form>
+                
+                <button onclick="window.print()" class="btn btn-secondary btn-sm ms-2">
+                    <i class="bi bi-printer me-1"></i>
+                    Print
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+    
+    <!-- No Data Message -->
+    {% if not report_data and request.method == 'POST' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No data available for the selected criteria. Please adjust your filters and try again.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/balance_sheet/balance_sheet.js' %}"></script>
+{% endblock %}

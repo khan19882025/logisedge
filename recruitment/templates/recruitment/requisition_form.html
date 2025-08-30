@@ -1,0 +1,453 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Job Requisition - {{ object.title|default:"Create New" }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/recruitment/recruitment.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'recruitment:dashboard' %}">Recruitment</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'recruitment:requisition_list' %}">Job Requisitions</a></li>
+            <li class="breadcrumb-item active">{{ object.title|default:"Create New" }}</li>
+        </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    <i class="fas fa-briefcase text-primary"></i>
+                    {{ object.title|default:"Create Job Requisition" }}
+                </h2>
+                <p class="text-muted">Fill in the details below to create a new job requisition</p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'recruitment:requisition_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="requisitionForm">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-8">
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-info-circle text-primary"></i>
+                                Basic Information
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                                            Job Title <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.title }}
+                                        {% if form.title.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.title.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.department.id_for_label }}" class="form-label">
+                                            Department <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.department }}
+                                        {% if form.department.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.department.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.location.id_for_label }}" class="form-label">
+                                            Location <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.location }}
+                                        {% if form.location.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.location.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.position_type.id_for_label }}" class="form-label">
+                                            Employment Type <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.position_type }}
+                                        {% if form.position_type.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.position_type.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.job_description.id_for_label }}" class="form-label">
+                                    Job Description <span class="text-danger">*</span>
+                                </label>
+                                {{ form.job_description }}
+                                {% if form.job_description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.job_description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Provide a detailed description of the role, responsibilities, and requirements</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.required_skills.id_for_label }}" class="form-label">
+                                    Requirements & Skills
+                                </label>
+                                {{ form.required_skills }}
+                                {% if form.required_skills.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.required_skills.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">List key requirements, skills, and qualifications needed for this position</small>
+                            </div>
+                        </div>
+
+                        <!-- Salary & Benefits -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-money-bill-wave text-success"></i>
+                                Salary & Benefits
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.salary_range_min.id_for_label }}" class="form-label">
+                                            Minimum Salary
+                                        </label>
+                                        {{ form.salary_range_min }}
+                                        {% if form.salary_range_min.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.salary_range_min.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.salary_range_max.id_for_label }}" class="form-label">
+                                            Maximum Salary
+                                        </label>
+                                        {{ form.salary_range_max }}
+                                        {% if form.salary_range_max.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.salary_range_max.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.benefits.id_for_label }}" class="form-label">
+                                    Benefits & Perks
+                                </label>
+                                {{ form.benefits }}
+                                {% if form.benefits.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.benefits.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Describe the benefits package, perks, and additional incentives</small>
+                            </div>
+                        </div>
+
+                        <!-- Timeline & Priority -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-calendar-alt text-warning"></i>
+                                Timeline & Priority
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.target_start_date.id_for_label }}" class="form-label">
+                                            Target Start Date
+                                        </label>
+                                        {{ form.target_start_date }}
+                                        {% if form.target_start_date.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.target_start_date.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                            Priority Level
+                                        </label>
+                                        {{ form.priority }}
+                                        {% if form.priority.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.priority.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.headcount.id_for_label }}" class="form-label">
+                                            Number of Positions
+                                        </label>
+                                        {{ form.headcount }}
+                                        {% if form.headcount.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.headcount.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.experience_required.id_for_label }}" class="form-label">
+                                            Experience Required (Years)
+                                        </label>
+                                        {{ form.experience_required }}
+                                        {% if form.experience_required.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.experience_required.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.closing_date.id_for_label }}" class="form-label">
+                                            Closing Date
+                                        </label>
+                                        {{ form.closing_date }}
+                                        {% if form.closing_date.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.closing_date.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.education_required.id_for_label }}" class="form-label">
+                                            Education Required
+                                        </label>
+                                        {{ form.education_required }}
+                                        {% if form.education_required.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.education_required.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="col-md-4">
+                        <!-- Status & Approval -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-clipboard-check text-info"></i>
+                                Status & Approval
+                            </h5>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">
+                                    Status
+                                </label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.status.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.approval_level.id_for_label }}" class="form-label">
+                                    Approval Level
+                                </label>
+                                {{ form.approval_level }}
+                                {% if form.approval_level.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.approval_level.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.requested_by.id_for_label }}" class="form-label">
+                                    Requester
+                                </label>
+                                {{ form.requested_by }}
+                                {% if form.requested_by.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.requested_by.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-plus-circle text-secondary"></i>
+                                Additional Information
+                            </h5>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.internal_notes.id_for_label }}" class="form-label">
+                                    Internal Notes
+                                </label>
+                                {{ form.internal_notes }}
+                                {% if form.internal_notes.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.internal_notes.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Internal notes for HR team (not visible to candidates)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.external_notes.id_for_label }}" class="form-label">
+                                    External Notes
+                                </label>
+                                {{ form.external_notes }}
+                                {% if form.external_notes.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.external_notes.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Notes for the requester and external stakeholders</small>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="quick-actions">
+                            <h6 class="text-muted mb-3">Quick Actions</h6>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    {% if object %}Update{% else %}Create{% endif %} Requisition
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="saveAsDraft()">
+                                    <i class="fas fa-edit"></i> Save as Draft
+                                </button>
+                                <a href="{% url 'recruitment:requisition_list' %}" class="btn btn-outline-danger">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{% static 'js/recruitment/recruitment.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form validation
+    initializeFormValidation();
+    
+    // Initialize date pickers
+    initializeDatePickers();
+    
+    // Initialize salary range validation
+    initializeSalaryValidation();
+    
+    // Auto-save functionality
+    initializeAutoSave();
+});
+
+function saveAsDraft() {
+    // Set status to draft and submit
+    const statusField = document.getElementById('{{ form.status.id_for_label }}');
+    if (statusField) {
+        statusField.value = 'draft';
+    }
+    document.getElementById('requisitionForm').submit();
+}
+
+function initializeSalaryValidation() {
+    const minSalary = document.getElementById('{{ form.salary_range_min.id_for_label }}');
+    const maxSalary = document.getElementById('{{ form.salary_range_max.id_for_label }}');
+    
+    if (minSalary && maxSalary) {
+        maxSalary.addEventListener('change', function() {
+            const min = parseFloat(minSalary.value) || 0;
+            const max = parseFloat(maxSalary.value) || 0;
+            
+            if (max > 0 && min > max) {
+                alert('Maximum salary should be greater than minimum salary');
+                maxSalary.value = '';
+            }
+        });
+    }
+}
+
+function initializeAutoSave() {
+    const form = document.getElementById('requisitionForm');
+    let autoSaveTimer;
+    
+    form.addEventListener('input', function() {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(function() {
+            // Auto-save logic can be implemented here
+            console.log('Auto-saving...');
+        }, 3000);
+    });
+}
+</script>
+{% endblock %} 

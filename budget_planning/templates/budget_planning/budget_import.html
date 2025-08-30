@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Budgets - Budget Planning{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+<style>
+    .budget-import-zone {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .budget-import-zone:hover,
+    .budget-import-zone.dragover {
+        border-color: #007bff;
+        background-color: #e3f2fd;
+    }
+    
+    .budget-import-zone.dragover {
+        transform: scale(1.02);
+    }
+    
+    .file-info {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        display: none;
+    }
+    
+    .file-info.show {
+        display: block;
+    }
+    
+    .import-instructions {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .import-instructions h6 {
+        color: #007bff;
+        margin-bottom: 0.5rem;
+    }
+    
+    .import-instructions ul {
+        margin-bottom: 0;
+        padding-left: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-upload mr-2"></i>Import Budgets
+        </h1>
+        <div>
+            <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Budgets
+            </a>
+        </div>
+    </div>
+
+    <!-- Import Instructions -->
+    <div class="import-instructions">
+        <h6><i class="fas fa-info-circle mr-2"></i>Import Instructions</h6>
+        <ul>
+            <li>Upload an Excel file (.xlsx or .xls) with budget data</li>
+            <li>Maximum file size: 10MB</li>
+            <li>Required columns: Budget Code, Budget Name, Fiscal Year, Budget Period, Start Date, End Date, Total Amount, Currency</li>
+            <li>Optional columns: Notes, Status</li>
+            <li>Date format should be YYYY-MM-DD</li>
+            <li>Currency should be one of: AED, USD, EUR</li>
+            <li>Status should be one of: draft, submitted, approved, rejected</li>
+        </ul>
+    </div>
+
+    <!-- Import Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-file-excel mr-2"></i>Upload Budget File
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- File Upload Zone -->
+                <div class="budget-import-zone" onclick="document.getElementById('id_excel_file').click();">
+                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Drag and drop your Excel file here</h5>
+                    <p class="text-muted mb-0">or click to browse</p>
+                    <small class="text-muted">Supports .xlsx and .xls files up to 10MB</small>
+                </div>
+                
+                <!-- Hidden file input -->
+                <input type="file" name="excel_file" id="id_excel_file" class="d-none" accept=".xlsx,.xls">
+                
+                <!-- File info display -->
+                <div class="file-info" id="file-info">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-file-excel text-success mr-2"></i>
+                        <div>
+                            <strong id="file-name"></strong>
+                            <br>
+                            <small class="text-muted" id="file-size"></small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form errors -->
+                {% if form.errors %}
+                    <div class="alert alert-danger mt-3">
+                        <h6><i class="fas fa-exclamation-triangle mr-2"></i>Please correct the following errors:</h6>
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <p class="mb-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Submit button -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-upload mr-2"></i>Import Budgets
+                    </button>
+                    <a href="{% url 'budget_planning:budget_list' %}" class="btn btn-secondary btn-lg ml-2">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sample Template -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-download mr-2"></i>Sample Template
+            </h6>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">
+                Download a sample Excel template to understand the required format for budget imports.
+            </p>
+            <a href="#" class="btn btn-outline-primary" onclick="downloadSampleTemplate()">
+                <i class="fas fa-download mr-2"></i>Download Sample Template
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Imports -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-history mr-2"></i>Recent Imports
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Status</th>
+                            <th>Records</th>
+                            <th>Processed</th>
+                            <th>Errors</th>
+                            <th>Import Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- This would be populated with actual import history -->
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                <i class="fas fa-info-circle mr-2"></i>No recent imports found
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/budget_planning/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize budget import functionality
+    initializeBudgetImport();
+});
+
+function updateFileDisplay(file) {
+    const fileInfo = document.getElementById('file-info');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    
+    if (file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.add('show');
+    } else {
+        fileInfo.classList.remove('show');
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function downloadSampleTemplate() {
+    // This would trigger a download of a sample Excel template
+    alert('Sample template download functionality would be implemented here.');
+}
+
+// File upload drag and drop functionality
+function initializeBudgetImport() {
+    const importZone = $('.budget-import-zone');
+    const fileInput = $('#id_excel_file');
+    
+    if (importZone.length && fileInput.length) {
+        importZone.on('dragover', function(e) {
+            e.preventDefault();
+            $(this).addClass('dragover');
+        });
+        
+        importZone.on('dragleave', function(e) {
+            e.preventDefault();
+            $(this).removeClass('dragover');
+        });
+        
+        importZone.on('drop', function(e) {
+            e.preventDefault();
+            $(this).removeClass('dragover');
+            
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput[0].files = files;
+                updateFileDisplay(files[0]);
+            }
+        });
+        
+        fileInput.change(function() {
+            if (this.files.length > 0) {
+                updateFileDisplay(this.files[0]);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

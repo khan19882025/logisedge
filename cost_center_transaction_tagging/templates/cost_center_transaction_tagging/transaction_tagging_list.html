@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transaction Tagging List - Cost Center Transaction Tagging{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_transaction_tagging/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-tags mr-2"></i>Transaction Tagging List
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus mr-1"></i>Tag Transaction
+            </a>
+            <a href="{% url 'cost_center_transaction_tagging:bulk_transaction_tagging' %}" class="btn btn-success">
+                <i class="fas fa-upload mr-1"></i>Bulk Tagging
+            </a>
+            <a href="{% url 'cost_center_transaction_tagging:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row" id="searchForm">
+                <div class="col-md-2">
+                    <label for="id_transaction_id">Transaction ID</label>
+                    {{ search_form.transaction_id }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_reference_number">Reference Number</label>
+                    {{ search_form.reference_number }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_transaction_type">Transaction Type</label>
+                    {{ search_form.transaction_type }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_cost_center">Cost Center</label>
+                    {{ search_form.cost_center }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_status">Status</label>
+                    {{ search_form.status }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_start_date">Start Date</label>
+                    {{ search_form.start_date }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_end_date">End Date</label>
+                    {{ search_form.end_date }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_min_amount">Min Amount</label>
+                    {{ search_form.min_amount }}
+                </div>
+                <div class="col-md-2">
+                    <label for="id_max_amount">Max Amount</label>
+                    {{ search_form.max_amount }}
+                </div>
+                <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search mr-1"></i>Search
+                    </button>
+                    <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times mr-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Transaction List ({{ total_count }} transactions)</h6>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown" data-toggle="dropdown">
+                    <i class="fas fa-download mr-1"></i>Export
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel mr-1"></i>Excel
+                    </a>
+                    <a class="dropdown-item" href="#" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf mr-1"></i>PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover datatable" id="transactionsTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Reference</th>
+                            <th>Type</th>
+                            <th>Cost Center</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in page_obj %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_detail' transaction.pk %}">
+                                    {{ transaction.transaction_id }}
+                                </a>
+                            </td>
+                            <td>{{ transaction.reference_number }}</td>
+                            <td>
+                                <span class="badge badge-{% if transaction.transaction_type == 'journal_entry' %}primary{% elif transaction.transaction_type == 'purchase_invoice' %}warning{% elif transaction.transaction_type == 'sales_invoice' %}success{% elif transaction.transaction_type == 'expense_claim' %}danger{% elif transaction.transaction_type == 'payment' %}info{% else %}secondary{% endif %}">
+                                    {{ transaction.get_transaction_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'cost_center_management:cost_center_detail' transaction.cost_center.pk %}">
+                                    {{ transaction.cost_center.code }} - {{ transaction.cost_center.name }}
+                                </a>
+                            </td>
+                            <td class="text-right">
+                                <span class="font-weight-bold">${{ transaction.amount|floatformat:2 }}</span>
+                            </td>
+                            <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge badge-{% if transaction.status == 'posted' %}success{% elif transaction.status == 'draft' %}warning{% else %}secondary{% endif %}">
+                                    {{ transaction.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_detail' transaction.pk %}"
+                                       class="btn btn-sm btn-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if transaction.status == 'draft' %}
+                                    <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_update' transaction.pk %}"
+                                       class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_delete' transaction.pk %}"
+                                       class="btn btn-sm btn-danger delete-btn" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Transaction pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.transaction_id %}&transaction_id={{ request.GET.transaction_id }}{% endif %}{% if request.GET.reference_number %}&reference_number={{ request.GET.reference_number }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.transaction_id %}&transaction_id={{ request.GET.transaction_id }}{% endif %}{% if request.GET.reference_number %}&reference_number={{ request.GET.reference_number }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.transaction_id %}&transaction_id={{ request.GET.transaction_id }}{% endif %}{% if request.GET.reference_number %}&reference_number={{ request.GET.reference_number }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.transaction_id %}&transaction_id={{ request.GET.transaction_id }}{% endif %}{% if request.GET.reference_number %}&reference_number={{ request.GET.reference_number }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.transaction_id %}&transaction_id={{ request.GET.transaction_id }}{% endif %}{% if request.GET.reference_number %}&reference_number={{ request.GET.reference_number }}{% endif %}{% if request.GET.transaction_type %}&transaction_type={{ request.GET.transaction_type }}{% endif %}{% if request.GET.cost_center %}&cost_center={{ request.GET.cost_center }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No transactions found</h5>
+                <p class="text-muted">No transactions match your search criteria.</p>
+                <a href="{% url 'cost_center_transaction_tagging:transaction_tagging_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus mr-1"></i>Tag First Transaction
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_transaction_tagging/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+
+    // Initialize dataTable for better table functionality
+    if ($('#transactionsTable').length) {
+        $('#transactionsTable').DataTable({
+            "pageLength": 25,
+            "order": [[5, "desc"], [0, "asc"]],
+            "responsive": true,
+            "language": {
+                "search": "Search transactions:",
+                "lengthMenu": "Show _MENU_ transactions per page",
+                "info": "Showing _START_ to _END_ of _TOTAL_ transactions"
+            }
+        });
+    }
+});
+
+// Export functions
+function exportToExcel() {
+    var url = window.location.href;
+    if (url.indexOf('?') > -1) {
+        url += '&format=excel';
+    } else {
+        url += '?format=excel';
+    }
+    window.location.href = url;
+}
+
+function exportToPDF() {
+    var url = window.location.href;
+    if (url.indexOf('?') > -1) {
+        url += '&format=pdf';
+    } else {
+        url += '?format=pdf';
+    }
+    window.location.href = url;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity Logs Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 25px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-card h3 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .stats-card p {
+        margin: 5px 0 0 0;
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        margin-bottom: 30px;
+    }
+    
+    .quick-actions {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+    
+    .action-btn {
+        display: inline-block;
+        padding: 12px 24px;
+        margin: 8px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .recent-activity {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        margin-top: 30px;
+    }
+    
+    .activity-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 18px;
+        color: white;
+    }
+    
+    .activity-content {
+        flex: 1;
+    }
+    
+    .activity-time {
+        color: #666;
+        font-size: 0.85rem;
+    }
+    
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-success { background: #d4edda; color: #155724; }
+    .status-warning { background: #fff3cd; color: #856404; }
+    .status-danger { background: #f8d7da; color: #721c24; }
+    .status-info { background: #d1ecf1; color: #0c5460; }
+    
+    /* Activity icon colors for different action types */
+    .activity-icon-create { background: #28a745; }
+    .activity-icon-update { background: #ffc107; }
+    .activity-icon-delete { background: #dc3545; }
+    .activity-icon-login { background: #17a2b8; }
+    .activity-icon-default { background: #6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-chart-line mr-2"></i>
+                Activity Logs Dashboard
+            </h1>
+            <p class="text-muted">Comprehensive monitoring and audit trail for all system activities</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <h3>{{ total_activity_logs }}</h3>
+                <p>Total Activity Logs</p>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h3>{{ total_security_events }}</h3>
+                <p>Security Events</p>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <h3>{{ total_audit_trails }}</h3>
+                <p>Audit Trails</p>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <h3>{{ total_compliance_reports }}</h3>
+                <p>Compliance Reports</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="chart-container">
+                <h5 class="mb-3">Activity Logs Over Time</h5>
+                <canvas id="activityChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-5">
+            <div class="chart-container">
+                <h5 class="mb-3">Security Events by Type</h5>
+                <canvas id="securityChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions and Recent Activity -->
+    <div class="row">
+        <div class="col-xl-4">
+            <div class="quick-actions">
+                <h5 class="mb-3">Quick Actions</h5>
+                <a href="{% url 'activity_logs:activity_log_create' %}" class="action-btn">
+                    <i class="fas fa-plus mr-2"></i>Create Log Entry
+                </a>
+                <div class="export-buttons">
+                    <a href="{% url 'activity_logs:activity_log_export_csv' %}" class="action-btn">
+                        <i class="fas fa-download mr-2"></i>Export CSV
+                    </a>
+                    <a href="{% url 'activity_logs:activity_log_export_json' %}" class="action-btn">
+                        <i class="fas fa-code mr-2"></i>Export JSON
+                    </a>
+                </div>
+                <a href="{% url 'activity_logs:security_event_create' %}" class="action-btn">
+                    <i class="fas fa-shield-alt mr-2"></i>Report Security Event
+                </a>
+                <a href="{% url 'activity_logs:compliance_report_create' %}" class="action-btn">
+                    <i class="fas fa-file-alt mr-2"></i>Generate Report
+                </a>
+            </div>
+        </div>
+        <div class="col-xl-8">
+            <div class="recent-activity">
+                <h5 class="mb-3">Recent Activity</h5>
+                {% for log in recent_activity_logs %}
+                <div class="activity-item">
+                    <div class="activity-icon activity-icon-{{ log.action_type|lower }}">
+                        {% if log.action_type == 'CREATE' %}<i class="fas fa-plus"></i>
+                        {% elif log.action_type == 'UPDATE' %}<i class="fas fa-edit"></i>
+                        {% elif log.action_type == 'DELETE' %}<i class="fas fa-trash"></i>
+                        {% elif log.action_type == 'LOGIN' %}<i class="fas fa-sign-in-alt"></i>
+                        {% else %}<i class="fas fa-info"></i>{% endif %}
+                    </div>
+                    <div class="activity-content">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>{{ log.user.get_full_name|default:log.user.username }}</strong>
+                            <span class="status-badge status-{{ log.severity|lower }}">
+                                {{ log.severity }}
+                            </span>
+                        </div>
+                        <p class="mb-1">{{ log.description }}</p>
+                        <small class="activity-time">{{ log.timestamp|timesince }} ago</small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center py-4">No recent activity to display</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Activity Chart
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: {{ activity_chart_labels|safe }},
+            datasets: [{
+                label: 'Activity Logs',
+                data: {{ activity_chart_data|safe }},
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Security Chart
+    const securityCtx = document.getElementById('securityChart').getContext('2d');
+    const securityChart = new Chart(securityCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ security_chart_labels|safe }},
+            datasets: [{
+                data: {{ security_chart_data|safe }},
+                backgroundColor: [
+                    '#dc3545',
+                    '#ffc107',
+                    '#28a745',
+                    '#17a2b8',
+                    '#6c757d'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

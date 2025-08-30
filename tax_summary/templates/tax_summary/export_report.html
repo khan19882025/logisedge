@@ -1,0 +1,163 @@
+{% extends 'tax_summary/base.html' %}
+{% load static %}
+
+{% block title %}Export Tax Summary Report - {{ report.report_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Export Report</li>
+{% endblock %}
+
+{% block tax_content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="fas fa-download"></i>
+                        Export Tax Summary Report
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Report Details</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Report Name:</strong></td>
+                                    <td>{{ report.report_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Report Type:</strong></td>
+                                    <td>{{ report.get_report_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date Range:</strong></td>
+                                    <td>{{ report.start_date }} to {{ report.end_date }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Currency:</strong></td>
+                                    <td>{{ report.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{% if report.status == 'draft' %}secondary{% elif report.status == 'generated' %}success{% else %}info{% endif %}">
+                                            {{ report.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Report Totals</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Input Tax:</strong></td>
+                                    <td class="text-right">{{ report.total_input_tax|floatformat:2 }} {{ report.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Output Tax:</strong></td>
+                                    <td class="text-right">{{ report.total_output_tax|floatformat:2 }} {{ report.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Net VAT Payable:</strong></td>
+                                    <td class="text-right {% if report.net_vat_payable < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ report.net_vat_payable|floatformat:2 }} {{ report.currency }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Input Transactions:</strong></td>
+                                    <td class="text-right">{{ report.input_transactions_count }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Output Transactions:</strong></td>
+                                    <td class="text-right">{{ report.output_transactions_count }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.export_format.id_for_label }}">Export Format</label>
+                                    {{ form.export_format }}
+                                    {% if form.export_format.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.export_format.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.include_transactions.id_for_label }}">
+                                        {{ form.include_transactions }}
+                                        Include Transaction Details
+                                    </label>
+                                    {% if form.include_transactions.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.include_transactions.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.date_format.id_for_label }}">Date Format</label>
+                                    {{ form.date_format }}
+                                    {% if form.date_format.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.date_format.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.number_format.id_for_label }}">Number Format</label>
+                                    {{ form.number_format }}
+                                    {% if form.number_format.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.number_format.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.notes.id_for_label }}">Export Notes (Optional)</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download"></i>
+                                Export Report
+                            </button>
+                            <a href="{% url 'tax_summary:report_detail' pk=report.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Report
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

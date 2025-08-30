@@ -1,0 +1,470 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supplier Payment Details - {{ payment.payment_id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-info {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .invoice-table th, .invoice-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .status-badge {
+        font-size: 0.9em;
+    }
+    
+    .amount-highlight {
+        font-weight: bold;
+        color: #28a745;
+        font-size: 1.1em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-invoice-dollar"></i> 
+                        Supplier Payment Details - {{ payment.payment_id }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'supplier_payments:supplier_payment_update' payment.pk %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'supplier_payments:supplier_payment_print' payment.pk %}" class="btn btn-info btn-sm" target="_blank">
+                            <i class="fas fa-print"></i> Print
+                        </a>
+                        <a href="{% url 'supplier_payments:supplier_payment_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Payment Information -->
+                    <div class="payment-info">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-info-circle"></i> Payment Information</h5>
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Payment ID:</strong></td>
+                                        <td>{{ payment.payment_id }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Supplier:</strong></td>
+                                        <td>{{ payment.supplier.customer_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Supplier Code:</strong></td>
+                                        <td>{{ payment.supplier.customer_code|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Payment Date:</strong></td>
+                                        <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Amount:</strong></td>
+                                        <td class="amount-highlight">${{ payment.amount|floatformat:2 }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-cog"></i> Payment Details</h5>
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Payment Method:</strong></td>
+                                        <td>{{ payment.get_payment_method_display }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Ledger Account:</strong></td>
+                                        <td>
+                                            {% if payment.ledger_account %}
+                                                <span class="badge badge-success">
+                                                    <i class="fas fa-book"></i> {{ payment.ledger_account.name }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">
+                                                    <i class="fas fa-exclamation-triangle"></i> Not Selected
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Reference Number:</strong></td>
+                                        <td>{{ payment.reference_number|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Created:</strong></td>
+                                        <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Last Updated:</strong></td>
+                                        <td>{{ payment.updated_at|date:"M d, Y H:i" }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        {% if payment.notes %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6><i class="fas fa-sticky-note"></i> Notes</h6>
+                                <p class="text-muted">{{ payment.notes }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Supplier Details -->
+                    <div class="mt-4">
+                        <h5><i class="fas fa-building"></i> Supplier Details</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-address-card"></i> Contact Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-borderless table-sm">
+                                            <tr>
+                                                <td><strong>Contact Person:</strong></td>
+                                                <td>{{ payment.supplier.contact_person|default:"-" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Email:</strong></td>
+                                                <td>
+                                                    {% if payment.supplier.email %}
+                                                        <a href="mailto:{{ payment.supplier.email }}">{{ payment.supplier.email }}</a>
+                                                    {% elif not payment.payment_invoices.exists and not payment.payment_bills.exists %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Phone:</strong></td>
+                                                <td>{{ payment.supplier.phone|default:"-" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Mobile:</strong></td>
+                                                <td>{{ payment.supplier.mobile|default:"-" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Website:</strong></td>
+                                                <td>
+                                                    {% if payment.supplier.website %}
+                                                        <a href="{{ payment.supplier.website }}" target="_blank">{{ payment.supplier.website }}</a>
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-map-marker-alt"></i> Address Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <strong>Billing Address:</strong><br>
+                                            {% if payment.supplier.billing_address %}
+                                                {{ payment.supplier.billing_address|linebreaks }}
+                                                {% if payment.supplier.billing_city %}{{ payment.supplier.billing_city }}{% endif %}{% if payment.supplier.billing_state %}, {{ payment.supplier.billing_state }}{% endif %}{% if payment.supplier.billing_postal_code %} {{ payment.supplier.billing_postal_code }}{% endif %}<br>
+                                                {% if payment.supplier.billing_country %}{{ payment.supplier.billing_country }}{% endif %}
+                                            {% else %}
+                                                <span class="text-muted">No billing address provided</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if payment.supplier.shipping_address %}
+                                        <div>
+                                            <strong>Shipping Address:</strong><br>
+                                            {{ payment.supplier.shipping_address|linebreaks }}
+                                            {% if payment.supplier.shipping_city %}{{ payment.supplier.shipping_city }}{% endif %}{% if payment.supplier.shipping_state %}, {{ payment.supplier.shipping_state }}{% endif %}{% if payment.supplier.shipping_postal_code %} {{ payment.supplier.shipping_postal_code }}{% endif %}<br>
+                                            {% if payment.supplier.shipping_country %}{{ payment.supplier.shipping_country }}{% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-dollar-sign"></i> Financial Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-borderless table-sm">
+                                            <tr>
+                                                <td><strong>Payment Terms:</strong></td>
+                                                <td>{{ payment.supplier.payment_terms|default:"-" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Currency:</strong></td>
+                                                <td>{{ payment.supplier.currency|default:"AED" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Credit Limit:</strong></td>
+                                                <td>${{ payment.supplier.credit_limit|floatformat:2 }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Tax Rate:</strong></td>
+                                                <td>{{ payment.supplier.tax_rate|floatformat:2 }}%</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Tax Exempt:</strong></td>
+                                                <td>
+                                                    {% if payment.supplier.tax_exempt %}
+                                                        <span class="badge badge-success">Yes</span>
+                                                    {% else %}
+                                                        <span class="badge badge-secondary">No</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-info"></i> Additional Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-borderless table-sm">
+                                            <tr>
+                                                <td><strong>Industry:</strong></td>
+                                                <td>{{ payment.supplier.industry|default:"-" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Tax Number:</strong></td>
+                                                <td>{{ payment.supplier.tax_number|default:"-" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Registration Number:</strong></td>
+                                                <td>{{ payment.supplier.registration_number|default:"-" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Customer Types:</strong></td>
+                                                <td>
+                                                    {% for type in payment.supplier.customer_types.all %}
+                                                        <span class="badge badge-info">{{ type.name }}</span>
+                                                    {% empty %}
+                                                        -
+                                                    {% endfor %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        {% if payment.supplier.notes %}
+                                        <div class="mt-2">
+                                            <strong>Notes:</strong><br>
+                                            <p class="text-muted">{{ payment.supplier.notes|linebreaks }}</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Related Invoices and Bills -->
+                    <div class="mt-4">
+                        <h5><i class="fas fa-file-invoice"></i> Related Invoices and Bills</h5>
+                        
+                        {% if payment.payment_invoices.exists or payment.payment_bills.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-striped invoice-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Number</th>
+                                            <th>Date</th>
+                                            <th>Customer/Supplier</th>
+                                            <th>Reference</th>
+                                            <th>Status</th>
+                                            <th>Allocated Amount</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment_invoice in payment.payment_invoices.all %}
+                                        <tr>
+                                            <td><span class="badge badge-primary">Invoice</span></td>
+                                            <td>
+                                                <a href="{% url 'invoice:invoice_detail' payment_invoice.invoice.pk %}" class="text-primary">
+                                                    {{ payment_invoice.invoice.invoice_number }}
+                                                </a>
+                                            </td>
+                                            <td>{{ payment_invoice.invoice.invoice_date|date:"M d, Y" }}</td>
+                                            <td>{{ payment_invoice.invoice.customer.customer_name }}</td>
+                                            <td>{{ payment_invoice.invoice.reference_number|default:"-" }}</td>
+                                            <td>
+                                                <span class="badge badge-{% if payment_invoice.invoice.status == 'paid' %}success{% elif payment_invoice.invoice.status == 'overdue' %}danger{% elif payment_invoice.invoice.status == 'sent' %}warning{% else %}secondary{% endif %} status-badge">
+                                                    {{ payment_invoice.invoice.get_status_display }}{% if payment_invoice.invoice.status == 'sent' %} (Awaiting Payment){% endif %}
+                                                </span>
+                                            </td>
+                                            <td class="amount-highlight">${{ payment_invoice.allocated_amount|floatformat:2 }}</td>
+                                            <td>
+                                                <a href="{% url 'invoice:invoice_detail' payment_invoice.invoice.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% for payment_bill in payment.payment_bills.all %}
+                                        <tr>
+                                            <td><span class="badge badge-success">Bill</span></td>
+                                            <td>
+                                                <a href="{% url 'supplier_bills:supplier_bill_detail' payment_bill.supplier_bill.pk %}" class="text-primary">
+                                                    {{ payment_bill.supplier_bill.number }}
+                                                </a>
+                                            </td>
+                                            <td>{{ payment_bill.supplier_bill.bill_date|date:"M d, Y" }}</td>
+                                            <td>{{ payment_bill.supplier_bill.supplier }}</td>
+                                            <td>{{ payment_bill.supplier_bill.description|default:"-" }}</td>
+                                            <td>
+                                                <span class="badge badge-{% if payment_bill.supplier_bill.status == 'paid' %}success{% elif payment_bill.supplier_bill.status == 'overdue' %}danger{% elif payment_bill.supplier_bill.status == 'sent' %}warning{% else %}secondary{% endif %} status-badge">
+                                                    {{ payment_bill.supplier_bill.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td class="amount-highlight">${{ payment_bill.allocated_amount|floatformat:2 }}</td>
+                                            <td>
+                                                <a href="{% url 'supplier_bills:supplier_bill_detail' payment_bill.supplier_bill.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="table-info">
+                                            <td colspan="6"><strong>Total Allocated:</strong></td>
+                                            <td class="amount-highlight">
+                                                <strong>${{ payment.amount|floatformat:2 }}</strong>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        {% elif not payment.payment_invoices.exists and not payment.payment_bills.exists %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 
+                                No specific invoices or bills were selected for this payment. This payment was made as a general payment to the supplier.
+                            </div>
+                            
+                            <!-- Show related invoices based on supplier matching -->
+                            {% with related_invoices=payment.get_related_invoices %}
+                                {% if related_invoices %}
+                                    <h6 class="mt-3"><i class="fas fa-search"></i> Potentially Related Invoices</h6>
+                                    <p class="text-muted">These invoices contain items for this supplier and might be related to this payment:</p>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-striped invoice-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Invoice Number</th>
+                                                    <th>Invoice Date</th>
+                                                    <th>Customer</th>
+                                                    <th>Items Count</th>
+                                                    <th>Cost Total</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for related in related_invoices %}
+                                                <tr>
+                                                    <td>
+                                                        <a href="{% url 'invoice:invoice_detail' related.invoice.pk %}" class="text-primary">
+                                                            {{ related.invoice.invoice_number }}
+                                                        </a>
+                                                    </td>
+                                                    <td>{{ related.invoice.invoice_date|date:"M d, Y" }}</td>
+                                                    <td>{{ related.invoice.customer.customer_name }}</td>
+                                                    <td>{{ related.items_count }}</td>
+                                                    <td class="amount-highlight">${{ related.cost_total|floatformat:2 }}</td>
+                                                    <td>
+                                                        <span class="badge badge-{% if related.invoice.status == 'paid' %}success{% elif related.invoice.status == 'overdue' %}danger{% elif related.invoice.status == 'sent' %}warning{% else %}secondary{% endif %} status-badge">
+                                                            {{ related.invoice.get_status_display }}{% if related.invoice.status == 'sent' %} (Awaiting Payment){% endif %}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="{% url 'invoice:invoice_detail' related.invoice.pk %}" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <a href="{% url 'supplier_payments:supplier_payment_update' payment.pk %}" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Edit Payment
+                            </a>
+                            <a href="{% url 'supplier_payments:supplier_payment_print' payment.pk %}" class="btn btn-info" target="_blank">
+                                <i class="fas fa-print"></i> Print Receipt
+                            </a>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal">
+                                <i class="fas fa-trash"></i> Delete Payment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete payment <strong>{{ payment.payment_id }}</strong>? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <a href="{% url 'supplier_payments:supplier_payment_delete' payment.pk %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

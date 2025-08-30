@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cost Center Management - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-pie mr-2"></i>Cost Center Management
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_management:cost_center_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>New Cost Center
+            </a>
+            <a href="{% url 'cost_center_management:department_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-building mr-1"></i>New Department
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row">
+        <!-- Total Cost Centers -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Cost Centers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_cost_centers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Departments -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Departments
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_departments }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Budgets -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Budgets
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_budgets }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Transactions -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total Transactions
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_transactions }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exchange-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Recent Cost Centers -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Cost Centers</h6>
+                    <a href="{% url 'cost_center_management:cost_center_list' %}" class="btn btn-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_cost_centers %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cost_center in recent_cost_centers %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'cost_center_management:cost_center_detail' cost_center.pk %}">
+                                                {{ cost_center.code }}
+                                            </a>
+                                        </td>
+                                        <td>{{ cost_center.name }}</td>
+                                        <td>{{ cost_center.department.name }}</td>
+                                        <td>
+                                            <span class="badge badge-{% if cost_center.status == 'active' %}success{% elif cost_center.status == 'inactive' %}danger{% else %}warning{% endif %}">
+                                                {{ cost_center.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No cost centers found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Variances -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Budget Variances</h6>
+                    <a href="{% url 'cost_center_management:cost_center_budget_list' %}" class="btn btn-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if cost_centers_with_variance %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Cost Center</th>
+                                        <th>Budget</th>
+                                        <th>Variance</th>
+                                        <th>Utilization</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in cost_centers_with_variance %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'cost_center_management:cost_center_detail' item.cost_center.pk %}">
+                                                {{ item.cost_center.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ item.cost_center.budget_amount|floatformat:2 }} {{ item.cost_center.currency }}</td>
+                                        <td>
+                                            <span class="text-{% if item.variance < 0 %}danger{% else %}success{% endif %}">
+                                                {{ item.variance|floatformat:2 }} {{ item.cost_center.currency }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar {% if item.utilization_percentage > 100 %}bg-danger{% elif item.utilization_percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                     role="progressbar" 
+                                                     data-width="{{ item.utilization_percentage|floatformat:0 }}"
+                                                     aria-valuenow="{{ item.utilization_percentage|floatformat:0 }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ item.utilization_percentage|floatformat:0 }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No budget variances found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'cost_center_management:cost_center_create' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-plus mr-2"></i>Create Cost Center
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'cost_center_management:department_create' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-building mr-2"></i>Create Department
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'cost_center_management:cost_center_budget_create' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-dollar-sign mr-2"></i>Create Budget
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'cost_center_management:cost_center_report_create' %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-chart-bar mr-2"></i>Generate Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Set progress bar widths from data-width attributes
+    $('.progress-bar[data-width]').each(function() {
+        var width = $(this).data('width');
+        $(this).css('width', width + '%');
+    });
+    
+    // Auto-refresh dashboard every 5 minutes
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Approval Requests{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'approval_workflow/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Approval Requests</h4>
+                <div class="page-title-right">
+                    <a href="{% url 'approval_workflow:approval_request_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Request
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            {{ filter_form.status.label_tag }}
+                            {{ filter_form.status }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.priority.label_tag }}
+                            {{ filter_form.priority }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.workflow_definition.label_tag }}
+                            {{ filter_form.workflow_definition }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.requester.label_tag }}
+                            {{ filter_form.requester }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.date_from.label_tag }}
+                            {{ filter_form.date_from }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.date_to.label_tag }}
+                            {{ filter_form.date_to }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ filter_form.search.label_tag }}
+                            {{ filter_form.search }}
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            <a href="{% url 'approval_workflow:approval_request_list' %}" class="btn btn-secondary">Clear Filters</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requests List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">All Requests</h5>
+                </div>
+                <div class="card-body">
+                    {% if approval_requests %}
+                        <div class="table-responsive">
+                            <table class="table table-centered table-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Title</th>
+                                        <th>Requester</th>
+                                        <th>Workflow</th>
+                                        <th>Status</th>
+                                        <th>Priority</th>
+                                        <th>Amount</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in approval_requests %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'approval_workflow:approval_request_detail' request.pk %}" class="text-primary fw-bold">
+                                                {{ request.request_id }}
+                                            </a>
+                                        </td>
+                                        <td>{{ request.title }}</td>
+                                        <td>{{ request.requester.get_full_name|default:request.requester.username }}</td>
+                                        <td>{{ request.workflow_definition.name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ request.status }}">
+                                                {{ request.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ request.priority }}">
+                                                {{ request.get_priority_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if request.amount %}
+                                                ${{ request.amount|floatformat:2 }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ request.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'approval_workflow:approval_request_detail' request.pk %}">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </li>
+                                                    {% if request.can_be_approved %}
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'approval_workflow:approve_request' request.pk %}">
+                                                            <i class="fas fa-check"></i> Review
+                                                        </a>
+                                                    </li>
+                                                    {% endif %}
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'approval_workflow:add_comment' request.pk %}">
+                                                            <i class="fas fa-comment"></i> Comment
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">&laquo; First</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5>No approval requests found</h5>
+                            <p class="text-muted">Click the "New Request" button to create your first approval request.</p>
+                            <a href="{% url 'approval_workflow:approval_request_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Request
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'approval_workflow/js/dashboard.js' %}"></script>
+{% endblock %}

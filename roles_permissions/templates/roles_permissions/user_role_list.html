@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Role Assignments{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'roles_permissions/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-users"></i>
+                    User Role Assignments
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'roles_permissions:dashboard' %}">Roles & Permissions</a></li>
+                        <li class="breadcrumb-item active">User Roles</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Search & Filter</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="user" class="form-label">User</label>
+                            <input type="text" class="form-control" id="user" name="user" 
+                                   value="{{ request.GET.user }}" placeholder="Search by username or email">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-control" id="role" name="role">
+                                <option value="">All Roles</option>
+                                {% for role in roles %}
+                                    <option value="{{ role.id }}" {% if request.GET.role == role.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ role.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="">All Status</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expired</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="assignment_type" class="form-label">Assignment Type</label>
+                            <select class="form-control" id="assignment_type" name="assignment_type">
+                                <option value="">All Types</option>
+                                <option value="primary" {% if request.GET.assignment_type == 'primary' %}selected{% endif %}>Primary</option>
+                                <option value="secondary" {% if request.GET.assignment_type == 'secondary' %}selected{% endif %}>Secondary</option>
+                                <option value="temporary" {% if request.GET.assignment_type == 'temporary' %}selected{% endif %}>Temporary</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            <a href="{% url 'roles_permissions:user_role_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">User Role Assignments ({{ page_obj.paginator.count }})</h5>
+                <div>
+                    <a href="{% url 'roles_permissions:bulk_role_assignment' %}" class="btn btn-success me-2">
+                        <i class="fas fa-users"></i> Bulk Assignment
+                    </a>
+                    <a href="{% url 'roles_permissions:user_role_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Assign Role
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Roles Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    {% if user_roles %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Assignment Type</th>
+                                        <th>Status</th>
+                                        <th>Valid Period</th>
+                                        <th>Assigned By</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user_role in user_roles %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm me-3">
+                                                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ user_role.user.get_full_name|default:user_role.user.username }}</strong>
+                                                    <br><small class="text-muted">{{ user_role.user.email }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ user_role.role.name }}</strong>
+                                                <br><small class="text-muted">{{ user_role.role.get_role_type_display }}</small>
+                                            </div>
+                                        </td>
+                                                                                 <td>
+                                             <span class="badge badge-{% if user_role.is_primary %}primary{% else %}secondary{% endif %}">
+                                                 {% if user_role.is_primary %}Primary{% else %}Secondary{% endif %}
+                                             </span>
+                                         </td>
+                                        <td>
+                                            {% if user_role.is_active %}
+                                                {% if user_role.is_expired %}
+                                                    <span class="badge badge-warning">Expired</span>
+                                                {% else %}
+                                                    <span class="badge badge-success">Active</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge badge-danger">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                                                                 <td>
+                                             <small>
+                                                 <strong>Assigned:</strong> {{ user_role.assigned_at|date:"M d, Y" }}
+                                                 {% if user_role.expires_at %}
+                                                     <br><strong>Expires:</strong> {{ user_role.expires_at|date:"M d, Y" }}
+                                                 {% endif %}
+                                             </small>
+                                         </td>
+                                        <td>
+                                            <small>{{ user_role.assigned_by.get_full_name|default:user_role.assigned_by.username }}</small>
+                                        </td>
+                                                                                 <td>
+                                             <small>{{ user_role.assigned_at|date:"M d, Y" }}</small>
+                                         </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'roles_permissions:user_role_update' user_role.pk %}"
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   title="Edit Assignment">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'roles_permissions:user_permissions' user_role.user.id %}"
+                                                   class="btn btn-sm btn-outline-info"
+                                                   title="View User Permissions">
+                                                    <i class="fas fa-key"></i>
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="Remove Assignment"
+                                                        onclick="confirmDelete('{{ user_role.pk }}', '{{ user_role.user.get_full_name|default:user_role.user.username }}', '{{ user_role.role.name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.assignment_type %}&assignment_type={{ request.GET.assignment_type }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.assignment_type %}&assignment_type={{ request.GET.assignment_type }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.assignment_type %}&assignment_type={{ request.GET.assignment_type }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.assignment_type %}&assignment_type={{ request.GET.assignment_type }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.assignment_type %}&assignment_type={{ request.GET.assignment_type }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No user role assignments found</h5>
+                            <p class="text-muted">Start by assigning roles to users.</p>
+                            <a href="{% url 'roles_permissions:user_role_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Assign Role
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'roles_permissions/js/dashboard.js' %}"></script>
+<script>
+function confirmDelete(userRoleId, userName, roleName) {
+    if (confirm(`Are you sure you want to remove the role "${roleName}" from user "${userName}"?`)) {
+        // Redirect to the delete confirmation page
+        window.location.href = `/settings/roles-permissions/user-roles/${userRoleId}/delete/`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add search functionality
+    const searchInput = document.getElementById('user');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            // You can add real-time search functionality here
+        });
+    }
+
+    // Add table row hover effects
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+});
+</script>
+{% endblock %}

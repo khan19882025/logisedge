@@ -1,0 +1,218 @@
+{% extends 'asset_movement_log/base.html' %}
+{% load static %}
+
+{% block title %}Asset Movement Logs{% endblock %}
+
+{% block asset_movement_content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Search and Filter Form -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-search"></i>
+                    Search & Filter
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="form-horizontal">
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ search_form.search.label_tag }}
+                            {{ search_form.search }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.date_from.label_tag }}
+                            {{ search_form.date_from }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.date_to.label_tag }}
+                            {{ search_form.date_to }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.movement_type.label_tag }}
+                            {{ search_form.movement_type }}
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            {{ search_form.movement_reason.label_tag }}
+                            {{ search_form.movement_reason }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.from_location.label_tag }}
+                            {{ search_form.from_location }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.to_location.label_tag }}
+                            {{ search_form.to_location }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.moved_by.label_tag }}
+                            {{ search_form.moved_by }}
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            {{ search_form.is_completed.label_tag }}
+                            {{ search_form.is_completed }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.is_approved.label_tag }}
+                            {{ search_form.is_approved }}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>&nbsp;</label><br>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <a href="{% url 'asset_movement_log:movement_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Movements Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-list"></i>
+                    Asset Movement Logs
+                </h3>
+                <div class="card-tools">
+                    <a href="{% url 'asset_movement_log:movement_create' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> New Movement
+                    </a>
+                    <a href="{% url 'asset_movement_log:export' %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-download"></i> Export
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Type</th>
+                                <th>From Location</th>
+                                <th>To Location</th>
+                                <th>Date</th>
+                                <th>Moved By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in movements %}
+                            <tr>
+                                <td>
+                                    <strong>{{ movement.asset.asset_code }}</strong><br>
+                                    <small class="text-muted">{{ movement.asset.asset_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ movement.movement_type|lower }}">
+                                        {{ movement.get_movement_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ movement.from_location.name|default:"-" }}</td>
+                                <td>{{ movement.to_location.name|default:"-" }}</td>
+                                <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                                <td>{{ movement.moved_by.get_full_name|default:movement.moved_by.username }}</td>
+                                <td>
+                                    {% if movement.is_completed %}
+                                        <span class="badge badge-success">Completed</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">Pending</span>
+                                    {% endif %}
+                                    {% if movement.is_approved %}
+                                        <span class="badge badge-info">Approved</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Pending Approval</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'asset_movement_log:movement_detail' movement.movement_id %}" 
+                                           class="btn btn-sm btn-info" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'asset_movement_log:movement_update' movement.movement_id %}" 
+                                           class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'asset_movement_log:movement_delete' movement.movement_id %}" 
+                                           class="btn btn-sm btn-danger" title="Delete"
+                                           onclick="return confirm('Are you sure you want to delete this movement?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center">
+                                    <p class="text-muted">No movements found matching your criteria.</p>
+                                    <a href="{% url 'asset_movement_log:movement_create' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Create First Movement
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if is_paginated %}
+            <div class="card-footer">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Adjustment Entries - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'adjustment_entry/css/adjustment_entry.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="adjustment-entry-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-exchange-alt"></i> Adjustment Journal Entries</h2>
+                <p class="subtitle">Manage adjustment entries for prepaid expenses, accruals, depreciation, and reclassifications</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'adjustment_entry:adjustment_entry_create' %}" class="btn btn-light">
+                    <i class="fas fa-plus"></i> New Adjustment Entry
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="adjustment-entry-content">
+        <!-- Statistics Cards -->
+        <div class="stats-cards">
+            <div class="stat-card total">
+                <div class="stat-number">{{ total_entries }}</div>
+                <div class="stat-label">Total Entries</div>
+            </div>
+            <div class="stat-card draft">
+                <div class="stat-number">{{ draft_entries }}</div>
+                <div class="stat-label">Draft</div>
+            </div>
+            <div class="stat-card posted">
+                <div class="stat-number">{{ posted_entries }}</div>
+                <div class="stat-label">Posted</div>
+            </div>
+            <div class="stat-card cancelled">
+                <div class="stat-number">{{ cancelled_entries }}</div>
+                <div class="stat-label">Cancelled</div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="search-filter-section">
+            <form method="get" id="search-form">
+                <div class="row">
+                    <div class="col-md-2">
+                        <label for="{{ search_form.search_type.id_for_label }}" class="form-label">Search By</label>
+                        {{ search_form.search_type }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ search_form.search_term.id_for_label }}" class="form-label">Search Term</label>
+                        {{ search_form.search_term }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ search_form.status.id_for_label }}" class="form-label">Status</label>
+                        {{ search_form.status }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ search_form.adjustment_type.id_for_label }}" class="form-label">Type</label>
+                        {{ search_form.adjustment_type }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ search_form.date_from.id_for_label }}" class="form-label">Date From</label>
+                        {{ search_form.date_from }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ search_form.date_to.id_for_label }}" class="form-label">Date To</label>
+                        {{ search_form.date_to }}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <a href="{% url 'adjustment_entry:adjustment_entry_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Adjustment Entries List -->
+        <div class="adjustment-entry-container">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Voucher Number</th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Narration</th>
+                                <th>Total Debit</th>
+                                <th>Total Credit</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ entry.voucher_number }}</strong>
+                                    {% if entry.reference_number %}
+                                        <br><small class="text-muted">Ref: {{ entry.reference_number }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ entry.date|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="adjustment-type-badge adjustment-type-{{ entry.adjustment_type }}">
+                                        {{ entry.get_adjustment_type_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;" title="{{ entry.narration }}">
+                                        {{ entry.narration }}
+                                    </div>
+                                </td>
+                                <td class="amount-debit">AED {{ entry.total_debit|floatformat:2 }}</td>
+                                <td class="amount-credit">AED {{ entry.total_credit|floatformat:2 }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ entry.status }}">
+                                        {{ entry.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {{ entry.created_by.get_full_name|default:entry.created_by.username }}
+                                    <br><small class="text-muted">{{ entry.created_at|date:"M d, Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'adjustment_entry:adjustment_entry_detail' entry.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        
+                                        {% if entry.can_edit %}
+                                        <a href="{% url 'adjustment_entry:adjustment_entry_edit' entry.pk %}" 
+                                           class="btn btn-sm btn-outline-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <a href="{% url 'adjustment_entry:adjustment_entry_print' entry.pk %}" 
+                                           class="btn btn-sm btn-outline-info" title="Print" target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        
+                                        {% if entry.can_edit %}
+                                        <a href="{% url 'adjustment_entry:adjustment_entry_delete' entry.pk %}" 
+                                           class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if entry.can_post %}
+                                    <form method="post" action="{% url 'adjustment_entry:adjustment_entry_post' entry.pk %}" 
+                                          style="display: inline;" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success" title="Post Entry"
+                                                onclick="return confirm('Are you sure you want to post this entry?')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    {% if entry.can_cancel %}
+                                    <form method="post" action="{% url 'adjustment_entry:adjustment_entry_cancel' entry.pk %}" 
+                                          style="display: inline;" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Cancel Entry"
+                                                onclick="return confirm('Are you sure you want to cancel this entry?')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Adjustment entries pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search_type %}&search_type={{ request.GET.search_type }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.adjustment_type %}&adjustment_type={{ request.GET.adjustment_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_type %}&search_type={{ request.GET.search_type }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.adjustment_type %}&adjustment_type={{ request.GET.adjustment_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search_type %}&search_type={{ request.GET.search_type }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.adjustment_type %}&adjustment_type={{ request.GET.adjustment_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search_type %}&search_type={{ request.GET.search_type }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.adjustment_type %}&adjustment_type={{ request.GET.adjustment_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_type %}&search_type={{ request.GET.search_type }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.adjustment_type %}&adjustment_type={{ request.GET.adjustment_type }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- Page Info -->
+                <div class="text-center text-muted">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                </div>
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Adjustment Entries Found</h4>
+                    <p class="text-muted">No adjustment entries match your search criteria.</p>
+                    <a href="{% url 'adjustment_entry:adjustment_entry_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Your First Adjustment Entry
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'adjustment_entry/js/adjustment_entry.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Session Details - {{ session.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'merge_duplicates/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    Session Details
+                </h1>
+                <p class="text-muted mb-0">
+                    Detailed information about duplicate detection session "{{ session.name }}"
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Session Information -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Session Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Name:</dt>
+                                <dd class="col-sm-8">{{ session.name }}</dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge badge-{{ session.status|yesno:'success,warning,info,danger,secondary' }}">
+                                        {{ session.get_status_display }}
+                                    </span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">{{ session.created_at|date:"M d, Y H:i" }}</dd>
+                                
+                                <dt class="col-sm-4">Created By:</dt>
+                                <dd class="col-sm-8">{{ session.created_by.get_full_name|default:session.created_by.username }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Started:</dt>
+                                <dd class="col-sm-8">
+                                    {% if session.started_at %}
+                                        {{ session.started_at|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">Not started</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Completed:</dt>
+                                <dd class="col-sm-8">
+                                    {% if session.completed_at %}
+                                        {{ session.completed_at|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">Not completed</span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Duplicates Found:</dt>
+                                <dd class="col-sm-8">{{ session.duplicates_found }}</dd>
+                                
+                                <dt class="col-sm-4">Records Merged:</dt>
+                                <dd class="col-sm-8">{{ session.records_merged }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    {% if session.description %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <dt>Description:</dt>
+                            <dd>{{ session.description }}</dd>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if session.status == 'pending' %}
+                            <a href="{% url 'data_cleaning_tool:merge_duplicates_session_start' session.pk %}" class="btn btn-success">
+                                <i class="fas fa-play me-2"></i>Start Session
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'data_cleaning_tool:merge_duplicates_session_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Sessions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Duplicate Groups -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Duplicate Groups</h6>
+                    <span class="badge badge-primary">{{ duplicate_groups|length }} groups found</span>
+                </div>
+                <div class="card-body">
+                    {% if duplicate_groups %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Entity Type</th>
+                                        <th>Confidence Score</th>
+                                        <th>Records Count</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for group in duplicate_groups %}
+                                    <tr>
+                                        <td>{{ group.entity_type|title }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ group.confidence_score|floatformat:0 }}%"
+                                                     aria-valuenow="{{ group.confidence_score|floatformat:0 }}" 
+                                                     aria-valuemin="0" aria-valuemax="100">
+                                                    {{ group.confidence_score|floatformat:1 }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ group.duplicaterecord_set.count }}</td>
+                                        <td>
+                                            {% if group.is_merged %}
+                                                <span class="badge badge-success">Merged</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">Pending Review</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ group.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <a href="{% url 'data_cleaning_tool:merge_duplicates_group_detail' group.pk %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            {% if not group.is_merged %}
+                                            <a href="{% url 'data_cleaning_tool:merge_duplicates_group_review' group.pk %}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-check"></i> Review
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-search fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-muted">No duplicate groups found yet.</p>
+                            {% if session.status == 'pending' %}
+                                <p class="text-muted">Start the session to begin duplicate detection.</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Merge Operations -->
+    {% if merge_operations %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Merge Operations</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Master Record</th>
+                                    <th>Status</th>
+                                    <th>Created By</th>
+                                    <th>Created</th>
+                                    <th>Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for operation in merge_operations %}
+                                <tr>
+                                    <td>{{ operation.master_record.record_id }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ operation.status|yesno:'success,warning,info,danger,secondary' }}">
+                                            {{ operation.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ operation.created_by.get_full_name|default:operation.created_by.username }}</td>
+                                    <td>{{ operation.created_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if operation.completed_at %}
+                                            {{ operation.completed_at|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Not completed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'merge_duplicates/js/dashboard.js' %}"></script>
+{% endblock %}

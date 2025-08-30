@@ -1,0 +1,452 @@
+{% extends 'data_cleaning_tool/base.html' %}
+{% load static %}
+
+{% block title %}Session Details - {{ session.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Session Details
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Detailed information about data cleaning session "{{ session.name }}"
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'data_cleaning_tool:session_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Sessions
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <!-- Main Session Information -->
+                <div class="col-lg-8">
+                    <!-- Session Overview Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-cog me-2"></i>
+                                Session Overview
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Session ID:</strong> #{{ session.id }}</p>
+                                    <p><strong>Name:</strong> {{ session.name }}</p>
+                                    <p><strong>Status:</strong> 
+                                        {% if session.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif session.status == 'running' %}
+                                            <span class="badge bg-info">Running</span>
+                                        {% elif session.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif session.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% elif session.status == 'cancelled' %}
+                                            <span class="badge bg-secondary">Cancelled</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Cleaning Type:</strong> {{ session.get_cleaning_type_display }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Created By:</strong> {{ session.created_by.username }}</p>
+                                    <p><strong>Created At:</strong> {{ session.created_at|date:"M d, Y H:i" }}</p>
+                                    <p><strong>Started At:</strong> 
+                                        {% if session.started_at %}
+                                            {{ session.started_at|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Not started</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Completed At:</strong> 
+                                        {% if session.completed_at %}
+                                            {{ session.completed_at|date:"M d, Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Not completed</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            {% if session.description %}
+                                <hr>
+                                <p><strong>Description:</strong> {{ session.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Execution Details -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-play-circle me-2"></i>
+                                Execution Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Duration:</strong> 
+                                        {% if session.started_at and session.completed_at %}
+                                            {{ session.completed_at|timeuntil:session.started_at }}
+                                        {% elif session.started_at and session.status == 'running' %}
+                                            {{ session.started_at|timesince }} (running)
+                                        {% else %}
+                                            <span class="text-muted">Not available</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Records Scanned:</strong> 
+                                        {% if session.records_scanned %}
+                                            {{ session.records_scanned|floatformat:0 }}
+                                        {% else %}
+                                            <span class="text-muted">Not available</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Records Processed:</strong> 
+                                        {% if session.records_processed %}
+                                            {{ session.records_processed|floatformat:0 }}
+                                        {% else %}
+                                            <span class="text-muted">Not available</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Records Cleaned:</strong> 
+                                        {% if session.records_cleaned %}
+                                            {{ session.records_cleaned|floatformat:0 }}
+                                        {% else %}
+                                            <span class="text-muted">Not available</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Records Skipped:</strong> 
+                                        {% if session.records_skipped %}
+                                            {{ session.records_skipped|floatformat:0 }}
+                                        {% else %}
+                                            <span class="text-muted">Not available</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Success Rate:</strong> 
+                                        {% if session.success_rate %}
+                                            {{ session.success_rate|floatformat:1 }}%
+                                        {% else %}
+                                            <span class="text-muted">Not available</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rules Applied -->
+                    {% if session.rules_applied.all %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-list-check me-2"></i>
+                                Rules Applied
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Rule Name</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Records Affected</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rule in session.rules_applied.all %}
+                                        <tr>
+                                            <td>{{ rule.name }}</td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ rule.get_rule_type_display }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success">Applied</span>
+                                            </td>
+                                            <td>
+                                                {% if rule.records_affected %}
+                                                    {{ rule.records_affected }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Error Logs -->
+                    {% if session.error_logs %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error Logs
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <strong>Errors encountered during execution:</strong>
+                            </div>
+                            <pre class="bg-light p-3 rounded"><code>{{ session.error_logs }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Session Logs -->
+                    {% if session.session_logs %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Session Logs
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <pre class="bg-light p-3 rounded"><code>{{ session.session_logs }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Actions Card -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-tools me-2"></i>
+                                Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                {% if session.status == 'running' %}
+                                    <button type="button" class="btn btn-warning" onclick="stopSession({{ session.id }})">
+                                        <i class="fas fa-stop me-2"></i>Stop Session
+                                    </button>
+                                {% elif session.status == 'pending' %}
+                                    <button type="button" class="btn btn-danger" onclick="cancelSession({{ session.id }})">
+                                        <i class="fas fa-times me-2"></i>Cancel Session
+                                    </button>
+                                {% endif %}
+                                
+                                {% if session.status == 'completed' %}
+                                    <a href="{% url 'data_cleaning_tool:session_detail' session.id %}?download=report" class="btn btn-success">
+                                        <i class="fas fa-download me-2"></i>Download Report
+                                    </a>
+                                {% endif %}
+                                
+                                <a href="{% url 'data_cleaning_tool:session_create' %}?clone={{ session.id }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-copy me-2"></i>Clone Session
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Schedule Information -->
+                    {% if session.schedule %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-calendar me-2"></i>
+                                Scheduled Session
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Schedule:</strong> {{ session.schedule.name }}</p>
+                            <p><strong>Frequency:</strong> {{ session.schedule.get_frequency_display }}</p>
+                            <p><strong>Next Run:</strong> 
+                                {% if session.schedule.next_run %}
+                                    {{ session.schedule.next_run|date:"M d, Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">Not scheduled</span>
+                                {% endif %}
+                            </p>
+                            <a href="{% url 'data_cleaning_tool:schedule_edit' session.schedule.id %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-edit me-2"></i>Edit Schedule
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Performance Metrics -->
+                    {% if session.performance_metrics %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Performance Metrics
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Memory Usage</label>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ session.performance_metrics.memory_usage|default:0 }}%">
+                                        {{ session.performance_metrics.memory_usage|default:0 }}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">CPU Usage</label>
+                                <div class="progress">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ session.performance_metrics.cpu_usage|default:0 }}%">
+                                        {{ session.performance_metrics.cpu_usage|default:0 }}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-0">
+                                <label class="form-label">Processing Speed</label>
+                                <div class="text-center">
+                                    <h4 class="text-primary mb-0">
+                                        {% if session.performance_metrics.processing_speed %}
+                                            {{ session.performance_metrics.processing_speed|floatformat:1 }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </h4>
+                                    <small class="text-muted">records/second</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Quick Stats -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-chart-pie me-2"></i>
+                                Quick Stats
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="border-end">
+                                        <h4 class="text-success mb-0">
+                                            {% if session.records_cleaned %}
+                                                {{ session.records_cleaned|floatformat:0 }}
+                                            {% else %}
+                                                0
+                                            {% endif %}
+                                        </h4>
+                                        <small class="text-muted">Cleaned</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-warning mb-0">
+                                        {% if session.records_skipped %}
+                                            {{ session.records_skipped|floatformat:0 }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </h4>
+                                    <small class="text-muted">Skipped</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function stopSession(sessionId) {
+    if (confirm('Are you sure you want to stop this session? This action cannot be undone.')) {
+        fetch(`/utilities/data-cleaning/sessions/${sessionId}/stop/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to stop session: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while stopping the session.');
+        });
+    }
+}
+
+function cancelSession(sessionId) {
+    if (confirm('Are you sure you want to cancel this session? This action cannot be undone.')) {
+        fetch(`/utilities/data-cleaning/sessions/${sessionId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to cancel session: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while cancelling the session.');
+        });
+    }
+}
+</script>
+
+<style>
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.progress {
+    height: 8px;
+}
+
+.border-end {
+    border-right: 1px solid #dee2e6;
+}
+
+pre {
+    font-size: 0.875rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

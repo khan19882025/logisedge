@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SMS Gateway Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'sms_gateway/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-sms fa-fw"></i> SMS Gateway Dashboard
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'sms_gateway:gateway_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> New Gateway
+            </a>
+            <a href="{% url 'sms_gateway:send_message' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-paper-plane fa-fw"></i> Send SMS
+            </a>
+            <a href="{% url 'sms_gateway:gateway_health' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-heartbeat fa-fw"></i> Health Monitor
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <!-- Total Gateways -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Gateways
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_gateways }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-server fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Gateways -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Gateways
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_gateways }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Healthy Gateways -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Healthy Gateways
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ healthy_gateways }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-heart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Success Rate -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Test Success Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ success_rate }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Gateway Status Overview -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Gateway Status Overview</h6>
+                    <a href="{% url 'sms_gateway:gateway_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if gateway_health %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Gateway</th>
+                                        <th>Status</th>
+                                        <th>Response Time</th>
+                                        <th>Success Rate</th>
+                                        <th>Last Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for health in gateway_health %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'sms_gateway:gateway_detail' pk=health.gateway.pk %}">
+                                                {{ health.gateway.name }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if health.is_healthy %}
+                                                <span class="badge badge-success">Healthy</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">Unhealthy</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ health.response_time|floatformat:3 }}s</td>
+                                        <td>{{ health.success_rate|floatformat:1 }}%</td>
+                                        <td>{{ health.recorded_at|date:"M d, H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No gateway health data available.</p>
+                            <a href="{% url 'sms_gateway:gateway_create' %}" class="btn btn-primary">
+                                Create First Gateway
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'sms_gateway:gateway_create' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-plus fa-fw"></i> Add New Gateway</h6>
+                            </div>
+                            <p class="mb-1">Configure a new SMS gateway provider</p>
+                        </a>
+                        <a href="{% url 'sms_gateway:send_message' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-paper-plane fa-fw"></i> Send SMS</h6>
+                            </div>
+                            <p class="mb-1">Send a new SMS message</p>
+                        </a>
+                        <a href="{% url 'sms_gateway:gateway_health' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-heartbeat fa-fw"></i> Health Monitor</h6>
+                            </div>
+                            <p class="mb-1">Monitor gateway health and performance</p>
+                        </a>
+                        <a href="{% url 'sms_gateway:test_results_list' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1"><i class="fas fa-vial fa-fw"></i> Test Results</h6>
+                            </div>
+                            <p class="mb-1">View all test results and logs</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Row -->
+    <div class="row">
+        <!-- Recent Test Results -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Test Results</h6>
+                    <a href="{% url 'sms_gateway:test_results_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_tests %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Gateway</th>
+                                        <th>Test Type</th>
+                                        <th>Status</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for test in recent_tests %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'sms_gateway:gateway_detail' pk=test.gateway.pk %}">
+                                                {{ test.gateway.name }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ test.get_test_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            {% if test.success %}
+                                                <span class="badge badge-success">Success</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">Failed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ test.started_at|date:"M d, H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-vial fa-2x text-gray-300 mb-2"></i>
+                            <p class="text-gray-500">No test results available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Messages -->
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Messages</h6>
+                    <a href="{% url 'sms_gateway:messages_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_messages %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Recipient</th>
+                                        <th>Status</th>
+                                        <th>Gateway</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for message in recent_messages %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'sms_gateway:message_detail' pk=message.pk %}">
+                                                {{ message.recipient_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if message.delivery_status == 'delivered' %}
+                                                <span class="badge badge-success">Delivered</span>
+                                            {% elif message.delivery_status == 'sent' %}
+                                                <span class="badge badge-info">Sent</span>
+                                            {% elif message.delivery_status == 'failed' %}
+                                                <span class="badge badge-danger">Failed</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">{{ message.get_delivery_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ message.gateway.name }}</td>
+                                        <td>{{ message.created_at|date:"M d, H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-envelope fa-2x text-gray-300 mb-2"></i>
+                            <p class="text-gray-500">No messages available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Statistics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">System Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-right">
+                                <h4 class="text-primary">{{ total_tests }}</h4>
+                                <p class="text-muted">Total Tests</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-right">
+                                <h4 class="text-success">{{ total_messages }}</h4>
+                                <p class="text-muted">Total Messages</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-right">
+                                <h4 class="text-info">{{ delivery_rate }}%</h4>
+                                <p class="text-muted">Delivery Rate</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div>
+                                <h4 class="text-warning">{{ success_rate }}%</h4>
+                                <p class="text-muted">Test Success Rate</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'sms_gateway/js/dashboard.js' %}"></script>
+{% endblock %}

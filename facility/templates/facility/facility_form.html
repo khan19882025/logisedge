@@ -1,0 +1,698 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/facility/facility.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="bi bi-building me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted">Manage facility information</p>
+        </div>
+        <div>
+            <a href="{% url 'facility:facility_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <div>
+        <h6 class="mb-3 font-weight-bold text-primary">
+            <i class="bi bi-pencil-square me-1"></i>Facility Information
+        </h6>
+        <form method="post" id="facilityForm">
+            {% csrf_token %}
+            
+            <!-- Tab Navigation -->
+            <ul class="nav nav-tabs" id="facilityTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab">
+                        <i class="bi bi-info-circle me-1"></i>Basic Information
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab">
+                        <i class="bi bi-geo-alt me-1"></i>Location
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab">
+                        <i class="bi bi-person-lines-fill me-1"></i>Contact
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="specs-tab" data-bs-toggle="tab" data-bs-target="#specs" type="button" role="tab">
+                        <i class="bi bi-rulers me-1"></i>Specifications
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="operational-tab" data-bs-toggle="tab" data-bs-target="#operational" type="button" role="tab">
+                        <i class="bi bi-gear me-1"></i>Operational
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab">
+                        <i class="bi bi-tools me-1"></i>Equipment
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab">
+                        <i class="bi bi-currency-dollar me-1"></i>Financial
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ownership-tab" data-bs-toggle="tab" data-bs-target="#ownership" type="button" role="tab">
+                        <i class="bi bi-house me-1"></i>Ownership
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+                        <i class="bi bi-sticky me-1"></i>Notes
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="facilityTabsContent">
+                <!-- Basic Information Tab -->
+                <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.facility_code.id_for_label }}" class="form-label">
+                                    Facility Code <span class="text-danger">*</span>
+                                </label>
+                                {{ form.facility_code }}
+                                {% if form.facility_code.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.facility_code.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">Unique identifier for the facility (e.g., FAC-001)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.facility_name.id_for_label }}" class="form-label">
+                                    Facility Name <span class="text-danger">*</span>
+                                </label>
+                                {{ form.facility_name }}
+                                {% if form.facility_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.facility_name.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.facility_type.id_for_label }}" class="form-label">Facility Type</label>
+                                {{ form.facility_type }}
+                                {% if form.facility_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.facility_type.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.status.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.short_description.id_for_label }}" class="form-label">Short Description</label>
+                        {{ form.short_description }}
+                        {% if form.short_description.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.short_description.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Detailed Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.description.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Location Tab -->
+                <div class="tab-pane fade" id="location" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.address.id_for_label }}" class="form-label">Complete Address</label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.address.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.city.id_for_label }}" class="form-label">City</label>
+                                {{ form.city }}
+                                {% if form.city.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.city.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.state.id_for_label }}" class="form-label">State/Province</label>
+                                {{ form.state }}
+                                {% if form.state.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.state.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.country.id_for_label }}" class="form-label">Country</label>
+                                {{ form.country }}
+                                {% if form.country.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.country.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.postal_code.id_for_label }}" class="form-label">Postal Code</label>
+                                {{ form.postal_code }}
+                                {% if form.postal_code.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.postal_code.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.latitude.id_for_label }}" class="form-label">GPS Latitude</label>
+                                {{ form.latitude }}
+                                {% if form.latitude.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.latitude.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.longitude.id_for_label }}" class="form-label">GPS Longitude</label>
+                                {{ form.longitude }}
+                                {% if form.longitude.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.longitude.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Tab -->
+                <div class="tab-pane fade" id="contact" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.phone.id_for_label }}" class="form-label">Facility Phone</label>
+                                {{ form.phone }}
+                                {% if form.phone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.phone.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Facility Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.email.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.contact_person.id_for_label }}" class="form-label">Contact Person</label>
+                                {{ form.contact_person }}
+                                {% if form.contact_person.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.contact_person.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.contact_phone.id_for_label }}" class="form-label">Contact Phone</label>
+                                {{ form.contact_phone }}
+                                {% if form.contact_phone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.contact_phone.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.contact_email.id_for_label }}" class="form-label">Contact Email</label>
+                        {{ form.contact_email }}
+                        {% if form.contact_email.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.contact_email.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Specifications Tab -->
+                <div class="tab-pane fade" id="specs" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.total_area.id_for_label }}" class="form-label">Total Area (m²)</label>
+                                {{ form.total_area }}
+                                {% if form.total_area.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.total_area.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.usable_area.id_for_label }}" class="form-label">Usable Area (m²)</label>
+                                {{ form.usable_area }}
+                                {% if form.usable_area.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.usable_area.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.height.id_for_label }}" class="form-label">Height (m)</label>
+                                {{ form.height }}
+                                {% if form.height.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.height.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity (m³)</label>
+                                {{ form.capacity }}
+                                {% if form.capacity.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.capacity.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.max_weight_capacity.id_for_label }}" class="form-label">Max Weight (tons)</label>
+                                {{ form.max_weight_capacity }}
+                                {% if form.max_weight_capacity.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.max_weight_capacity.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operational Tab -->
+                <div class="tab-pane fade" id="operational" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.operating_hours.id_for_label }}" class="form-label">Operating Hours</label>
+                                {{ form.operating_hours }}
+                                {% if form.operating_hours.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.operating_hours.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.timezone.id_for_label }}" class="form-label">Timezone</label>
+                                {{ form.timezone }}
+                                {% if form.timezone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.timezone.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.is_24_7 }}
+                                    <label class="form-check-label" for="{{ form.is_24_7.id_for_label }}">
+                                        24/7 Operation
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.has_security }}
+                                    <label class="form-check-label" for="{{ form.has_security.id_for_label }}">
+                                        Security
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.has_cctv }}
+                                    <label class="form-check-label" for="{{ form.has_cctv.id_for_label }}">
+                                        CCTV
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.has_fire_suppression }}
+                                    <label class="form-check-label" for="{{ form.has_fire_suppression.id_for_label }}">
+                                        Fire Suppression
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.has_climate_control }}
+                                    <label class="form-check-label" for="{{ form.has_climate_control.id_for_label }}">
+                                        Climate Control
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipment Tab -->
+                <div class="tab-pane fade" id="equipment" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.loading_docks.id_for_label }}" class="form-label">Loading Docks</label>
+                                {{ form.loading_docks }}
+                                {% if form.loading_docks.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.loading_docks.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.forklifts.id_for_label }}" class="form-label">Forklifts</label>
+                                {{ form.forklifts }}
+                                {% if form.forklifts.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.forklifts.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.pallet_racks.id_for_label }}" class="form-label">Pallet Racks</label>
+                                {{ form.pallet_racks }}
+                                {% if form.pallet_racks.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.pallet_racks.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.refrigeration_units.id_for_label }}" class="form-label">Refrigeration Units</label>
+                                {{ form.refrigeration_units }}
+                                {% if form.refrigeration_units.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.refrigeration_units.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.power_generators.id_for_label }}" class="form-label">Power Generators</label>
+                                {{ form.power_generators }}
+                                {% if form.power_generators.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.power_generators.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Tab -->
+                <div class="tab-pane fade" id="financial" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.monthly_rent.id_for_label }}" class="form-label">Monthly Rent</label>
+                                {{ form.monthly_rent }}
+                                {% if form.monthly_rent.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.monthly_rent.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.utilities_cost.id_for_label }}" class="form-label">Utilities Cost</label>
+                                {{ form.utilities_cost }}
+                                {% if form.utilities_cost.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.utilities_cost.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.maintenance_cost.id_for_label }}" class="form-label">Maintenance Cost</label>
+                                {{ form.maintenance_cost }}
+                                {% if form.maintenance_cost.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.maintenance_cost.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.currency.id_for_label }}" class="form-label">Currency</label>
+                                {{ form.currency }}
+                                {% if form.currency.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.currency.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <strong>Financial Information:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Monthly rent is the base rental cost</li>
+                            <li>Utilities include electricity, water, gas, etc.</li>
+                            <li>Maintenance includes regular upkeep costs</li>
+                            <li>Total monthly cost will be calculated automatically</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Ownership Tab -->
+                <div class="tab-pane fade" id="ownership" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.owner.id_for_label }}" class="form-label">Owner/Landlord</label>
+                                {{ form.owner }}
+                                {% if form.owner.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.owner.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check mt-4">
+                                    {{ form.is_owned }}
+                                    <label class="form-check-label" for="{{ form.is_owned.id_for_label }}">
+                                        Facility is owned by the company
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.lease_start_date.id_for_label }}" class="form-label">Lease Start Date</label>
+                                {{ form.lease_start_date }}
+                                {% if form.lease_start_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.lease_start_date.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.lease_end_date.id_for_label }}" class="form-label">Lease End Date</label>
+                                {{ form.lease_end_date }}
+                                {% if form.lease_end_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.lease_end_date.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Tab -->
+                <div class="tab-pane fade" id="notes" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">General Notes</label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.notes.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.internal_notes.id_for_label }}" class="form-label">Internal Notes</label>
+                                {{ form.internal_notes }}
+                                {% if form.internal_notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.internal_notes.errors.0 }}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">These notes are not visible to all users</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'facility:facility_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </a>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/facility/facility.js' %}"></script>
+{% endblock %} 

@@ -1,0 +1,677 @@
+{% extends 'service/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - logisEdge{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-gear me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted mb-0">{{ action }} a new service</p>
+        </div>
+        <a href="{% url 'service:service_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Services
+        </a>
+    </div>
+
+    <!-- Form Container -->
+    <div class="service-form-container">
+        <!-- Form Header -->
+        <div class="form-header">
+            <h2>{{ title }}</h2>
+        </div>
+
+        <!-- Form Body -->
+        <div class="form-body">
+            <form method="post" class="service-form">
+                {% csrf_token %}
+                
+                <!-- Service Code (Read-only for existing services) -->
+                {% if service %}
+                <div class="form-section mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.service_code.id_for_label }}" class="form-label">
+                                    Service Code <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       value="{{ service.service_code }}" 
+                                       readonly>
+                                <div class="form-text">Auto-generated service code</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs" id="serviceFormTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab">
+                            <i class="bi bi-info-circle me-2"></i>Basic Information
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab">
+                            <i class="bi bi-currency-dollar me-2"></i>Pricing Information
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">
+                            <i class="bi bi-list-check me-2"></i>Service Details
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab">
+                            <i class="bi bi-gear me-2"></i>Configuration
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="serviceFormTabContent">
+                    <!-- Basic Information Tab -->
+                    <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                        <div class="form-section">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.service_name.id_for_label }}" class="form-label">
+                                            Service Name <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.service_name }}
+                                        {% if form.service_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.service_name.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.service_type.id_for_label }}" class="form-label">
+                                            Service Type <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.service_type }}
+                                        {% if form.service_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.service_type.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="{{ form.short_description.id_for_label }}" class="form-label">
+                                            Short Description
+                                        </label>
+                                        {{ form.short_description }}
+                                        {% if form.short_description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.short_description.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                                            Description
+                                        </label>
+                                        {{ form.description }}
+                                        {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.description.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Information Tab -->
+                    <div class="tab-pane fade" id="pricing" role="tabpanel">
+                        <div class="form-section">
+                            <!-- Base Pricing Row -->
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.sale_price.id_for_label }}" class="form-label">
+                                            Sale Price (Excluding VAT) <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.sale_price }}
+                                        {% if form.sale_price.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.sale_price.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Price before VAT</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.cost_price.id_for_label }}" class="form-label">
+                                            Cost Price (Excluding VAT) <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.cost_price }}
+                                        {% if form.cost_price.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.cost_price.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Cost before VAT</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                            Currency <span class="text-danger">*</span>
+                                        </label>
+                                        {{ form.currency }}
+                                        {% if form.currency.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.currency.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- VAT Calculation Section -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-calculator me-2"></i>VAT Calculation (5%)
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Sale Price VAT -->
+                                        <div class="col-md-6">
+                                            <div class="pricing-breakdown">
+                                                <h6 class="text-primary mb-3">Sale Price Breakdown</h6>
+                                                <div class="row mb-2">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">Base Price:</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span id="sale-base-display">0.00</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-2">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">VAT (5%):</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span id="sale-vat-display">0.00</span>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <strong>Total Sale Price:</strong>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <strong id="sale-total-display">0.00</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Cost Price VAT -->
+                                        <div class="col-md-6">
+                                            <div class="pricing-breakdown">
+                                                <h6 class="text-success mb-3">Cost Price Breakdown</h6>
+                                                <div class="row mb-2">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">Base Cost:</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span id="cost-base-display">0.00</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-2">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">VAT (5%):</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span id="cost-vat-display">0.00</span>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <strong>Total Cost Price:</strong>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <strong id="cost-total-display">0.00</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Profit Margin -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="profit-margin-info">
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">Gross Profit:</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span id="gross-profit-display">0.00</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">Profit Margin:</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span id="profit-margin-display">0.00%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Pricing Fields -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.base_price.id_for_label }}" class="form-label">
+                                            Base Price
+                                        </label>
+                                        {{ form.base_price }}
+                                        {% if form.base_price.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.base_price.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.pricing_model.id_for_label }}" class="form-label">
+                                            Pricing Model
+                                        </label>
+                                        {{ form.pricing_model }}
+                                        {% if form.pricing_model.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.pricing_model.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Service Details Tab -->
+                    <div class="tab-pane fade" id="details" role="tabpanel">
+                        <div class="form-section">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.duration.id_for_label }}" class="form-label">
+                                            Duration
+                                        </label>
+                                        {{ form.duration }}
+                                        {% if form.duration.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.duration.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.status.id_for_label }}" class="form-label">
+                                            Status
+                                        </label>
+                                        {{ form.status }}
+                                        {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.status.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="{{ form.requirements.id_for_label }}" class="form-label">
+                                            Requirements
+                                        </label>
+                                        {{ form.requirements }}
+                                        {% if form.requirements.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.requirements.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="{{ form.deliverables.id_for_label }}" class="form-label">
+                                            Deliverables
+                                        </label>
+                                        {{ form.deliverables }}
+                                        {% if form.deliverables.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.deliverables.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Tab -->
+                    <div class="tab-pane fade" id="config" role="tabpanel">
+                        <div class="form-section">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.is_featured }}
+                                        <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
+                                            Featured Service
+                                        </label>
+                                        {% if form.is_featured.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.is_featured.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.is_available_online }}
+                                        <label class="form-check-label" for="{{ form.is_available_online.id_for_label }}">
+                                            Available Online
+                                        </label>
+                                        {% if form.is_available_online.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.is_available_online.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.has_vat }}
+                                        <label class="form-check-label" for="{{ form.has_vat.id_for_label }}">
+                                            <i class="bi bi-percent me-1"></i>Subject to VAT (5%)
+                                        </label>
+                                        {% if form.has_vat.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.has_vat.errors.0 }}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Enable if this service is subject to VAT</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>{{ action }} Service
+                    </button>
+                    <a href="{% url 'service:service_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Tab validation - show errors on the correct tab
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.service-form');
+    const tabs = document.querySelectorAll('.nav-link');
+    
+    // VAT Calculation Variables
+    const VAT_RATE = 0.05; // 5%
+    const salePriceInput = document.getElementById('id_sale_price');
+    const costPriceInput = document.getElementById('id_cost_price');
+    const currencySelect = document.getElementById('id_currency');
+    
+    // Display elements
+    const saleBaseDisplay = document.getElementById('sale-base-display');
+    const saleVatDisplay = document.getElementById('sale-vat-display');
+    const saleTotalDisplay = document.getElementById('sale-total-display');
+    const costBaseDisplay = document.getElementById('cost-base-display');
+    const costVatDisplay = document.getElementById('cost-vat-display');
+    const costTotalDisplay = document.getElementById('cost-total-display');
+    const grossProfitDisplay = document.getElementById('gross-profit-display');
+    const profitMarginDisplay = document.getElementById('profit-margin-display');
+    
+    // Function to format currency
+    function formatCurrency(amount, currency = 'AED') {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+    
+    // Function to calculate VAT and update displays
+    function calculateVAT() {
+        const salePrice = parseFloat(salePriceInput.value) || 0;
+        const costPrice = parseFloat(costPriceInput.value) || 0;
+        const currency = currencySelect.value || 'AED';
+        
+        // Calculate VAT amounts
+        const saleVAT = salePrice * VAT_RATE;
+        const costVAT = costPrice * VAT_RATE;
+        
+        // Calculate totals
+        const saleTotal = salePrice + saleVAT;
+        const costTotal = costPrice + costVAT;
+        
+        // Calculate profit
+        const grossProfit = saleTotal - costTotal;
+        const profitMargin = saleTotal > 0 ? (grossProfit / saleTotal) * 100 : 0;
+        
+        // Update displays
+        saleBaseDisplay.textContent = formatCurrency(salePrice, currency);
+        saleVatDisplay.textContent = formatCurrency(saleVAT, currency);
+        saleTotalDisplay.textContent = formatCurrency(saleTotal, currency);
+        
+        costBaseDisplay.textContent = formatCurrency(costPrice, currency);
+        costVatDisplay.textContent = formatCurrency(costVAT, currency);
+        costTotalDisplay.textContent = formatCurrency(costTotal, currency);
+        
+        grossProfitDisplay.textContent = formatCurrency(grossProfit, currency);
+        profitMarginDisplay.textContent = profitMargin.toFixed(2) + '%';
+        
+        // Add color coding for profit
+        if (grossProfit > 0) {
+            grossProfitDisplay.className = 'text-success';
+            profitMarginDisplay.className = 'text-success';
+        } else if (grossProfit < 0) {
+            grossProfitDisplay.className = 'text-danger';
+            profitMarginDisplay.className = 'text-danger';
+        } else {
+            grossProfitDisplay.className = '';
+            profitMarginDisplay.className = '';
+        }
+    }
+    
+    // Add event listeners for real-time calculation
+    if (salePriceInput) {
+        salePriceInput.addEventListener('input', calculateVAT);
+    }
+    if (costPriceInput) {
+        costPriceInput.addEventListener('input', calculateVAT);
+    }
+    if (currencySelect) {
+        currencySelect.addEventListener('change', calculateVAT);
+    }
+    
+    // Initial calculation
+    calculateVAT();
+    
+    // Check for errors and show the appropriate tab
+    const errorFields = form.querySelectorAll('.is-invalid');
+    if (errorFields.length > 0) {
+        // Find which tab contains the first error
+        const firstError = errorFields[0];
+        const fieldName = firstError.name;
+        
+        // Determine which tab to show based on field name
+        let targetTab = 'basic';
+        if (['sale_price', 'cost_price', 'currency', 'base_price', 'pricing_model'].includes(fieldName)) {
+            targetTab = 'pricing';
+        } else if (['duration', 'status', 'requirements', 'deliverables'].includes(fieldName)) {
+            targetTab = 'details';
+        } else if (['is_featured', 'is_available_online'].includes(fieldName)) {
+            targetTab = 'config';
+        }
+        
+        // Show the appropriate tab
+        const targetTabElement = document.querySelector(`#${targetTab}-tab`);
+        const targetContent = document.querySelector(`#${targetTab}`);
+        
+        // Remove active class from all tabs
+        tabs.forEach(tab => {
+            tab.classList.remove('active');
+            tab.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+        
+        // Add active class to target tab
+        targetTabElement.classList.add('active');
+        targetTabElement.setAttribute('aria-selected', 'true');
+        targetContent.classList.add('show', 'active');
+    }
+});
+</script>
+
+<style>
+/* Pricing Breakdown Styling */
+.pricing-breakdown {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    height: 100%;
+}
+
+.pricing-breakdown h6 {
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.pricing-breakdown .row {
+    margin-bottom: 8px;
+}
+
+.pricing-breakdown .text-muted {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.pricing-breakdown .text-end {
+    font-weight: 600;
+}
+
+.pricing-breakdown hr {
+    margin: 15px 0;
+    border-color: #dee2e6;
+}
+
+.profit-margin-info {
+    background: #e8f5e8;
+    border: 1px solid #c3e6c3;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.profit-margin-info .row {
+    margin-bottom: 8px;
+}
+
+.profit-margin-info .text-muted {
+    font-weight: 600;
+    color: #495057 !important;
+}
+
+.profit-margin-info .text-end {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Card styling for VAT section */
+.card-header.bg-light {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card-header h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Form text styling */
+.form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Currency formatting */
+#sale-base-display, #sale-vat-display, #sale-total-display,
+#cost-base-display, #cost-vat-display, #cost-total-display,
+#gross-profit-display {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .pricing-breakdown {
+        margin-bottom: 20px;
+    }
+    
+    .pricing-breakdown .row {
+        margin-bottom: 5px;
+    }
+    
+    .pricing-breakdown .text-end {
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %} 

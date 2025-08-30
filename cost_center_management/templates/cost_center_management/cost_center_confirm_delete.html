@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Cost Center - Cost Center Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-trash mr-2"></i>Delete Cost Center
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_management:cost_center_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Cost Centers
+            </a>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Confirm Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>Warning!
+                        </h5>
+                        <p class="mb-0">
+                            You are about to delete the cost center <strong>"{{ object.name }}" ({{ object.code }})</strong>. 
+                            This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <!-- Cost Center Details -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="font-weight-bold">Cost Center Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Code:</strong></td>
+                                    <td>{{ object.code }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ object.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Department:</strong></td>
+                                    <td>{{ object.department.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Manager:</strong></td>
+                                    <td>{{ object.manager.get_full_name|default:object.manager.username|default:"Not assigned" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if object.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Budget:</strong></td>
+                                    <td>{{ object.budget_amount|floatformat:2 }} {{ object.currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ object.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="font-weight-bold">Related Data</h6>
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle mr-1"></i>Impact Analysis
+                                </h6>
+                                <ul class="mb-0">
+                                    <li><strong>{{ object.cost_center_transactions.count }}</strong> transactions will be affected</li>
+                                    <li><strong>{{ object.child_cost_centers.count }}</strong> child cost centers will be affected</li>
+                                    <li>All associated transaction data will be preserved</li>
+                                    <li>Historical reports will still reference this cost center</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Child Cost Centers List -->
+                    {% if object.child_cost_centers.exists %}
+                    <div class="mt-4">
+                        <h6 class="font-weight-bold">Child Cost Centers</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Budget</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for child in object.child_cost_centers.all %}
+                                    <tr>
+                                        <td>{{ child.code }}</td>
+                                        <td>{{ child.name }}</td>
+                                        <td>
+                                            {% if child.is_active %}
+                                                <span class="badge badge-success">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ child.budget_amount|floatformat:2 }} {{ child.currency }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Confirmation Form -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                                    <label class="form-check-label" for="confirmDelete">
+                                        I understand that this action cannot be undone and I want to delete this cost center.
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                    <i class="fas fa-trash mr-1"></i>Delete Cost Center
+                                </button>
+                                <a href="{% url 'cost_center_management:cost_center_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times mr-1"></i>Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Card -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle mr-1"></i>Help
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>Before Deleting</h6>
+                    <ul class="list-unstyled">
+                        <li>• Ensure no active transactions are using this cost center</li>
+                        <li>• Consider deactivating instead of deleting for historical records</li>
+                        <li>• Review all associated data and relationships</li>
+                        <li>• Make sure you have proper backups</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Alternative Actions</h6>
+                    <ul class="list-unstyled">
+                        <li>• <a href="{% url 'cost_center_management:cost_center_update' object.pk %}" class="text-primary">Edit Cost Center</a></li>
+                        <li>• <a href="{% url 'cost_center_management:cost_center_list' %}" class="text-primary">Back to Cost Centers</a></li>
+                        <li>• <a href="{% url 'cost_center_management:dashboard' %}" class="text-primary">Go to Dashboard</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Enable/disable delete button based on checkbox
+    $('#confirmDelete').change(function() {
+        if ($(this).is(':checked')) {
+            $('#deleteBtn').prop('disabled', false);
+        } else {
+            $('#deleteBtn').prop('disabled', true);
+        }
+    });
+
+    // Confirm deletion on form submit
+    $('form').submit(function(e) {
+        if (!confirm('Are you absolutely sure you want to delete this cost center? This action cannot be undone.')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

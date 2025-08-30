@@ -1,0 +1,283 @@
+{% extends 'payment_scheduling/base.html' %}
+
+{% block title %}Payment Schedules{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Schedules</li>
+{% endblock %}
+
+{% block payment_scheduling_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Payment Schedules</h6>
+                <div>
+                    <a href="{% url 'payment_scheduling:schedule_create' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> New Schedule
+                    </a>
+                    <a href="{% url 'payment_scheduling:calendar_view' %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-calendar"></i> Calendar View
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filter Form -->
+                <form method="get" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            {{ filter_form.search }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.status }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.payment_type }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ filter_form.currency }}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-search"></i> Filter
+                                </button>
+                                <a href="{% url 'payment_scheduling:schedule_list' %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-3">
+                            {{ filter_form.date_from }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ filter_form.date_to }}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                {{ filter_form.overdue_only }}
+                                <label class="form-check-label" for="{{ filter_form.overdue_only.id_for_label }}">
+                                    Overdue Only
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Schedules Table -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                </th>
+                                <th>Schedule #</th>
+                                <th>Customer/Vendor</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Outstanding</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for schedule in schedules %}
+                            <tr data-schedule-id="{{ schedule.id }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input schedule-checkbox" value="{{ schedule.id }}">
+                                </td>
+                                <td>
+                                    <a href="{% url 'payment_scheduling:schedule_detail' schedule.id %}" class="text-primary fw-bold">
+                                        {{ schedule.schedule_number }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if schedule.customer %}
+                                        <i class="fas fa-user text-primary"></i> {{ schedule.customer.customer_name }}
+                                    {% elif schedule.vendor %}
+                                        <i class="fas fa-building text-success"></i> {{ schedule.vendor }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ schedule.get_payment_type_display }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ schedule.total_with_vat|floatformat:2 }} {{ schedule.currency }}</strong>
+                                    <br>
+                                    <small class="text-muted">VAT: {{ schedule.vat_amount|floatformat:2 }}</small>
+                                </td>
+                                <td>
+                                    {{ schedule.due_date|date:"M d, Y" }}
+                                    {% if schedule.is_overdue %}
+                                        <br>
+                                        <small class="text-danger">
+                                            <i class="fas fa-exclamation-triangle"></i> {{ schedule.days_overdue }} days overdue
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if schedule.status == 'paid' %}success{% elif schedule.status == 'overdue' %}danger{% elif schedule.status == 'partially_paid' %}warning{% else %}secondary{% endif %} status-badge">
+                                        {{ schedule.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if schedule.outstanding_amount > 0 %}
+                                        <span class="text-danger fw-bold">
+                                            {{ schedule.outstanding_amount|floatformat:2 }} {{ schedule.currency }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-success">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'payment_scheduling:schedule_detail' schedule.id %}" 
+                                           class="btn btn-sm btn-info" 
+                                           data-bs-toggle="tooltip" 
+                                           title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'payment_scheduling:schedule_update' schedule.id %}" 
+                                           class="btn btn-sm btn-warning" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-primary create-reminder-btn" 
+                                                data-schedule-id="{{ schedule.id }}"
+                                                data-bs-toggle="tooltip" 
+                                                title="Create Reminder">
+                                            <i class="fas fa-bell"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" 
+                                                data-bs-toggle="dropdown">
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'payment_scheduling:schedule_detail' schedule.id %}">
+                                                    <i class="fas fa-eye"></i> View Details
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'payment_scheduling:schedule_update' schedule.id %}">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="exportSchedule({{ schedule.id }})">
+                                                    <i class="fas fa-file-export"></i> Export
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="{% url 'payment_scheduling:schedule_delete' schedule.id %}">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center">
+                                    <div class="py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">No payment schedules found.</p>
+                                        <a href="{% url 'payment_scheduling:schedule_create' %}" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Create First Schedule
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if schedules.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if schedules.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ schedules.previous_page_number }}&{{ request.GET.urlencode }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in schedules.paginator.page_range %}
+                            {% if schedules.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > schedules.number|add:'-3' and num < schedules.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if schedules.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ schedules.next_page_number }}&{{ request.GET.urlencode }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulk-action-form" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="bulk-action" class="form-label">Action</label>
+                        <select class="form-select" id="bulk-action" name="action" required>
+                            <option value="">Select Action</option>
+                            <option value="status">Change Status</option>
+                            <option value="export">Export Selected</option>
+                            <option value="delete">Delete Selected</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="status-options" style="display: none;">
+                        <label for="new-status" class="form-label">New Status</label>
+                        <select class="form-select" id="new-status" name="new_status">
+                            <option value="">Select Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="partially_paid">Partially Paid</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="bulk-action-form" class="btn btn-primary">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

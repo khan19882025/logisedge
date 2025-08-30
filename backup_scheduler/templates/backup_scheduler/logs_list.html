@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load backup_filters %}
+
+{% block title %}Backup Logs{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-entry {
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    .log-entry:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+    .log-timestamp {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .log-message {
+        font-family: 'Courier New', monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .log-level-badge {
+        font-size: 0.75rem;
+    }
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-clipboard-list text-primary me-2"></i>
+                Backup Logs
+            </h1>
+            <p class="text-muted mb-0">View all backup-related activities and system logs</p>
+        </div>
+        <div>
+            <a href="{% url 'backup_scheduler:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <form method="get" class="d-flex">
+                        <input type="text" name="search" class="form-control me-2" 
+                               placeholder="Search logs..." value="{{ request.GET.search }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>
+                            Search
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="filterByLevel('all')">
+                            All Levels
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="filterByLevel('info')">
+                            Info
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterByLevel('warning')">
+                            Warning
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="filterByLevel('error')">
+                            Error
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="filterByLevel('critical')">
+                            Critical
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs List -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    System Logs
+                </h5>
+                <span class="badge bg-primary">{{ page_obj.paginator.count }} total logs</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Level</th>
+                                <th>Message</th>
+                                <th>Execution</th>
+                                <th>User</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in page_obj %}
+                            <tr class="log-entry border-left border-{{ log.level|log_level_border }}">
+                                <td class="log-timestamp">
+                                    {{ log.timestamp|date:"M d, Y H:i:s" }}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ log.level|log_level_badge }} log-level-badge">
+                                        {{ log.level|title }}
+                                    </span>
+                                </td>
+                                <td class="log-message">
+                                    {{ log.message|truncatechars:100 }}
+                                    {% if log.message|length > 100 %}
+                                        <button class="btn btn-link btn-sm p-0 ms-2" 
+                                                onclick="showFullMessage('{{ log.id }}', '{{ log.message|escapejs }}')">
+                                            Show more
+                                        </button>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.execution %}
+                                        <a href="{% url 'backup_scheduler:execution_detail' log.execution.pk %}" 
+                                           class="text-decoration-none">
+                                            {{ log.execution.execution_id|truncatechars:12 }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.user %}
+                                        {{ log.user.username }}
+                                    {% else %}
+                                        <span class="text-muted">System</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.ip_address %}
+                                        <code class="small">{{ log.ip_address }}</code>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="pagination-info">
+                            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} logs
+                        </div>
+                        <nav aria-label="Logs pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No logs found</h5>
+                    <p class="text-muted">There are no backup logs to display at the moment.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Full Message Modal -->
+<div class="modal fade" id="fullMessageModal" tabindex="-1" aria-labelledby="fullMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fullMessageModalLabel">Full Log Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="fullMessageContent" class="bg-light p-3 rounded"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showFullMessage(logId, message) {
+    document.getElementById('fullMessageContent').textContent = message;
+    new bootstrap.Modal(document.getElementById('fullMessageModal')).show();
+}
+
+function filterByLevel(level) {
+    const url = new URL(window.location);
+    if (level === 'all') {
+        url.searchParams.delete('level');
+    } else {
+        url.searchParams.set('level', level);
+    }
+    window.location.href = url.toString();
+}
+
+// Auto-refresh logs every 30 seconds
+setInterval(function() {
+    if (!document.hidden) {
+        location.reload();
+    }
+}, 30000);
+</script>
+{% endblock %}

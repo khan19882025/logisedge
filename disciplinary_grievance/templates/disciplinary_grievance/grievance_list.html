@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load disciplinary_filters %}
+
+{% block title %}Grievance List{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'disciplinary_grievance/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-clipboard-list me-2"></i>
+                    Grievance Management
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'disciplinary_grievance:dashboard' %}">Disciplinary & Grievance</a></li>
+                        <li class="breadcrumb-item active">Grievances</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-search me-2"></i>Search & Filter Grievances
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-2">
+                            {{ search_form.ticket_number.label_tag }}
+                            {{ search_form.ticket_number }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.title.label_tag }}
+                            {{ search_form.title }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.employee.label_tag }}
+                            {{ search_form.employee }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.category.label_tag }}
+                            {{ search_form.category }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.status.label_tag }}
+                            {{ search_form.status }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ search_form.priority.label_tag }}
+                            {{ search_form.priority }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.date_from.label_tag }}
+                            {{ search_form.date_from }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ search_form.date_to.label_tag }}
+                            {{ search_form.date_to }}
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            <a href="{% url 'disciplinary_grievance:grievance_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Results
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grievance List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list me-2"></i>Grievance List
+                    </h6>
+                    <div>
+                        <a href="{% url 'disciplinary_grievance:grievance_create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-2"></i>New Grievance
+                        </a>
+                        <button class="btn btn-success btn-sm" onclick="exportToCSV('grievanceTable')">
+                            <i class="fas fa-download me-2"></i>Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="grievanceTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Ticket #</th>
+                                        <th>Title</th>
+                                        <th>Employee</th>
+                                        <th>Category</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Assigned To</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for grievance in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'disciplinary_grievance:grievance_detail' grievance.pk %}">
+                                                {{ grievance.ticket_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ grievance.title|truncatechars:40 }}</td>
+                                        <td>
+                                            {% if grievance.is_anonymous %}
+                                                <span class="text-muted">Anonymous</span>
+                                            {% else %}
+                                                {{ grievance.employee.name }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ grievance.category.name }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ grievance.priority|priority_badge }}">
+                                                {{ grievance.get_priority_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ grievance.status|status_badge }}" 
+                                                  data-grievance-status="{{ grievance.pk }}">
+                                                {{ grievance.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if grievance.assigned_to %}
+                                                {{ grievance.assigned_to.get_full_name|default:grievance.assigned_to.username }}
+                                            {% else %}
+                                                <span class="text-muted">Unassigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ grievance.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'disciplinary_grievance:grievance_detail' grievance.pk %}" 
+                                                   class="btn btn-sm btn-info" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if perms.disciplinary_grievance.change_grievance %}
+                                                <a href="{% url 'disciplinary_grievance:grievance_update' grievance.pk %}" 
+                                                   class="btn btn-sm btn-warning" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% endif %}
+                                                <a href="{% url 'disciplinary_grievance:grievance_status_update' grievance.pk %}" 
+                                                   class="btn btn-sm btn-primary" title="Update Status">
+                                                    <i class="fas fa-tasks"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Grievance pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.ticket_number %}&ticket_number={{ request.GET.ticket_number }}{% endif %}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.ticket_number %}&ticket_number={{ request.GET.ticket_number }}{% endif %}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.ticket_number %}&ticket_number={{ request.GET.ticket_number }}{% endif %}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.ticket_number %}&ticket_number={{ request.GET.ticket_number }}{% endif %}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.ticket_number %}&ticket_number={{ request.GET.ticket_number }}{% endif %}{% if request.GET.title %}&title={{ request.GET.title }}{% endif %}{% if request.GET.employee %}&employee={{ request.GET.employee }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                            </small>
+                        </div>
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No grievances found</h5>
+                            <p class="text-muted">No grievances match your search criteria.</p>
+                            <a href="{% url 'disciplinary_grievance:grievance_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Grievance
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'disciplinary_grievance/js/dashboard.js' %}"></script>
+<script>
+    // Initialize search functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add loading states to form submission
+        const searchForm = document.querySelector('form[method="get"]');
+        if (searchForm) {
+            searchForm.addEventListener('submit', function() {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Searching...';
+                submitBtn.disabled = true;
+            });
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Export Report{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_reports/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-download mr-2"></i>Export Report
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_reports:report_detail' report.pk %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Back to Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Export Options</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="font-weight-bold">Report Details:</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Report Name:</strong></td>
+                            <td>{{ report.report_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Report Type:</strong></td>
+                            <td>{{ report.get_report_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Date Range:</strong></td>
+                            <td>{{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge badge-{% if report.status == 'generated' %}success{% elif report.status == 'draft' %}warning{% else %}secondary{% endif %}">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="font-weight-bold">Export Formats:</h6>
+                    <div class="list-group">
+                        <a href="{% url 'cost_center_reports:report_export' report.pk %}?format=pdf" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file-pdf text-danger mr-2"></i>
+                                <strong>PDF Export</strong>
+                                <br>
+                                <small class="text-muted">Printable format with formatting preserved</small>
+                            </div>
+                            <span class="badge badge-primary badge-pill">PDF</span>
+                        </a>
+                        <a href="{% url 'cost_center_reports:report_export' report.pk %}?format=excel" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file-excel text-success mr-2"></i>
+                                <strong>Excel Export</strong>
+                                <br>
+                                <small class="text-muted">Editable format with formulas and charts</small>
+                            </div>
+                            <span class="badge badge-success badge-pill">XLSX</span>
+                        </a>
+                        <a href="{% url 'cost_center_reports:report_export' report.pk %}?format=csv" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file-csv text-info mr-2"></i>
+                                <strong>CSV Export</strong>
+                                <br>
+                                <small class="text-muted">Comma-separated values for data analysis</small>
+                            </div>
+                            <span class="badge badge-info badge-pill">CSV</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Export Form -->
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="{{ form.export_type.id_for_label }}">
+                                {{ form.export_type.label }}
+                                {% if form.export_type.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ form.export_type }}
+                            {% if form.export_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.export_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="include_charts">Include Charts</label>
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="include_charts" name="include_charts" checked>
+                                <label class="custom-control-label" for="include_charts">Include charts and graphs</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="include_summary">Include Summary</label>
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="include_summary" name="include_summary" checked>
+                                <label class="custom-control-label" for="include_summary">Include executive summary</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'cost_center_reports:report_detail' report.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times mr-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download mr-1"></i>Generate Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Export History -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Export History</h6>
+        </div>
+        <div class="card-body">
+            {% if report.exports.all %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Export Type</th>
+                                <th>Generated</th>
+                                <th>Generated By</th>
+                                <th>File Size</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for export in report.exports.all %}
+                            <tr>
+                                <td>
+                                    <span class="badge badge-{% if export.export_type == 'pdf' %}danger{% elif export.export_type == 'excel' %}success{% else %}info{% endif %}">
+                                        {{ export.get_export_type_display|upper }}
+                                    </span>
+                                </td>
+                                <td>{{ export.generated_at|date:"M d, Y H:i" }}</td>
+                                <td>{{ export.generated_by.get_full_name|default:export.generated_by.username }}</td>
+                                <td>
+                                    {% if export.file_size %}
+                                        {{ export.file_size|filesizeformat }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if export.file_path %}
+                                        <a href="{{ export.file_path }}" class="btn btn-sm btn-outline-primary" download>
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">File not available</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-file-export fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">No exports generated yet for this report.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_reports/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Handle export type selection
+    $('#id_export_type').change(function() {
+        var selectedType = $(this).val();
+        
+        // Show/hide options based on export type
+        if (selectedType === 'pdf') {
+            $('#include_charts').prop('checked', true);
+            $('#include_summary').prop('checked', true);
+        } else if (selectedType === 'excel') {
+            $('#include_charts').prop('checked', true);
+            $('#include_summary').prop('checked', false);
+        } else if (selectedType === 'csv') {
+            $('#include_charts').prop('checked', false);
+            $('#include_summary').prop('checked', false);
+        }
+    });
+});
+</script>
+{% endblock %}

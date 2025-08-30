@@ -1,0 +1,574 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cheque Details - {{ cheque.cheque_number }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cheque_register/css/cheque_register.css' %}">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    .detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.75rem;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .detail-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .detail-subtitle {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    
+    .status-pending { background: #f59e0b; }
+    .status-cleared { background: #10b981; }
+    .status-bounced { background: #ef4444; }
+    .status-cancelled { background: #6b7280; }
+    .status-stopped { background: #3b82f6; }
+    
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+    
+    .main-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    
+    .info-value {
+        font-size: 1rem;
+        color: #1f2937;
+        font-weight: 600;
+    }
+    
+    .info-value.amount {
+        font-size: 1.25rem;
+        color: #059669;
+    }
+    
+    .info-value.overdue {
+        color: #dc2626;
+    }
+    
+    .history-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+        background: #f8fafc;
+    }
+    
+    .history-info {
+        flex: 1;
+    }
+    
+    .history-status {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+    
+    .history-details {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .history-time {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        text-align: right;
+    }
+    
+    .alert-item {
+        padding: 1rem;
+        border-left: 4px solid #ef4444;
+        background: #fef2f2;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-item.cleared {
+        border-left-color: #10b981;
+        background: #f0fdf4;
+    }
+    
+    .alert-item.post_dated_due {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+    }
+    
+    .alert-message {
+        font-size: 0.875rem;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .alert-time {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-outline {
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+    
+    .btn-outline:hover {
+        background: #f8fafc;
+        border-color: #9ca3af;
+    }
+    
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: #059669;
+        color: white;
+    }
+    
+    .btn-warning {
+        background: #f59e0b;
+        color: white;
+    }
+    
+    .btn-warning:hover {
+        background: #d97706;
+        color: white;
+    }
+    
+    .btn-danger {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #dc2626;
+        color: white;
+    }
+    
+    .btn-info {
+        background: #3b82f6;
+        color: white;
+    }
+    
+    .btn-info:hover {
+        background: #2563eb;
+        color: white;
+    }
+    
+    @media (max-width: 1024px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .detail-container {
+            padding: 1rem;
+        }
+        
+        .detail-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <!-- Header -->
+    <div class="detail-header">
+        <div>
+            <h1 class="detail-title">
+                <i class="fas fa-university"></i> Cheque Details
+            </h1>
+            <p class="detail-subtitle">
+                {{ cheque.cheque_number }} - {{ cheque.get_party_name }}
+            </p>
+        </div>
+        <div class="status-badge status-{{ cheque.status }}">
+            {{ cheque.get_status_display }}
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Basic Information -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-info-circle"></i> Basic Information
+                    </h3>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Cheque Number</span>
+                        <span class="info-value">{{ cheque.cheque_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Cheque Date</span>
+                        <span class="info-value">{{ cheque.cheque_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Type</span>
+                        <span class="info-value">{{ cheque.get_cheque_type_display }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Amount</span>
+                        <span class="info-value amount">{{ cheque.amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Party Type</span>
+                        <span class="info-value">{{ cheque.get_party_type_display }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Party Name</span>
+                        <span class="info-value">{{ cheque.get_party_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Bank Account</span>
+                        <span class="info-value">{{ cheque.bank_account.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status</span>
+                        <span class="info-value">
+                            <span class="status-badge status-{{ cheque.status }}">
+                                {{ cheque.get_status_display }}
+                            </span>
+                        </span>
+                    </div>
+                    {% if cheque.clearing_date %}
+                        <div class="info-item">
+                            <span class="info-label">Clearing Date</span>
+                            <span class="info-value">{{ cheque.clearing_date|date:"M d, Y" }}</span>
+                        </div>
+                    {% endif %}
+                    {% if cheque.is_overdue %}
+                        <div class="info-item">
+                            <span class="info-label">Days Overdue</span>
+                            <span class="info-value overdue">{{ cheque.days_overdue }} days</span>
+                        </div>
+                    {% endif %}
+                    {% if cheque.is_post_dated %}
+                        <div class="info-item">
+                            <span class="info-label">Post-dated</span>
+                            <span class="info-value">Yes</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Transaction Information -->
+            {% if cheque.related_transaction or cheque.transaction_reference %}
+                <div class="info-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-exchange-alt"></i> Transaction Information
+                        </h3>
+                    </div>
+                    <div class="info-grid">
+                        {% if cheque.related_transaction %}
+                            <div class="info-item">
+                                <span class="info-label">Related Transaction</span>
+                                <span class="info-value">{{ cheque.related_transaction }}</span>
+                            </div>
+                        {% endif %}
+                        {% if cheque.transaction_reference %}
+                            <div class="info-item">
+                                <span class="info-label">Transaction Reference</span>
+                                <span class="info-value">{{ cheque.transaction_reference }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Remarks -->
+            {% if cheque.remarks %}
+                <div class="info-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-sticky-note"></i> Remarks
+                        </h3>
+                    </div>
+                    <p>{{ cheque.remarks }}</p>
+                </div>
+            {% endif %}
+
+            <!-- Status History -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-history"></i> Status History
+                    </h3>
+                </div>
+                {% if status_history %}
+                    {% for history in status_history %}
+                        <div class="history-item">
+                            <div class="history-info">
+                                <div class="history-status">
+                                    {% if history.old_status %}
+                                        {{ history.get_old_status_display }} → {{ history.get_new_status_display }}
+                                    {% else %}
+                                        {{ history.get_new_status_display }}
+                                    {% endif %}
+                                </div>
+                                {% if history.remarks %}
+                                    <div class="history-details">{{ history.remarks }}</div>
+                                {% endif %}
+                                {% if history.changed_by %}
+                                    <div class="history-details">Changed by: {{ history.changed_by.get_full_name|default:history.changed_by.username }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="history-time">
+                                {{ history.changed_at|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No status history available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Actions -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cogs"></i> Actions
+                    </h3>
+                </div>
+                <div class="action-buttons">
+                    <a href="{% url 'cheque_register:cheque_edit' cheque.pk %}" class="btn btn-outline">
+                        <i class="fas fa-edit"></i> Edit Cheque
+                    </a>
+                    <a href="{% url 'cheque_register:cheque_status_change' cheque.pk %}" class="btn btn-primary">
+                        <i class="fas fa-exchange-alt"></i> Change Status
+                    </a>
+                    {% if cheque.status == 'pending' %}
+                        <a href="#" class="btn btn-success" onclick="markAsCleared()">
+                            <i class="fas fa-check"></i> Mark as Cleared
+                        </a>
+                        <a href="#" class="btn btn-warning" onclick="markAsBounced()">
+                            <i class="fas fa-times"></i> Mark as Bounced
+                        </a>
+                        <a href="#" class="btn btn-info" onclick="stopPayment()">
+                            <i class="fas fa-ban"></i> Stop Payment
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'cheque_register:cheque_list' %}" class="btn btn-outline">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            {% if alerts %}
+                <div class="info-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bell"></i> Recent Alerts
+                        </h3>
+                    </div>
+                    {% for alert in alerts %}
+                        <div class="alert-item {{ alert.alert_type }}">
+                            <div class="alert-message">{{ alert.message }}</div>
+                            <div class="alert-time">{{ alert.created_at|timesince }} ago</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Audit Information -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-clock"></i> Audit Information
+                    </h3>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Created By</span>
+                        <span class="info-value">
+                            {{ cheque.created_by.get_full_name|default:cheque.created_by.username }}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Created At</span>
+                        <span class="info-value">{{ cheque.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% if cheque.updated_by %}
+                        <div class="info-item">
+                            <span class="info-label">Updated By</span>
+                            <span class="info-value">
+                                {{ cheque.updated_by.get_full_name|default:cheque.updated_by.username }}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Updated At</span>
+                            <span class="info-value">{{ cheque.updated_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cheque_register/js/cheque_register.js' %}"></script>
+<script>
+function markAsCleared() {
+    if (confirm('Are you sure you want to mark this cheque as cleared?')) {
+        // This would typically redirect to a status change form
+        window.location.href = "{% url 'cheque_register:cheque_status_change' cheque.pk %}";
+    }
+}
+
+function markAsBounced() {
+    if (confirm('Are you sure you want to mark this cheque as bounced?')) {
+        // This would typically redirect to a status change form
+        window.location.href = "{% url 'cheque_register:cheque_status_change' cheque.pk %}";
+    }
+}
+
+function stopPayment() {
+    if (confirm('Are you sure you want to stop payment on this cheque?')) {
+        // This would typically redirect to a status change form
+        window.location.href = "{% url 'cheque_register:cheque_status_change' cheque.pk %}";
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manual Backup Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'manual_backup/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="backup-dashboard">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-database"></i> Manual Backup Management</h1>
+        <p class="subtitle">Enterprise-grade backup and recovery system for ERP environment</p>
+    </div>
+
+    <div class="backup-status-overview">
+        <div class="status-card">
+            <div class="status-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="status-info">
+                <h3>Last Backup</h3>
+                <p id="last-backup-time">Not available</p>
+                <span class="status-badge success">Successful</span>
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <div class="status-icon warning">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="status-info">
+                <h3>Next Scheduled</h3>
+                <p id="next-backup-time">Not scheduled</p>
+                <span class="status-badge warning">Pending</span>
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <div class="status-icon info">
+                <i class="fas fa-hdd"></i>
+            </div>
+            <div class="status-info">
+                <h3>Storage Used</h3>
+                <p id="storage-used">0 GB</p>
+                <span class="status-badge info">Available</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="backup-actions">
+        <div class="action-section">
+            <h2>Quick Backup Actions</h2>
+            <div class="action-buttons">
+                <button class="btn btn-primary btn-large" onclick="initiateBackup('general')">
+                    <i class="fas fa-save"></i>
+                    General Backup
+                </button>
+                <button class="btn btn-warning btn-large" onclick="initiateBackup('predepLOY')">
+                    <i class="fas fa-upload"></i>
+                    Pre-Deployment Backup
+                </button>
+                <button class="btn btn-success btn-large" onclick="initiateBackup('postdeploy')">
+                    <i class="fas fa-download"></i>
+                    Post-Deployment Backup
+                </button>
+            </div>
+        </div>
+
+        <div class="action-section">
+            <h2>Advanced Operations</h2>
+            <div class="action-buttons">
+                <button class="btn btn-info" onclick="showBackupHistory()">
+                    <i class="fas fa-history"></i>
+                    Backup History
+                </button>
+                <button class="btn btn-secondary" onclick="showRestoreOptions()">
+                    <i class="fas fa-undo"></i>
+                    Restore Options
+                </button>
+                <button class="btn btn-dark" onclick="showAuditLog()">
+                    <i class="fas fa-clipboard-list"></i>
+                    Audit Log
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="backup-configuration">
+        <h2>Backup Configuration</h2>
+        <div class="config-grid">
+            <div class="config-item">
+                <label>Backup Type</label>
+                <select id="backup-type" class="form-control">
+                    <option value="full">Full System Backup</option>
+                    <option value="database">Database Only</option>
+                    <option value="files">Files Only</option>
+                    <option value="config">Configuration Only</option>
+                </select>
+            </div>
+            
+            <div class="config-item">
+                <label>Compression Level</label>
+                <select id="compression-level" class="form-control">
+                    <option value="none">None</option>
+                    <option value="fast">Fast</option>
+                    <option value="balanced" selected>Balanced</option>
+                    <option value="maximum">Maximum</option>
+                </select>
+            </div>
+            
+            <div class="config-item">
+                <label>Encryption</label>
+                <select id="encryption-type" class="form-control">
+                    <option value="aes256" selected>AES-256</option>
+                    <option value="aes128">AES-128</option>
+                    <option value="none">None</option>
+                </select>
+            </div>
+            
+            <div class="config-item">
+                <label>Retention Period</label>
+                <select id="retention-period" class="form-control">
+                    <option value="7">7 days</option>
+                    <option value="30" selected>30 days</option>
+                    <option value="90">90 days</option>
+                    <option value="365">1 year</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="recent-backups">
+        <h2>Recent Backups</h2>
+        <div class="backup-list" id="recent-backups-list">
+            <!-- Backup items will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Backup Modal -->
+<div id="backup-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Initiate Manual Backup</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="backup-form">
+                <div class="form-group">
+                    <label for="backup-reason">Backup Reason *</label>
+                    <input type="text" id="backup-reason" name="reason" required 
+                           placeholder="e.g., System maintenance, Pre-deployment, Emergency backup">
+                </div>
+                
+                <div class="form-group">
+                    <label for="backup-description">Description</label>
+                    <textarea id="backup-description" name="description" rows="3"
+                              placeholder="Additional details about this backup..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="backup-priority">Priority</label>
+                    <select id="backup-priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="backup-notify">Notify Stakeholders</label>
+                    <input type="email" id="backup-notify" name="notify" 
+                           placeholder="email1@company.com, email2@company.com">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeBackupModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="confirmBackup()">Start Backup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div id="progress-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Backup in Progress</h2>
+        </div>
+        <div class="modal-body">
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Initializing backup...</div>
+            </div>
+            
+            <div class="backup-steps">
+                <div class="step" id="step-1">
+                    <i class="fas fa-circle"></i>
+                    <span>Preparing backup environment</span>
+                </div>
+                <div class="step" id="step-2">
+                    <i class="fas fa-circle"></i>
+                    <span>Backing up databases</span>
+                </div>
+                <div class="step" id="step-3">
+                    <i class="fas fa-circle"></i>
+                    <span>Backing up files</span>
+                </div>
+                <div class="step" id="step-4">
+                    <i class="fas fa-circle"></i>
+                    <span>Generating checksums</span>
+                </div>
+                <div class="step" id="step-5">
+                    <i class="fas fa-circle"></i>
+                    <span>Encrypting backup</span>
+                </div>
+                <div class="step" id="step-6">
+                    <i class="fas fa-circle"></i>
+                    <span>Storing backup</span>
+                </div>
+                <div class="step" id="step-7">
+                    <i class="fas fa-circle"></i>
+                    <span>Verifying integrity</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'manual_backup/js/dashboard.js' %}"></script>
+{% endblock %}

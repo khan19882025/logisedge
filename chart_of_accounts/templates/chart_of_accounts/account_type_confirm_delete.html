@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Account Type - {{ account_type.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chart_of_accounts/chart_of_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-exclamation-triangle text-danger"></i>
+                Delete Account Type
+            </h1>
+            <p class="text-muted">Confirm deletion of account type</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'chart_of_accounts:account_type_detail' account_type.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Details
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Confirm Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Warning: This action cannot be undone!
+                        </h6>
+                        <p class="mb-0">
+                            You are about to permanently delete the account type 
+                            <strong>"{{ account_type.name }}"</strong>. This action cannot be reversed.
+                        </p>
+                    </div>
+
+                    <!-- Account Type Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Account Type Details:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Name:</strong> {{ account_type.name }}</li>
+                                <li><strong>Category:</strong> 
+                                    {% if account_type.category == 'ASSET' %}
+                                        <span class="badge bg-primary">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'LIABILITY' %}
+                                        <span class="badge bg-danger">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'EQUITY' %}
+                                        <span class="badge bg-success">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'REVENUE' %}
+                                        <span class="badge bg-info">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'EXPENSE' %}
+                                        <span class="badge bg-warning">{{ account_type.get_category_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ account_type.get_category_display }}</span>
+                                    {% endif %}
+                                </li>
+                                <li><strong>Status:</strong> 
+                                    {% if account_type.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Impact Analysis:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Associated Accounts:</strong> {{ account_count }}</li>
+                                <li><strong>Created:</strong> {{ account_type.created_at|date:"M d, Y" }}</li>
+                                <li><strong>Last Updated:</strong> {{ account_type.updated_at|date:"M d, Y" }}</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Associated Accounts Warning -->
+                    {% if account_count > 0 %}
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-x-circle"></i>
+                            Cannot Delete - Associated Accounts Found
+                        </h6>
+                        <p class="mb-0">
+                            This account type cannot be deleted because it has <strong>{{ account_count }}</strong> 
+                            associated account(s). You must either:
+                        </p>
+                        <ul class="mb-0 mt-2">
+                            <li>Change the account type for all associated accounts first</li>
+                            <li>Delete all associated accounts (if appropriate)</li>
+                            <li>Deactivate the account type instead of deleting it</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Description -->
+                    {% if account_type.description %}
+                    <div class="mb-4">
+                        <h6>Description:</h6>
+                        <p class="text-muted">{{ account_type.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'chart_of_accounts:account_type_detail' account_type.pk %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                Cancel
+                            </a>
+                            <a href="{% url 'chart_of_accounts:account_type_edit' account_type.pk %}" 
+                               class="btn btn-outline-warning">
+                                <i class="bi bi-pencil-square"></i>
+                                Edit Instead
+                            </a>
+                        </div>
+                        
+                        {% if account_count == 0 %}
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" 
+                                    onclick="return confirm('Are you absolutely sure you want to delete this account type? This action cannot be undone.')">
+                                <i class="bi bi-trash3"></i>
+                                Delete Permanently
+                            </button>
+                        </form>
+                        {% else %}
+                        <button type="button" class="btn btn-danger" disabled>
+                            <i class="bi bi-trash3"></i>
+                            Cannot Delete
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alternative Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightbulb"></i>
+                        Alternative Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Instead of deleting, consider:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a href="{% url 'chart_of_accounts:account_type_edit' account_type.pk %}" 
+                                       class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pencil-square"></i>
+                                        Edit Account Type
+                                    </a>
+                                    <small class="text-muted d-block">Modify name, category, or description</small>
+                                </li>
+                                <li class="mb-2">
+                                    <form method="post" action="{% url 'chart_of_accounts:account_type_toggle_status' account_type.pk %}" 
+                                          class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-{% if account_type.is_active %}danger{% else %}success{% endif %}">
+                                            <i class="bi bi-{% if account_type.is_active %}x-circle{% else %}check-circle{% endif %}"></i>
+                                            {% if account_type.is_active %}Deactivate{% else %}Activate{% endif %}
+                                        </button>
+                                    </form>
+                                    <small class="text-muted d-block">Disable without losing data</small>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>If you must delete:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a href="{% url 'chart_of_accounts:account_list' %}" 
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-list-ul"></i>
+                                        View All Accounts
+                                    </a>
+                                    <small class="text-muted d-block">Find and update associated accounts</small>
+                                </li>
+                                <li class="mb-2">
+                                    <a href="{% url 'chart_of_accounts:account_type_list' %}" 
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-tags"></i>
+                                        Other Account Types
+                                    </a>
+                                    <small class="text-muted d-block">Choose alternative account types</small>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

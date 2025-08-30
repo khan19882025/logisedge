@@ -1,0 +1,115 @@
+{% extends 'dashboard/dashboard.html' %}
+{% load static %}
+
+{% block title %}Delete Quotation - {{ quotation.quotation_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/quotation/quotation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                        Confirm Delete Quotation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Warning: This action cannot be undone!
+                        </h6>
+                        <p class="mb-0">
+                            You are about to delete the quotation <strong>{{ quotation.quotation_number }}</strong>. 
+                            This will permanently remove the quotation and all its associated items from the system.
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Quotation Details:</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Quotation Number:</strong></td>
+                                    <td>{{ quotation.quotation_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer:</strong></td>
+                                    <td>{{ quotation.customer.name|default:"Not Set" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Subject:</strong></td>
+                                    <td>{{ quotation.subject|default:"Not Set" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-{% if quotation.status == 'draft' %}secondary{% elif quotation.status == 'sent' %}info{% elif quotation.status == 'accepted' %}success{% elif quotation.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                            {{ quotation.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Amount:</strong></td>
+                                    <td>{{ quotation.currency }} {{ quotation.total_amount|default:"0.00" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ quotation.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Items to be deleted:</h6>
+                            {% if quotation.quotation_items.all %}
+                                <ul class="list-group list-group-flush">
+                                    {% for item in quotation.quotation_items.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ item.service.name|default:item.description }}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                Qty: {{ item.quantity }} | 
+                                                Price: {{ quotation.currency }} {{ item.unit_price|default:"0.00" }}
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill">
+                                            {{ quotation.currency }} {{ item.total_price|default:"0.00" }}
+                                        </span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No items found.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'quotation:quotation_detail' quotation.pk %}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash me-1"></i>Delete Quotation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/quotation/quotation.js' %}"></script>
+{% endblock %} 

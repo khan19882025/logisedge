@@ -1,0 +1,206 @@
+{% extends 'payment_scheduling/base.html' %}
+
+{% block title %}Payment Calendar{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Calendar</li>
+{% endblock %}
+
+{% block payment_scheduling_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Payment Calendar</h6>
+                <div>
+                    <a href="{% url 'payment_scheduling:schedule_create' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> New Schedule
+                    </a>
+                    <a href="{% url 'payment_scheduling:schedule_list' %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-list"></i> List View
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Details Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Schedule Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="eventModalBody">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" class="btn btn-primary" id="viewDetailsBtn">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize FullCalendar
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+        },
+        events: function(fetchInfo, successCallback, failureCallback) {
+            // Fetch events from our API
+            fetch('/accounting/payment-scheduling/api/schedule-data/')
+                .then(response => response.json())
+                .then(data => {
+                    var events = data.schedules.map(function(schedule) {
+                        return {
+                            id: schedule.id,
+                            title: schedule.schedule_number + ' - ' + schedule.total_amount + ' ' + schedule.currency,
+                            start: schedule.due_date,
+                            backgroundColor: getEventColor(schedule.status),
+                            borderColor: getEventColor(schedule.status),
+                            extendedProps: {
+                                schedule_number: schedule.schedule_number,
+                                total_amount: schedule.total_amount,
+                                outstanding_amount: schedule.outstanding_amount,
+                                status: schedule.status,
+                                currency: schedule.currency
+                            }
+                        };
+                    });
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('Error fetching events:', error);
+                    failureCallback(error);
+                });
+        },
+        eventClick: function(info) {
+            // Show event details in modal
+            var event = info.event;
+            var modal = new bootstrap.Modal(document.getElementById('eventModal'));
+            
+            // Populate modal content
+            var modalBody = document.getElementById('eventModalBody');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Schedule Information</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Schedule #:</strong></td>
+                                <td>${event.extendedProps.schedule_number}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Amount:</strong></td>
+                                <td>${event.extendedProps.total_amount} ${event.extendedProps.currency}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Outstanding:</strong></td>
+                                <td>${event.extendedProps.outstanding_amount} ${event.extendedProps.currency}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge bg-${getBadgeClass(event.extendedProps.status)}">
+                                        ${getStatusDisplay(event.extendedProps.status)}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Due Date:</strong></td>
+                                <td>${event.start.toLocaleDateString()}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Quick Actions</h6>
+                        <div class="d-grid gap-2">
+                            <a href="/accounting/payment-scheduling/schedules/${event.id}/" class="btn btn-info">
+                                <i class="bi bi-eye"></i> View Details
+                            </a>
+                            <a href="/accounting/payment-scheduling/schedules/${event.id}/update/" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <a href="/accounting/payment-scheduling/schedules/${event.id}/reminders/create/" class="btn btn-primary">
+                                <i class="bi bi-bell"></i> Add Reminder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update view details button
+            document.getElementById('viewDetailsBtn').href = `/accounting/payment-scheduling/schedules/${event.id}/`;
+            
+            modal.show();
+        },
+        eventDidMount: function(info) {
+            // Add tooltip to events
+            $(info.el).tooltip({
+                title: `${info.event.extendedProps.schedule_number}<br/>
+                        Amount: ${info.event.extendedProps.total_amount} ${info.event.extendedProps.currency}<br/>
+                        Status: ${getStatusDisplay(info.event.extendedProps.status)}`,
+                html: true,
+                placement: 'top',
+                container: 'body'
+            });
+        },
+        dayMaxEvents: true,
+        height: 'auto',
+        aspectRatio: 1.35
+    });
+    
+    calendar.render();
+    
+    // Helper functions
+    function getEventColor(status) {
+        const colors = {
+            'paid': '#1cc88a',
+            'overdue': '#e74a3b',
+            'pending': '#f6c23e',
+            'partially_paid': '#f6c23e',
+            'draft': '#36b9cc'
+        };
+        return colors[status] || '#6c757d';
+    }
+    
+    function getBadgeClass(status) {
+        const badgeClasses = {
+            'paid': 'success',
+            'overdue': 'danger',
+            'pending': 'secondary',
+            'partially_paid': 'warning',
+            'draft': 'info'
+        };
+        return badgeClasses[status] || 'secondary';
+    }
+    
+    function getStatusDisplay(status) {
+        const statusDisplay = {
+            'paid': 'Paid',
+            'overdue': 'Overdue',
+            'pending': 'Pending',
+            'partially_paid': 'Partially Paid',
+            'draft': 'Draft'
+        };
+        return statusDisplay[status] || status;
+    }
+});
+</script>
+{% endblock %}

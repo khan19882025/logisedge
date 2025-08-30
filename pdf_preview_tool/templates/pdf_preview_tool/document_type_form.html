@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Document Type - PDF Preview Tool{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-tags text-primary"></i>
+                    {{ action }} Document Type
+                </h1>
+                <p class="page-subtitle">{% if action == 'Create' %}Create a new document type{% else %}Update existing document type{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-edit"></i> Document Type Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    <strong>Name *</strong>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">A unique name for this document type</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">
+                                    <strong>Category *</strong>
+                                </label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.category.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Select the appropriate category</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <strong>Description</strong>
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Provide a detailed description of this document type</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        <strong>Active</strong>
+                                    </label>
+                                    <div class="form-text">Enable this document type for use</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.requires_approval }}
+                                    <label class="form-check-label" for="{{ form.requires_approval.id_for_label }}">
+                                        <strong>Requires Approval</strong>
+                                    </label>
+                                    <div class="form-text">Documents of this type need approval before preview</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'pdf_preview_tool:document_type_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Document Types
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> {% if action == 'Create' %}Create{% else %}Update{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Information -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Category Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-file-invoice text-primary"></i> Invoice</h6>
+                            <p class="text-muted">Customer invoices, bills, and payment requests</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-truck text-success"></i> Delivery Note</h6>
+                            <p class="text-muted">Shipping documents and delivery confirmations</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-shopping-cart text-info"></i> Purchase Order</h6>
+                            <p class="text-muted">Supplier orders and procurement documents</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-chart-line text-warning"></i> Report</h6>
+                            <p class="text-muted">Analytics, summaries, and business reports</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+    
+    // Auto-resize textarea
+    const descriptionTextarea = document.getElementById('{{ form.description.id_for_label }}');
+    if (descriptionTextarea) {
+        descriptionTextarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    }
+    
+    // Category change handler
+    const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            updateCategoryInfo(this.value);
+        });
+    }
+    
+    function updateCategoryInfo(category) {
+        const categoryInfo = {
+            'invoice': 'Customer invoices, bills, and payment requests. Typically includes line items, totals, and payment terms.',
+            'delivery_note': 'Shipping documents and delivery confirmations. Contains package details, shipping addresses, and delivery instructions.',
+            'purchase_order': 'Supplier orders and procurement documents. Includes item specifications, quantities, and delivery schedules.',
+            'sales_order': 'Customer order confirmations and sales agreements. Details products, pricing, and delivery terms.',
+            'receipt': 'Payment confirmations and transaction records. Shows payment amounts, methods, and dates.',
+            'report': 'Analytics, summaries, and business reports. Contains data analysis, charts, and business insights.',
+            'contract': 'Legal agreements and contract documents. Includes terms, conditions, and obligations.',
+            'other': 'Miscellaneous documents that don\'t fit other categories. Use for custom document types.'
+        };
+        
+        const descriptionField = document.getElementById('{{ form.description.id_for_label }}');
+        if (descriptionField && categoryInfo[category]) {
+            descriptionField.value = categoryInfo[category];
+            // Trigger resize
+            descriptionField.dispatchEvent(new Event('input'));
+        }
+    }
+});
+</script>
+{% endblock %}

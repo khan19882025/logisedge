@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if journal_entry %}Edit Journal Entry - {{ journal_entry.journal_number }}{% else %}Create Journal Entry{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/general_journal/general_journal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="journal-form-container">
+                <div class="journal-header">
+                    <h3>
+                        <i class="bi bi-journal-text me-2"></i>
+                        {% if journal_entry %}Edit Journal Entry{% else %}Create New Journal Entry{% endif %}
+                    </h3>
+                </div>
+                
+                <div class="journal-body">
+                    <form method="post" id="journal-form">
+                        {% csrf_token %}
+                        
+                        <!-- Journal Entry Header -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.date.id_for_label }}" class="form-label">Date *</label>
+                                    {{ form.date }}
+                                    {% if form.date.errors %}
+                                        <div class="text-danger">{{ form.date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.reference.id_for_label }}" class="form-label">Reference</label>
+                                    {{ form.reference }}
+                                    {% if form.reference.errors %}
+                                        <div class="text-danger">{{ form.reference.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Simple Journal Entry Lines Table -->
+                        <div class="journal-lines-container">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-list-ul me-2"></i>
+                                    Journal Entry Lines
+                                </h5>
+                                <button type="button" id="add-line-btn" class="btn btn-success btn-sm">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Add Line
+                                </button>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-bordered journal-lines-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 60%;">Account</th>
+                                            <th style="width: 20%;" class="text-end">Debit</th>
+                                            <th style="width: 20%;" class="text-end">Credit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="journal-lines">
+                                        <tr class="journal-line">
+                                            <td>
+                                                <select class="form-control account-select" name="account_1">
+                                                    <option value="">Select Account</option>
+                                                    {% for account in accounts %}
+                                                        <option value="{{ account.id }}">{{ account.account_code }} - {{ account.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td class="text-end">
+                                                <input type="number" class="form-control debit-amount" name="debit_1" step="0.01" min="0" placeholder="0.00">
+                                            </td>
+                                            <td class="text-end">
+                                                <input type="number" class="form-control credit-amount" name="credit_1" step="0.01" min="0" placeholder="0.00">
+                                            </td>
+                                        </tr>
+                                        <tr class="journal-line">
+                                            <td>
+                                                <select class="form-control account-select" name="account_2">
+                                                    <option value="">Select Account</option>
+                                                    {% for account in accounts %}
+                                                        <option value="{{ account.id }}">{{ account.account_code }} - {{ account.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td class="text-end">
+                                                <input type="number" class="form-control debit-amount" name="debit_2" step="0.01" min="0" placeholder="0.00">
+                                            </td>
+                                            <td class="text-end">
+                                                <input type="number" class="form-control credit-amount" name="credit_2" step="0.01" min="0" placeholder="0.00">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <td class="text-end"><strong>Totals:</strong></td>
+                                            <td class="text-end">
+                                                <strong class="text-danger" id="total-debit">0.00</strong>
+                                            </td>
+                                            <td class="text-end">
+                                                <strong class="text-success" id="total-credit">0.00</strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3" class="text-center">
+                                                <span id="balance-indicator" class="balance-indicator unbalanced">UNBALANCED (0.00)</span>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                                    {{ form.notes }}
+                                    {% if form.notes.errors %}
+                                        <div class="text-danger">{{ form.notes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Errors -->
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'general_journal:journal_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                Cancel
+                            </a>
+                            <div>
+                                <button type="submit" class="btn btn-secondary" id="submit-btn">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {% if journal_entry %}Update Journal Entry{% else %}Create Journal Entry{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/general_journal/general_journal.js' %}"></script>
+{% endblock %}

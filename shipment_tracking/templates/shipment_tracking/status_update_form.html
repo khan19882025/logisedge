@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load shipment_filters %}
+
+{% block title %}Add Status Update{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shipment_tracking/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-edit fa-fw"></i> Add Status Update
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'shipment_tracking:shipment_detail' shipment.pk %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Shipment
+            </a>
+            <a href="{% url 'shipment_tracking:shipment_list' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-list"></i> View All
+            </a>
+        </div>
+    </div>
+
+    <!-- Shipment Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Shipment Information</h6>
+                            <p class="mb-1">
+                                <strong>ID:</strong> {{ shipment.shipment_id }}
+                                {% if shipment.container_number %}
+                                    <br><strong>Container:</strong> {{ shipment.container_number }}
+                                {% endif %}
+                                {% if shipment.booking_id %}
+                                    <br><strong>Booking:</strong> {{ shipment.booking_id }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Current Status</h6>
+                            <p class="mb-1">
+                                <span class="badge badge-{{ shipment.current_status|status_badge_color }}">
+                                    {{ shipment.current_status|status_display }}
+                                </span>
+                                {% if shipment.current_location %}
+                                    <br><small class="text-muted">{{ shipment.current_location }}</small>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Update Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Add Status Update</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.status.id_for_label }}">New Status *</label>
+                                    {{ form.status }}
+                                    {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.status.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Select the new status for this shipment
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.location.id_for_label }}">Location *</label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.location.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Current location of the shipment
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.description.id_for_label }}">Description</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.description.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Additional details about this status update
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.estimated_completion.id_for_label }}">Estimated Completion</label>
+                                    {{ form.estimated_completion }}
+                                    {% if form.estimated_completion.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.estimated_completion.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        When this status is expected to be completed
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Coordinates (Optional)</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="number" step="any" class="form-control" 
+                                                   name="latitude" placeholder="Latitude" 
+                                                   value="{{ form.latitude.value|default:'' }}">
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="number" step="any" class="form-control" 
+                                                   name="longitude" placeholder="Longitude" 
+                                                   value="{{ form.longitude.value|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        GPS coordinates for precise location tracking
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Flow Guide -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border-left-info">
+                                    <div class="card-body">
+                                        <h6 class="text-info">
+                                            <i class="fas fa-info-circle"></i> Status Flow Guide
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Typical Status Flow:</small>
+                                                <div class="mt-2">
+                                                    <span class="badge badge-secondary">At Origin Port</span>
+                                                    <i class="fas fa-arrow-right mx-1"></i>
+                                                    <span class="badge badge-info">Sailing</span>
+                                                    <i class="fas fa-arrow-right mx-1"></i>
+                                                    <span class="badge badge-warning">Arrived at Destination</span>
+                                                    <i class="fas fa-arrow-right mx-1"></i>
+                                                    <span class="badge badge-primary">Customs Cleared</span>
+                                                    <i class="fas fa-arrow-right mx-1"></i>
+                                                    <span class="badge badge-success">Delivered</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted">Special Statuses:</small>
+                                                <div class="mt-2">
+                                                    <span class="badge badge-warning">On Hold</span>
+                                                    <span class="badge badge-danger">Damaged</span>
+                                                    <span class="badge badge-dark">Returned</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <hr>
+                                <div class="text-right">
+                                    <a href="{% url 'shipment_tracking:shipment_detail' shipment.pk %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Add Status Update
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-fill location based on status
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusSelect = document.getElementById('{{ form.status.id_for_label }}');
+        const locationField = document.getElementById('{{ form.location.id_for_label }}');
+        
+        if (statusSelect && locationField) {
+            statusSelect.addEventListener('change', function() {
+                const selectedStatus = this.value;
+                let suggestedLocation = '';
+                
+                switch(selectedStatus) {
+                    case 'at_origin_port':
+                        suggestedLocation = '{{ shipment.origin_port }}';
+                        break;
+                    case 'arrived_destination':
+                    case 'customs_cleared':
+                        suggestedLocation = '{{ shipment.destination_port }}';
+                        break;
+                    case 'delivered':
+                        suggestedLocation = '{{ shipment.destination_port }} - Delivered';
+                        break;
+                    case 'sailing':
+                        suggestedLocation = 'In Transit - {{ shipment.origin_port }} to {{ shipment.destination_port }}';
+                        break;
+                }
+                
+                if (suggestedLocation && !locationField.value) {
+                    locationField.value = suggestedLocation;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

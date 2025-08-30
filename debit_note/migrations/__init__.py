@@ -1,0 +1,1 @@
+# migrations package for debit_note app 

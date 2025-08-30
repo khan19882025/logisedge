@@ -1,0 +1,340 @@
+{% extends 'payment_scheduling/base.html' %}
+
+{% block title %}Payment Schedule Details - {{ schedule.schedule_number }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'payment_scheduling:schedule_list' %}">Schedules</a>
+</li>
+<li class="breadcrumb-item active">{{ schedule.schedule_number }}</li>
+{% endblock %}
+
+{% block payment_scheduling_content %}
+<div class="row">
+    <!-- Schedule Details -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    Payment Schedule Details - {{ schedule.schedule_number }}
+                </h6>
+                <div>
+                    <a href="{% url 'payment_scheduling:schedule_update' schedule.id %}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'payment_scheduling:reminder_create' schedule.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-bell"></i> Add Reminder
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Basic Information</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Schedule Number:</strong></td>
+                                <td>{{ schedule.schedule_number }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Payment Type:</strong></td>
+                                <td>
+                                    <span class="badge bg-info">{{ schedule.get_payment_type_display }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Customer/Vendor:</strong></td>
+                                <td>
+                                    {% if schedule.customer %}
+                                        <i class="fas fa-user text-primary"></i> {{ schedule.customer.customer_name }}
+                                    {% elif schedule.vendor %}
+                                        <i class="fas fa-building text-success"></i> {{ schedule.vendor }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Currency:</strong></td>
+                                <td>{{ schedule.currency }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Due Date:</strong></td>
+                                <td>
+                                    {{ schedule.due_date|date:"M d, Y" }}
+                                    {% if schedule.is_overdue %}
+                                        <br><small class="text-danger">
+                                            <i class="fas fa-exclamation-triangle"></i> {{ schedule.days_overdue }} days overdue
+                                        </small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Amount Details</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Total Amount:</strong></td>
+                                <td>{{ schedule.total_amount|floatformat:2 }} {{ schedule.currency }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>VAT Rate:</strong></td>
+                                <td>{{ schedule.vat_rate }}%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>VAT Amount:</strong></td>
+                                <td>{{ schedule.vat_amount|floatformat:2 }} {{ schedule.currency }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total with VAT:</strong></td>
+                                <td>
+                                    <strong class="text-primary">{{ schedule.total_with_vat|floatformat:2 }} {{ schedule.currency }}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Paid Amount:</strong></td>
+                                <td>
+                                    {% if schedule.paid_amount > 0 %}
+                                        <span class="text-success">{{ schedule.paid_amount|floatformat:2 }} {{ schedule.currency }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0.00 {{ schedule.currency }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Outstanding:</strong></td>
+                                <td>
+                                    {% if schedule.outstanding_amount > 0 %}
+                                        <span class="text-danger fw-bold">{{ schedule.outstanding_amount|floatformat:2 }} {{ schedule.currency }}</span>
+                                    {% else %}
+                                        <span class="text-success">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- References -->
+                {% if schedule.invoice_reference or schedule.po_reference or schedule.description %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="text-primary">References</h6>
+                        <table class="table table-borderless">
+                            {% if schedule.invoice_reference %}
+                            <tr>
+                                <td><strong>Invoice Reference:</strong></td>
+                                <td>{{ schedule.invoice_reference }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if schedule.po_reference %}
+                            <tr>
+                                <td><strong>PO Reference:</strong></td>
+                                <td>{{ schedule.po_reference }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if schedule.description %}
+                            <tr>
+                                <td><strong>Description:</strong></td>
+                                <td>{{ schedule.description }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Progress Bar -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="text-primary">Payment Progress</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" 
+                                 role="progressbar" 
+                                 style="width: {{ schedule.payment_progress }}%"
+                                 aria-valuenow="{{ schedule.payment_progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ schedule.payment_progress|floatformat:1 }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ schedule.paid_amount|floatformat:2 }} / {{ schedule.total_with_vat|floatformat:2 }} {{ schedule.currency }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Installments -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Payment Installments</h6>
+            </div>
+            <div class="card-body">
+                {% if installments %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Installment #</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Paid Amount</th>
+                                <th>Outstanding</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for installment in installments %}
+                            <tr>
+                                <td>{{ installment.installment_number }}</td>
+                                <td>{{ installment.amount|floatformat:2 }} {{ schedule.currency }}</td>
+                                <td>
+                                    {{ installment.due_date|date:"M d, Y" }}
+                                    {% if installment.is_overdue %}
+                                        <br><small class="text-danger">
+                                            <i class="fas fa-exclamation-triangle"></i> Overdue
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if installment.status == 'paid' %}success{% elif installment.status == 'overdue' %}danger{% elif installment.status == 'partially_paid' %}warning{% else %}secondary{% endif %}">
+                                        {{ installment.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if installment.paid_amount > 0 %}
+                                        {{ installment.paid_amount|floatformat:2 }} {{ schedule.currency }}
+                                    {% else %}
+                                        <span class="text-muted">0.00</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if installment.outstanding_amount > 0 %}
+                                        <span class="text-danger">{{ installment.outstanding_amount|floatformat:2 }} {{ schedule.currency }}</span>
+                                    {% else %}
+                                        <span class="text-success">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No installments found for this schedule.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Status Card -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <span class="badge bg-{% if schedule.status == 'paid' %}success{% elif schedule.status == 'overdue' %}danger{% elif schedule.status == 'partially_paid' %}warning{% else %}secondary{% endif %} fs-5">
+                        {{ schedule.get_status_display }}
+                    </span>
+                </div>
+                {% if schedule.is_overdue %}
+                <div class="alert alert-danger mt-3">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Overdue!</strong> This payment is {{ schedule.days_overdue }} days overdue.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reminders -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Reminders</h6>
+                <a href="{% url 'payment_scheduling:reminder_create' schedule.id %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% if reminders %}
+                    {% for reminder in reminders %}
+                    <div class="mb-3 p-2 border rounded">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ reminder.get_reminder_type_display }}</strong>
+                            <span class="badge bg-{{ reminder.status }}">{{ reminder.get_status_display }}</span>
+                        </div>
+                        <small class="text-muted">
+                            Scheduled: {{ reminder.scheduled_date|date:"M d, Y H:i" }}
+                        </small>
+                        {% if reminder.sent_date %}
+                        <br><small class="text-muted">
+                            Sent: {{ reminder.sent_date|date:"M d, Y H:i" }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No reminders set for this schedule.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'payment_scheduling:schedule_update' schedule.id %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Schedule
+                    </a>
+                    <a href="{% url 'payment_scheduling:reminder_create' schedule.id %}" class="btn btn-primary">
+                        <i class="fas fa-bell"></i> Add Reminder
+                    </a>
+                    <button class="btn btn-info" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <a href="{% url 'payment_scheduling:schedule_delete' schedule.id %}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">History</h6>
+            </div>
+            <div class="card-body">
+                {% if history %}
+                <div class="timeline">
+                    {% for entry in history %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">{{ entry.get_action_display }}</h6>
+                            <p class="timeline-text">{{ entry.description }}</p>
+                            <small class="text-muted">
+                                {{ entry.timestamp|date:"M d, Y H:i" }} by {{ entry.user.username }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No history records found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

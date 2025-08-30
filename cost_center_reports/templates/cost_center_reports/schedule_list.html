@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Report Schedules{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_reports/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-calendar mr-2"></i>Report Schedules
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_reports:schedule_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Create Schedule
+            </a>
+            <a href="{% url 'cost_center_reports:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Schedules List -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Scheduled Reports</h6>
+            <div>
+                <span class="badge badge-primary">{{ schedules.count }} Total Schedules</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if schedules %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Schedule Name</th>
+                                <th>Report Type</th>
+                                <th>Frequency</th>
+                                <th>Date Range</th>
+                                <th>Status</th>
+                                <th>Recipients</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for schedule in schedules %}
+                            <tr>
+                                <td>
+                                    <strong>{{ schedule.schedule_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">{{ schedule.get_report_type_display }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-secondary">{{ schedule.get_frequency_display }}</span>
+                                </td>
+                                <td>
+                                    {{ schedule.start_date|date:"M d, Y" }} - 
+                                    {% if schedule.end_date %}
+                                        {{ schedule.end_date|date:"M d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">No End Date</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if schedule.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if schedule.recipients %}
+                                        <small class="text-muted">
+                                            {{ schedule.recipients|length }} recipient{{ schedule.recipients|length|pluralize }}
+                                        </small>
+                                    {% else %}
+                                        <span class="text-muted">No recipients</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ schedule.created_at|date:"M d, Y" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'cost_center_reports:schedule_create' %}?edit={{ schedule.pk }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete('{{ schedule.pk }}', '{{ schedule.schedule_name }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">No report schedules found.</p>
+                    <a href="{% url 'cost_center_reports:schedule_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus mr-1"></i>Create First Schedule
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the schedule "<span id="scheduleName"></span>"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_reports/script.js' %}"></script>
+<script>
+function confirmDelete(scheduleId, scheduleName) {
+    document.getElementById('scheduleName').textContent = scheduleName;
+    document.getElementById('deleteForm').action = `/accounting/cost-center-reports/schedules/${scheduleId}/delete/`;
+    $('#deleteModal').modal('show');
+}
+</script>
+{% endblock %}

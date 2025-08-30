@@ -1,0 +1,495 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load disciplinary_filters %}
+
+{% block title %}Disciplinary Case Details - {{ case.case_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'disciplinary_grievance/css/dashboard.css' %}">
+<style>
+    .detail-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .detail-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        font-weight: 600;
+        color: #495057;
+        min-width: 150px;
+    }
+    .detail-value {
+        color: #212529;
+        flex: 1;
+        text-align: right;
+    }
+    .attachment-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin: 5px 0;
+        transition: all 0.3s ease;
+    }
+    .attachment-item:hover {
+        background: #f8f9fa;
+        border-color: #fd7e14;
+    }
+    .attachment-icon {
+        margin-right: 10px;
+        font-size: 1.2em;
+    }
+    .attachment-info {
+        flex: 1;
+    }
+    .attachment-actions {
+        display: flex;
+        gap: 5px;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fd7e14;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #fd7e14;
+    }
+    .timeline-content {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .timeline-title {
+        font-weight: 600;
+        color: #495057;
+    }
+    .timeline-date {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    .status-badge {
+        font-size: 0.8em;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+    .committee-member {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin: 5px 0;
+    }
+    .committee-member .member-info {
+        flex: 1;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-gavel me-2"></i>
+                    Disciplinary Case Details
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'disciplinary_grievance:dashboard' %}">Disciplinary & Grievance</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'disciplinary_grievance:disciplinary_case_list' %}">Disciplinary Cases</a></li>
+                        <li class="breadcrumb-item active">{{ case.case_number }}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge badge-{{ case.status|case_status_badge }} status-badge">
+                        {{ case.get_status_display }}
+                    </span>
+                    <span class="badge badge-{{ case.severity|severity_badge }} status-badge">
+                        {{ case.get_severity_display }}
+                    </span>
+                    {% if case.is_confidential %}
+                        <span class="badge badge-danger status-badge">
+                            <i class="fas fa-lock me-1"></i>Confidential
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="btn-group">
+                    {% if perms.disciplinary_grievance.change_disciplinarycase %}
+                    <a href="{% url 'disciplinary_grievance:disciplinary_case_update' case.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'disciplinary_grievance:disciplinary_case_status_update' case.pk %}" class="btn btn-primary">
+                        <i class="fas fa-tasks me-2"></i>Update Status
+                    </a>
+                    <a href="{% url 'disciplinary_grievance:disciplinary_case_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Details -->
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-info-circle me-2"></i>Basic Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-label">Case Number:</span>
+                            <span class="detail-value">{{ case.case_number }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Title:</span>
+                            <span class="detail-value">{{ case.title }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Description:</span>
+                            <span class="detail-value">{{ case.description|linebreaks }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Policy Violation:</span>
+                            <span class="detail-value">{{ case.policy_violation }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-user me-2"></i>Employee Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-label">Employee:</span>
+                            <span class="detail-value">{{ case.employee.name }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Created By:</span>
+                            <span class="detail-value">{{ case.created_by.get_full_name|default:case.created_by.username }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Creation Date:</span>
+                            <span class="detail-value">{{ case.created_at|date:"F d, Y \a\t g:i A" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incident Details -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-calendar-alt me-2"></i>Incident Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-label">Incident Date:</span>
+                            <span class="detail-value">{{ case.incident_date|date:"F d, Y" }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Incident Time:</span>
+                            <span class="detail-value">{{ case.incident_time|time:"g:i A" }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Witnesses:</span>
+                            <span class="detail-value">{{ case.witnesses|linebreaks }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Severity:</span>
+                            <span class="detail-value">
+                                <span class="badge badge-{{ case.severity|severity_badge }}">
+                                    {{ case.get_severity_display }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Status:</span>
+                            <span class="detail-value">
+                                <span class="badge badge-{{ case.status|case_status_badge }}">
+                                    {{ case.get_status_display }}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attachments -->
+            {% if case.attachments.all %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-paperclip me-2"></i>Attachments
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for attachment in case.attachments.all %}
+                    <div class="attachment-item">
+                        <div class="attachment-icon">
+                            {% if attachment.file.name|is_image_file %}
+                                <i class="fas fa-image text-success"></i>
+                            {% elif attachment.file.name|is_pdf_file %}
+                                <i class="fas fa-file-pdf text-danger"></i>
+                            {% elif attachment.file.name|is_document_file %}
+                                <i class="fas fa-file-word text-primary"></i>
+                            {% else %}
+                                <i class="fas fa-file text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="attachment-info">
+                            <strong>{{ attachment.file.name|get_file_extension }}</strong><br>
+                            <small class="text-muted">{{ attachment.file.size|file_size_format }} • Uploaded {{ attachment.uploaded_at|date:"M d, Y" }}</small>
+                        </div>
+                        <div class="attachment-actions">
+                            <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            {% if perms.disciplinary_grievance.delete_disciplinarycaseattachment %}
+                            <a href="{% url 'disciplinary_grievance:disciplinary_case_attachment_delete' attachment.pk %}" 
+                               class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('Are you sure you want to delete this attachment?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Assignment Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-user-tie me-2"></i>Assignment
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-label">Investigator:</span>
+                            <span class="detail-value">
+                                {% if case.assigned_investigator %}
+                                    {{ case.assigned_investigator.get_full_name|default:case.assigned_investigator.username }}
+                                {% else %}
+                                    <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Last Updated:</span>
+                            <span class="detail-value">{{ case.updated_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Committee Members -->
+            {% if case.committee_members.all %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-users me-2"></i>Committee Members
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for member in case.committee_members.all %}
+                    <div class="committee-member">
+                        <i class="fas fa-user-circle text-warning"></i>
+                        <div class="member-info">
+                            <strong>{{ member.get_full_name|default:member.username }}</strong><br>
+                            <small class="text-muted">{{ member.email }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Related Cases -->
+            {% if case.related_grievance or case.previous_cases.all %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-link me-2"></i>Related Cases
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if case.related_grievance %}
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-label">Related Grievance:</span>
+                            <span class="detail-value">
+                                <a href="{% url 'disciplinary_grievance:grievance_detail' case.related_grievance.pk %}">
+                                    {{ case.related_grievance.ticket_number }}
+                                </a>
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if case.previous_cases.all %}
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-label">Previous Cases:</span>
+                            <span class="detail-value">
+                                {% for prev_case in case.previous_cases.all %}
+                                    <a href="{% url 'disciplinary_grievance:disciplinary_case_detail' prev_case.pk %}">
+                                        {{ prev_case.case_number }}
+                                    </a>{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-tools me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'disciplinary_grievance:disciplinary_action_create' case.pk %}" class="btn btn-outline-warning">
+                            <i class="fas fa-gavel me-2"></i>Add Disciplinary Action
+                        </a>
+                        <a href="{% url 'disciplinary_grievance:appeal_create' %}?related_case={{ case.pk }}" class="btn btn-outline-info">
+                            <i class="fas fa-hand-paper me-2"></i>Create Appeal
+                        </a>
+                        <button class="btn btn-outline-success" onclick="exportCase()">
+                            <i class="fas fa-download me-2"></i>Export Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Timeline -->
+            {% if case.actions.all %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-history me-2"></i>Actions Timeline
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for action in case.actions.all %}
+                        <div class="timeline-item">
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <span class="timeline-title">{{ action.get_action_type_display }}</span>
+                                    <span class="timeline-date">{{ action.created_at|date:"M d, Y g:i A" }}</span>
+                                </div>
+                                <p class="mb-0">{{ action.description|linebreaks }}</p>
+                                <small class="text-muted">Status: {{ action.get_status_display }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'disciplinary_grievance/js/dashboard.js' %}"></script>
+<script>
+function exportCase() {
+    // Implementation for exporting case details
+    alert('Export functionality will be implemented here.');
+}
+
+// Auto-refresh status badges
+setInterval(function() {
+    // Could implement AJAX call to refresh status if needed
+}, 30000); // Refresh every 30 seconds
+</script>
+{% endblock %} 

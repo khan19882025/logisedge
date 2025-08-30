@@ -1,0 +1,247 @@
+{% extends 'tax_summary/base.html' %}
+{% load static %}
+
+{% block title %}Tax Summary Reports{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Reports</li>
+{% endblock %}
+
+{% block tax_summary_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-file-invoice-dollar text-primary"></i>
+                    Tax Summary Reports
+                </h1>
+                <div class="page-actions">
+                    <a href="{% url 'tax_summary:report_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create New Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ request.GET.search }}" placeholder="Search reports...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="report_type" class="form-label">Report Type</label>
+                            <select class="form-control" id="report_type" name="report_type">
+                                <option value="">All Types</option>
+                                <option value="input_output" {% if request.GET.report_type == 'input_output' %}selected{% endif %}>Input/Output Tax Summary</option>
+                                <option value="vat_summary" {% if request.GET.report_type == 'vat_summary' %}selected{% endif %}>VAT Summary</option>
+                                <option value="detailed" {% if request.GET.report_type == 'detailed' %}selected{% endif %}>Detailed Tax Report</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="">All Status</option>
+                                <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                                <option value="generated" {% if request.GET.status == 'generated' %}selected{% endif %}>Generated</option>
+                                <option value="exported" {% if request.GET.status == 'exported' %}selected{% endif %}>Exported</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="date_from" class="form-label">Date From</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                   value="{{ request.GET.date_from }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="date_to" class="form-label">Date To</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" 
+                                   value="{{ request.GET.date_to }}">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i>
+                        Tax Summary Reports ({{ page_obj.paginator.count }} total)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if object_list %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Report Name</th>
+                                        <th>Type</th>
+                                        <th>Date Range</th>
+                                        <th>Currency</th>
+                                        <th>Input Tax</th>
+                                        <th>Output Tax</th>
+                                        <th>Net VAT</th>
+                                        <th>Status</th>
+                                        <th>Generated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in object_list %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ report.report_name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ report.get_report_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            {{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ report.currency }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">{{ report.currency }} {{ report.total_input_tax|floatformat:2 }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-info">{{ report.currency }} {{ report.total_output_tax|floatformat:2 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if report.net_vat_payable >= 0 %}
+                                                <span class="text-danger">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</span>
+                                            {% else %}
+                                                <span class="text-success">{{ report.currency }} {{ report.net_vat_payable|floatformat:2 }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if report.status == 'draft' %}
+                                                <span class="badge bg-warning">Draft</span>
+                                            {% elif report.status == 'generated' %}
+                                                <span class="badge bg-success">Generated</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ report.get_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ report.generated_at|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'tax_summary:report_detail' report.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if report.status == 'draft' %}
+                                                    <a href="{% url 'tax_summary:report_update' report.pk %}" 
+                                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'tax_summary:generate_report' report.pk %}" 
+                                                       class="btn btn-sm btn-outline-success" title="Generate">
+                                                        <i class="fas fa-play"></i>
+                                                    </a>
+                                                {% endif %}
+                                                {% if report.status == 'generated' %}
+                                                    <a href="{% url 'tax_summary:transactions' report.pk %}" 
+                                                       class="btn btn-sm btn-outline-info" title="Transactions">
+                                                        <i class="fas fa-list"></i>
+                                                    </a>
+                                                    <a href="{% url 'tax_summary:export_report' report.pk %}" 
+                                                       class="btn btn-sm btn-outline-warning" title="Export">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                {% endif %}
+                                                <a href="{% url 'tax_summary:report_delete' report.pk %}" 
+                                                   class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Tax summary reports pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.report_type %}&report_type={{ request.GET.report_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No tax summary reports found</h5>
+                            <p class="text-muted">Create your first tax summary report to get started.</p>
+                            <a href="{% url 'tax_summary:report_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First Report
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'opening_balance/css/opening_balance.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="opening-balance-container">
+    <!-- Header -->
+    <div class="opening-balance-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2><i class="fas fa-balance-scale"></i> {{ title }}</h2>
+                    <p class="subtitle">
+                        {% if opening_balance %}
+                            Editing opening balance for {{ opening_balance.financial_year.name }}
+                        {% else %}
+                            Set opening balances for ledger accounts
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{% url 'opening_balance:opening_balance_list' %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="opening-balance-content">
+            <form method="post" id="opening-balance-form" class="opening-balance-form"
+                  {% if opening_balance %}
+                  data-existing-entries="[
+                      {% for entry in opening_balance.entries.all %}
+                          {
+                              'index': {{ forloop.counter0 }},
+                              'accountId': '{{ entry.account.id }}'
+                          }{% if not forloop.last %},{% endif %}
+                      {% endfor %}
+                  ]"
+                  {% endif %}>
+                {% csrf_token %}
+                
+                <!-- Financial Year Selection -->
+                <div class="form-section">
+                    <h4><i class="fas fa-calendar-alt"></i> Financial Year</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="{{ form.financial_year.id_for_label }}" class="form-label">Financial Year *</label>
+                            {{ form.financial_year }}
+                            {% if form.financial_year.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.financial_year.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Select the financial year for which you want to set opening balances.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Entry Details Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-list"></i> Opening Balance Entries</h4>
+                    <p class="text-muted mb-3">
+                        Add opening balance entries for each ledger account. Total debit must equal total credit.
+                    </p>
+                    
+                    <!-- Balance Summary -->
+                    <div class="balance-summary">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="balance-item">
+                                    <div class="balance-label">Total Debit</div>
+                                    <div class="balance-amount" id="total-debit">0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="balance-item">
+                                    <div class="balance-label">Total Credit</div>
+                                    <div class="balance-amount" id="total-credit">0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="balance-item">
+                                    <div class="balance-label">Balance Status</div>
+                                    <div class="balance-amount" id="balance-difference">Balanced</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Entry Details Table -->
+                    <div class="entry-details-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 35%;">Account *</th>
+                                    <th style="width: 20%;">Amount *</th>
+                                    <th style="width: 15%;">Type *</th>
+                                    <th style="width: 20%;">Remarks</th>
+                                    <th style="width: 10%;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="entry-rows">
+                                {{ formset.management_form }}
+                                {% for form in formset %}
+                                    <tr class="entry-row">
+                                        <td>
+                                            {{ form.account }}
+                                            {% if form.account.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.account.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ form.amount }}
+                                            {% if form.amount.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.amount.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ form.balance_type }}
+                                            {% if form.balance_type.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.balance_type.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ form.remarks }}
+                                            {% if form.remarks.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.remarks.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="col-actions">
+                                            {% if forloop.counter > 1 %}
+                                                <button type="button" class="btn btn-sm btn-danger remove-entry-row">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Add Row Button -->
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn add-entry-row">
+                            <i class="fas fa-plus"></i> Add Another Entry
+                        </button>
+                    </div>
+
+                    <!-- Formset Errors -->
+                    {% if formset.non_form_errors %}
+                        <div class="alert alert-danger mt-3">
+                            <ul class="mb-0">
+                                {% for error in formset.non_form_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary" data-original-text="{{ submit_text }}">
+                        <i class="fas fa-save"></i> {{ submit_text }}
+                    </button>
+                    <a href="{% url 'opening_balance:opening_balance_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    {% if opening_balance %}
+                        <a href="{% url 'opening_balance:opening_balance_detail' opening_balance.pk %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'opening_balance/js/opening_balance.js' %}"></script>
+{% endblock %} 

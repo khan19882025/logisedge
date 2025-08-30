@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load notification_template_filters %}
+
+{% block title %}Notification Templates Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-bell fa-fw"></i> Notification Templates Dashboard
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'notification_templates:template_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus fa-fw"></i> New Template
+            </a>
+            <a href="{% url 'notification_templates:category_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-folder-plus fa-fw"></i> New Category
+            </a>
+            <a href="{% url 'notification_templates:template_import' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-download fa-fw"></i> Import
+            </a>
+            <a href="{% url 'notification_templates:template_export' %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-upload fa-fw"></i> Export
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Templates
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_templates }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Templates
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_templates }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Approval
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_approval }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Categories
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ categories|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-folder fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Template Type Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie fa-fw"></i> Template Types
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if template_types %}
+                        <div class="chart-container" style="position: relative; height: 300px;">
+                            <canvas id="templateTypeChart"></canvas>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No templates found</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Language Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-globe fa-fw"></i> Language Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if languages %}
+                        <div class="chart-container" style="position: relative; height: 300px;">
+                            <canvas id="languageChart"></canvas>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No language data found</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Templates -->
+    <div class="row">
+        <!-- Recent Templates -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-alt fa-fw"></i> Recent Templates
+                    </h6>
+                    <a href="{% url 'notification_templates:template_list' %}" class="btn btn-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_templates %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Category</th>
+                                        <th>Language</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for template in recent_templates %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ template.name }}</strong>
+                                            {% if template.description %}
+                                                <br><small class="text-muted">{{ template.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ template.template_type|template_type_badge }}">
+                                                {{ template.get_template_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if template.category %}
+                                                <span class="badge" style="background-color: {{ template.category.color }}; color: white;">
+                                                    {{ template.category.name }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ template.get_language_display }}</span>
+                                        </td>
+                                        <td>
+                                            {% if template.is_active %}
+                                                <span class="badge badge-success">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Inactive</span>
+                                            {% endif %}
+                                            {% if template.requires_approval %}
+                                                {% if template.is_approved %}
+                                                    <span class="badge badge-success">Approved</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">Pending</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ template.created_at|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'notification_templates:template_detail' template.pk %}" 
+                                                   class="btn btn-outline-primary btn-sm" title="View">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'notification_templates:template_edit' template.pk %}" 
+                                                   class="btn btn-outline-warning btn-sm" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'notification_templates:template_test' template.pk %}" 
+                                                   class="btn btn-outline-info btn-sm" title="Test">
+                                                    <i class="fas fa-play"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No templates created yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history fa-fw"></i> Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                        <div class="timeline">
+                            {% for activity in recent_activity %}
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-{{ activity.action|activity_color }}"></div>
+                                <div class="timeline-content">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>{{ activity.user.get_full_name|default:activity.user.username }}</strong>
+                                        <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                                    </div>
+                                    <p class="mb-1">{{ activity.action|title }} template</p>
+                                    <small class="text-muted">
+                                        <a href="{% url 'notification_templates:template_detail' activity.template.pk %}">
+                                            {{ activity.template.name }}
+                                        </a>
+                                    </small>
+                                    {% if activity.change_reason %}
+                                        <br><small class="text-info">{{ activity.change_reason }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No recent activity</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Overview -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-folder fa-fw"></i> Category Overview
+                    </h6>
+                    <a href="{% url 'notification_templates:category_list' %}" class="btn btn-primary btn-sm">
+                        Manage Categories
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if categories %}
+                        <div class="row">
+                            {% for category in categories %}
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="card border-left-{{ category.color|category_color_class }} shadow h-100">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-{{ category.color|category_color_class }} text-uppercase mb-1">
+                                                    {{ category.name }}
+                                                </div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                                    {{ category.template_count }} templates
+                                                </div>
+                                                {% if category.description %}
+                                                    <small class="text-muted">{{ category.description|truncatechars:50 }}</small>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-auto">
+                                                {% if category.icon %}
+                                                    <i class="{{ category.icon }} fa-2x text-gray-300"></i>
+                                                {% else %}
+                                                    <i class="fas fa-folder fa-2x text-gray-300"></i>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No categories created yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -10px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #e3e6f0;
+}
+
+.timeline-content {
+    padding-bottom: 10px;
+}
+
+.bg-created { background-color: #28a745; }
+.bg-updated { background-color: #ffc107; }
+.bg-deleted { background-color: #dc3545; }
+.bg-activated { background-color: #17a2b8; }
+.bg-deactivated { background-color: #6c757d; }
+.bg-approved { background-color: #28a745; }
+.bg-rejected { background-color: #dc3545; }
+.bg-tested { background-color: #007bff; }
+
+.template-type-badge {
+    font-size: 0.75rem;
+}
+
+.category-color-class {
+    /* This will be handled by JavaScript */
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template Type Chart
+    {% if template_types %}
+    const templateTypeCtx = document.getElementById('templateTypeChart').getContext('2d');
+    const templateTypeChart = new Chart(templateTypeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                {% for type in template_types %}
+                    '{{ type.template_type|title }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for type in template_types %}
+                        {{ type.count }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Language Chart
+    {% if languages %}
+    const languageCtx = document.getElementById('languageChart').getContext('2d');
+    const languageChart = new Chart(languageCtx, {
+        type: 'bar',
+        data: {
+            labels: [
+                {% for lang in languages %}
+                    '{{ lang.language|upper }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Templates',
+                data: [
+                    {% for lang in languages %}
+                        {{ lang.count }},
+                    {% endfor %}
+                ],
+                backgroundColor: '#4e73df',
+                borderColor: '#2e59d9',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

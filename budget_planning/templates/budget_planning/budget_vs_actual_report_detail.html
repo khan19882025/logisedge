@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ report.report_name }} - Budget vs Actual Report{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/budget_planning/style.css' %}">
+<style>
+    .report-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .report-header h1 {
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .report-stat {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .report-stat .number {
+        font-size: 2rem;
+        font-weight: bold;
+        display: block;
+    }
+    
+    .report-stat .label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .variance-positive {
+        color: #28a745;
+    }
+    
+    .variance-negative {
+        color: #dc3545;
+    }
+    
+    .variance-neutral {
+        color: #6c757d;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 2rem;
+    }
+    
+    .export-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .data-table {
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Report Header -->
+    <div class="report-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-chart-line mr-2"></i>{{ report.report_name }}
+                </h1>
+                <p class="mb-0">
+                    <strong>Report Type:</strong> {{ report.get_report_type_display }} | 
+                    <strong>Fiscal Year:</strong> {{ report.fiscal_year }} | 
+                    <strong>Period:</strong> {{ report.start_date|date:"M d, Y" }} - {{ report.end_date|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-right">
+                <a href="{% url 'budget_planning:budget_vs_actual_dashboard' %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <div class="report-stat">
+                        <span class="number">AED {{ report.total_budget|floatformat:2 }}</span>
+                        <span class="label">Total Budget</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <div class="report-stat">
+                        <span class="number">AED {{ report.total_actual|floatformat:2 }}</span>
+                        <span class="label">Total Actual</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <div class="report-stat">
+                        <span class="number {% if report.total_variance < 0 %}variance-negative{% elif report.total_variance > 0 %}variance-positive{% else %}variance-neutral{% endif %}">
+                            AED {{ report.total_variance|floatformat:2 }}
+                        </span>
+                        <span class="label">Total Variance</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <div class="report-stat">
+                        <span class="number {% if report.variance_percentage < 0 %}variance-negative{% elif report.variance_percentage > 0 %}variance-positive{% else %}variance-neutral{% endif %}">
+                            {{ report.variance_percentage|floatformat:2 }}%
+                        </span>
+                        <span class="label">Variance %</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="export-section">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0">
+                    <i class="fas fa-download mr-2"></i>Export Options
+                </h5>
+            </div>
+            <div class="col-md-6 text-md-right">
+                <button class="btn btn-success btn-sm" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel mr-1"></i>Export to Excel
+                </button>
+                <button class="btn btn-danger btn-sm ml-2" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf mr-1"></i>Export to PDF
+                </button>
+                <button class="btn btn-info btn-sm ml-2" onclick="exportToCSV()">
+                    <i class="fas fa-file-csv mr-1"></i>Export to CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie mr-2"></i>Budget vs Actual Overview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="budgetVsActualChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar mr-2"></i>Variance Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="varianceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Data Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-table mr-2"></i>Detailed Report Data
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="data-table">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Cost Center</th>
+                                <th>Department</th>
+                                <th>Account</th>
+                                <th class="text-right">Budget Amount</th>
+                                <th class="text-right">Actual Amount</th>
+                                <th class="text-right">Variance</th>
+                                <th class="text-right">Variance %</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if report.report_data.items %}
+                                {% for item in report.report_data.items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.cost_center_code }}</strong><br>
+                                        <small class="text-muted">{{ item.cost_center_name }}</small>
+                                    </td>
+                                    <td>{{ item.department_name }}</td>
+                                    <td>
+                                        <strong>{{ item.account_code }}</strong><br>
+                                        <small class="text-muted">{{ item.account_name }}</small>
+                                    </td>
+                                    <td class="text-right">AED {{ item.budget_amount|floatformat:2 }}</td>
+                                    <td class="text-right">AED {{ item.actual_amount|floatformat:2 }}</td>
+                                    <td class="text-right {% if item.variance < 0 %}variance-negative{% elif item.variance > 0 %}variance-positive{% else %}variance-neutral{% endif %}">
+                                        AED {{ item.variance|floatformat:2 }}
+                                    </td>
+                                    <td class="text-right {% if item.variance_percentage < 0 %}variance-negative{% elif item.variance_percentage > 0 %}variance-positive{% else %}variance-neutral{% endif %}">
+                                        {{ item.variance_percentage|floatformat:2 }}%
+                                    </td>
+                                    <td>
+                                        {% if item.variance < 0 %}
+                                            <span class="badge badge-danger">Over Budget</span>
+                                        {% elif item.variance > 0 %}
+                                            <span class="badge badge-success">Under Budget</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">On Budget</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                        <h5>No detailed data available</h5>
+                                        <p>This report doesn't contain detailed line items.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Metadata -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-info-circle mr-2"></i>Report Information
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Report Name:</strong></td>
+                            <td>{{ report.report_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Report Type:</strong></td>
+                            <td>{{ report.get_report_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fiscal Year:</strong></td>
+                            <td>{{ report.fiscal_year }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Start Date:</strong></td>
+                            <td>{{ report.start_date|date:"F d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>End Date:</strong></td>
+                            <td>{{ report.end_date|date:"F d, Y" }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Generated By:</strong></td>
+                            <td>{{ report.generated_by.get_full_name|default:report.generated_by.username }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Generated At:</strong></td>
+                            <td>{{ report.generated_at|date:"F d, Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cost Center:</strong></td>
+                            <td>{{ report.cost_center.name|default:"All Cost Centers" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Department:</strong></td>
+                            <td>{{ report.department.name|default:"All Departments" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Export Status:</strong></td>
+                            <td>
+                                {% if report.is_exported %}
+                                    <span class="badge badge-success">Exported ({{ report.export_format|upper }})</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Not Exported</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize charts
+    initializeCharts();
+    
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+});
+
+function initializeCharts() {
+    // Budget vs Actual Chart
+    const budgetVsActualCtx = document.getElementById('budgetVsActualChart').getContext('2d');
+    const budgetVsActualChart = new Chart(budgetVsActualCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Budget', 'Actual'],
+            datasets: [{
+                data: [{{ report.total_budget }}, {{ report.total_actual }}],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 99, 132, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            return label + ': AED ' + value.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Variance Chart
+    const varianceCtx = document.getElementById('varianceChart').getContext('2d');
+    const varianceChart = new Chart(varianceCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Budget', 'Actual', 'Variance'],
+            datasets: [{
+                label: 'Amount (AED)',
+                data: [{{ report.total_budget }}, {{ report.total_actual }}, {{ report.total_variance }}],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 99, 132, 0.8)',
+                    '{% if report.total_variance < 0 %}rgba(220, 53, 69, 0.8){% elif report.total_variance > 0 %}rgba(40, 167, 69, 0.8){% else %}rgba(108, 117, 125, 0.8){% endif %}'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    '{% if report.total_variance < 0 %}rgba(220, 53, 69, 1){% elif report.total_variance > 0 %}rgba(40, 167, 69, 1){% else %}rgba(108, 117, 125, 1){% endif %}'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'AED ' + value.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed.y;
+                            return label + ': AED ' + value.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function exportToExcel() {
+    // Implement Excel export functionality
+    alert('Excel export functionality will be implemented here');
+}
+
+function exportToPDF() {
+    // Implement PDF export functionality
+    alert('PDF export functionality will be implemented here');
+}
+
+function exportToCSV() {
+    // Implement CSV export functionality
+    alert('CSV export functionality will be implemented here');
+}
+</script>
+{% endblock %}

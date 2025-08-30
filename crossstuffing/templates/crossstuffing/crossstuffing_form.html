@@ -1,0 +1,1587 @@
+{% extends 'crossstuffing/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title|default:'Cross Stuffing' }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .crossstuffing-form .form-label { 
+        font-weight: 500; 
+        color: #495057;
+        margin-bottom: 0;
+        min-width: 120px;
+        flex-shrink: 0;
+    }
+    .crossstuffing-form .form-control, 
+    .crossstuffing .form-select { 
+        flex: 1;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        padding: 0.75rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .crossstuffing-form .form-control:focus,
+    .crossstuffing-form .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .section-content {
+        background: #ffffff;
+        padding: 2rem;
+        border: 1px solid #e9ecef;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .form-section {
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    /* Force full width and remove all margins/padding */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    .container-fluid {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        max-width: none !important;
+        width: 100% !important;
+    }
+    .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+    }
+    .col-md-6 {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    /* Ensure sections extend to edges */
+    .left-section {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        width: 50% !important;
+        float: left !important;
+    }
+    .right-section {
+        margin-right: 0 !important;
+        padding-right: 0 !important;
+        width: 50% !important;
+        float: right !important;
+    }
+    .page-title-row {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+        width: 100% !important;
+    }
+    .page-title {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+    
+    /* CS Summary Modal Table Styles */
+    #csSummaryTable {
+        font-size: 0.85rem;
+    }
+    
+    #csSummaryTable th {
+        background-color: #e3f2fd;
+        border: 1px solid #2196f3;
+        padding: 0.5rem;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    
+    #csSummaryTable td {
+        border: 1px solid #e9ecef;
+        padding: 0.25rem;
+        vertical-align: middle;
+    }
+    
+    #csSummaryTable input {
+        border: 1px solid #ced4da;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        width: 100%;
+        min-width: 80px;
+    }
+    
+    #csSummaryTable input:focus {
+        border-color: #2196f3;
+        box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+    }
+    
+    .modal-xl {
+        max-width: 95%;
+    }
+    
+    /* Auto-populate button styles */
+    #autoPopulateFromCargo:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    #autoPopulateFromCargo:not(:disabled):hover {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+    }
+    /* Horizontal form layout */
+    .form-row-horizontal {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        gap: 1rem;
+    }
+    .form-group-horizontal {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        gap: 1rem;
+    }
+    .form-group-horizontal .form-label {
+        min-width: 120px;
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+    .form-group-horizontal .form-control,
+    .form-group-horizontal .form-select {
+        flex: 1;
+        margin-bottom: 0;
+    }
+    /* Two column layout for horizontal forms */
+    .form-row-two-col {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .form-row-two-col .form-group-horizontal {
+        flex: 1;
+        margin-bottom: 0;
+    }
+    /* Three column layout for horizontal forms */
+    .form-row-three-col {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .form-row-three-col .form-group-horizontal {
+        flex: 1;
+        margin-bottom: 0;
+    }
+    /* Section icons */
+    .section-icon {
+        font-size: 1.1em;
+        margin-right: 0.75rem;
+    }
+    /* Override any Bootstrap container defaults */
+    .container, .container-fluid {
+        max-width: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    /* Force the main content area to be full width */
+    main, .main-content {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    /* Cargo table styles */
+    .cargo-table {
+        font-size: 0.875rem;
+    }
+    .cargo-table th {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 0.5rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+    .cargo-table td {
+        border: 1px solid #dee2e6;
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+    .cargo-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+    .loading-spinner.show {
+        display: block;
+    }
+    /* Editable cargo field styles */
+    .cargo-qty, .cargo-rate {
+        border: 1px solid #007bff;
+        background-color: #f8f9fa;
+    }
+    .cargo-qty:focus, .cargo-rate:focus {
+        border-color: #0056b3;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        background-color: #fff;
+    }
+    .cargo-net-weight, .cargo-gross-weight, .cargo-amount {
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        color: #495057;
+    }
+    .cargo-table input[type="number"] {
+        text-align: right;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .cargo-table .form-control-sm {
+        height: calc(1.5em + 0.5rem + 2px);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block crossstuffing_content %}
+
+
+                    <form method="post" class="crossstuffing-form">
+                        {% csrf_token %}
+                        
+        <!-- Error Messages -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                <h6 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Please correct the following errors:
+                                </h6>
+                <ul class="mb-0">
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        
+        <!-- Top Page - Divided into 2 parts -->
+        <div class="row mx-0" style="width: 100%; margin: 0; padding: 0;">
+            <!-- Left Part - Basic Information (no left margin) -->
+            <div class="col-md-6 left-section" style="width: 50%; float: left; margin: 0; padding: 0;">
+                <div class="form-section">
+                    <h4 class="section-header">
+                        <i class="bi bi-info-circle section-icon"></i>
+                        Basic Information
+                    </h4>
+                    <div class="section-content">
+                        <!-- CS Number and Document Type -->
+                        <div class="form-row-two-col">
+                            <div class="form-group-horizontal">
+                                            <label for="{{ form.cs_number.id_for_label }}" class="form-label">
+                                                {{ form.cs_number.label }}
+                                            </label>
+                                {{ form.cs_number|add_class:'form-control' }}
+                                        {% if form.cs_number.errors %}
+                                    <div class="text-danger small">{{ form.cs_number.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.document_type.id_for_label }}" class="form-label">
+                                    {{ form.document_type.label }}
+                                </label>
+                                {{ form.document_type|add_class:'form-select' }}
+                                        {% if form.document_type.errors %}
+                                    <div class="text-danger small">{{ form.document_type.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Customer -->
+                        <div class="form-group-horizontal">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                {{ form.customer.label }} *
+                            </label>
+                            {{ form.customer|add_class:'form-select' }}
+                                {% if form.customer.errors %}
+                                <div class="text-danger small">{{ form.customer.errors.0 }}</div>
+                            {% endif %}
+                                    </div>
+
+                                <!-- Job -->
+                        <div class="form-group-horizontal">
+                            <label for="{{ form.job.id_for_label }}" class="form-label">
+                                {{ form.job.label }}
+                            </label>
+                            {{ form.job|add_class:'form-select' }}
+                                {% if form.job.errors %}
+                                <div class="text-danger small">{{ form.job.errors.0 }}</div>
+                            {% endif %}
+                                    </div>
+
+                                <!-- Facility -->
+                        <div class="form-group-horizontal">
+                            <label for="{{ form.facility.id_for_label }}" class="form-label">
+                                {{ form.facility.label }}
+                            </label>
+                            {{ form.facility|add_class:'form-select' }}
+                                {% if form.facility.errors %}
+                                <div class="text-danger small">{{ form.facility.errors.0 }}</div>
+                            {% endif %}
+                                    </div>
+
+                                <!-- Bill To -->
+                        <div class="form-group-horizontal">
+                            <label for="{{ form.bill_to_customer.id_for_label }}" class="form-label">
+                                {{ form.bill_to_customer.label }}
+                            </label>
+                            {{ form.bill_to_customer }}
+                            {% if form.bill_to_customer.errors %}
+                                <div class="text-danger small">{{ form.bill_to_customer.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                                <!-- Bill to Address -->
+                        <div class="form-group-horizontal">
+                            <label for="{{ form.bill_to_address.id_for_label }}" class="form-label">
+                                {{ form.bill_to_address.label }}
+                            </label>
+                            {{ form.bill_to_address|add_class:'form-control' }}
+                                {% if form.bill_to_address.errors %}
+                                <div class="text-danger small">{{ form.bill_to_address.errors.0 }}</div>
+                            {% endif %}
+                                    </div>
+
+                                <!-- Deliver to -->
+                                <div class="form-group-horizontal">
+                                    <label for="{{ form.deliver_to_customer.id_for_label }}" class="form-label">
+                                        {{ form.deliver_to_customer.label }}
+                                    </label>
+                                    {{ form.deliver_to_customer }}
+                                    {% if form.deliver_to_customer.errors %}
+                                        <div class="text-danger small">{{ form.deliver_to_customer.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Deliver to Address -->
+                        <div class="form-group-horizontal">
+                            <label for="{{ form.deliver_to_address.id_for_label }}" class="form-label">
+                                {{ form.deliver_to_address.label }}
+                            </label>
+                            {{ form.deliver_to_address|add_class:'form-control' }}
+                                {% if form.deliver_to_address.errors %}
+                                <div class="text-danger small">{{ form.deliver_to_address.errors.0 }}</div>
+                            {% endif %}
+                                    </div>
+                        
+                        
+                                    </div>
+                                </div>
+                            </div>
+
+            <!-- Right Part - Shipping Details (no right margin) -->
+            <div class="col-md-6 right-section" style="width: 50%; float: right; margin: 0; padding: 0;">
+                <div class="form-section">
+                    <h4 class="section-header">
+                        <i class="bi bi-calendar-event section-icon"></i>
+                        Shipping Details
+                    </h4>
+                    <div class="section-content">
+                        <!-- CS Date and Payment Mode -->
+                        <div class="form-row-two-col">
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.cs_date.id_for_label }}" class="form-label">
+                                    {{ form.cs_date.label }}
+                                </label>
+                                {{ form.cs_date|add_class:'form-control' }}
+                                        {% if form.cs_date.errors %}
+                                    <div class="text-danger small">{{ form.cs_date.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.payment_mode.id_for_label }}" class="form-label">
+                                    {{ form.payment_mode.label }}
+                                </label>
+                                {{ form.payment_mode|add_class:'form-select' }}
+                                        {% if form.payment_mode.errors %}
+                                    <div class="text-danger small">{{ form.payment_mode.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                        <!-- Container, BL Number and BOE -->
+                        <div class="form-row-three-col">
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.container_number.id_for_label }}" class="form-label">
+                                    {{ form.container_number.label }} *
+                                </label>
+                                {{ form.container_number|add_class:'form-control' }}
+                                        {% if form.container_number.errors %}
+                                    <div class="text-danger small">{{ form.container_number.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.bl_number.id_for_label }}" class="form-label">
+                                    {{ form.bl_number.label }}
+                                </label>
+                                {{ form.bl_number|add_class:'form-control' }}
+                                        {% if form.bl_number.errors %}
+                                    <div class="text-danger small">{{ form.bl_number.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.boe.id_for_label }}" class="form-label">
+                                    {{ form.boe.label }}
+                                </label>
+                                {{ form.boe|add_class:'form-control' }}
+                                        {% if form.boe.errors %}
+                                    <div class="text-danger small">{{ form.boe.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                        <!-- Exit Point and Destination -->
+                        <div class="form-row-two-col">
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.exit_point.id_for_label }}" class="form-label">
+                                    {{ form.exit_point.label }}
+                                </label>
+                                {{ form.exit_point|add_class:'form-select' }}
+                                        {% if form.exit_point.errors %}
+                                    <div class="text-danger small">{{ form.exit_point.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.destination.id_for_label }}" class="form-label">
+                                    {{ form.destination.label }}
+                                </label>
+                                {{ form.destination|add_class:'form-select' }}
+                                        {% if form.destination.errors %}
+                                    <div class="text-danger small">{{ form.destination.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                        <!-- Ship Mode and Ship Date -->
+                        <div class="form-row-two-col">
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.ship_mode.id_for_label }}" class="form-label">
+                                    {{ form.ship_mode.label }}
+                                </label>
+                                {{ form.ship_mode|add_class:'form-select' }}
+                                        {% if form.ship_mode.errors %}
+                                    <div class="text-danger small">{{ form.ship_mode.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.ship_date.id_for_label }}" class="form-label">
+                                    {{ form.ship_date.label }}
+                                </label>
+                                {{ form.ship_date|add_class:'form-control' }}
+                                        {% if form.ship_date.errors %}
+                                    <div class="text-danger small">{{ form.ship_date.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                        <!-- Vessel and Voyage -->
+                        <div class="form-row-two-col">
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.vessel.id_for_label }}" class="form-label">
+                                    {{ form.vessel.label }}
+                                </label>
+                                {{ form.vessel|add_class:'form-control' }}
+                                        {% if form.vessel.errors %}
+                                    <div class="text-danger small">{{ form.vessel.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.voyage.id_for_label }}" class="form-label">
+                                    {{ form.voyage.label }}
+                                </label>
+                                {{ form.voyage|add_class:'form-control' }}
+                                        {% if form.voyage.errors %}
+                                    <div class="text-danger small">{{ form.voyage.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Delivery Terms -->
+                        <div class="form-group-horizontal">
+                            <label for="{{ form.delivery_terms.id_for_label }}" class="form-label">
+                                {{ form.delivery_terms.label }}
+                            </label>
+                            {{ form.delivery_terms|add_class:'form-control' }}
+                            {% if form.delivery_terms.errors %}
+                                <div class="text-danger small">{{ form.delivery_terms.errors.0 }}</div>
+                                        {% endif %}
+                        </div>
+
+                        <!-- Port of Loading and Discharge Port -->
+                        <div class="form-row-two-col">
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.port_of_loading.id_for_label }}" class="form-label">
+                                    {{ form.port_of_loading.label }}
+                                </label>
+                                {{ form.port_of_loading|add_class:'form-select' }}
+                                {% if form.port_of_loading.errors %}
+                                    <div class="text-danger small">{{ form.port_of_loading.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group-horizontal">
+                                <label for="{{ form.discharge_port.id_for_label }}" class="form-label">
+                                    {{ form.discharge_port.label }}
+                                </label>
+                                {{ form.discharge_port|add_class:'form-select' }}
+                                {% if form.discharge_port.errors %}
+                                    <div class="text-danger small">{{ form.discharge_port.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- CS Summary Button -->
+                        <div class="form-group-horizontal">
+                            <label class="form-label">CS Summary:</label>
+                            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#csSummaryModal">
+                                <i class="bi bi-table me-1"></i>
+                                Open CS Summary
+                            </button>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+    
+        <!-- Available Cargo Items Section -->
+        <div class="row mt-4 mx-0">
+            <div class="col-12 px-0">
+            <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-box-seam me-2"></i>
+                            Available Cargo Items (Showing Remaining Quantities)
+                        </h5>
+                </div>
+                <div class="card-body">
+                    <div id="cargo-selection">
+                            <!-- Loading Spinner -->
+                            <div id="loading-spinner" class="loading-spinner">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading cargo items...</p>
+                            </div>
+                            
+                        <div class="table-responsive">
+                                <table class="table table-sm table-striped table-hover cargo-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="select-all-cargo" class="form-check-input">
+                                        </th>
+                                        <th>Job No</th>
+                                        <th>Item Code</th>
+                                        <th>Item</th>
+                                        <th>HS Code</th>
+                                        <th>Unit</th>
+                                        <th>Available QTY</th>
+                                        <th>COO</th>
+                                        <th>N-weight</th>
+                                        <th>G-weight</th>
+                                        <th>Rate</th>
+                                        <th>Amount</th>
+                                        <th>ED</th>
+                                            <th>Remark</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cargo-items-tbody">
+                                    <tr>
+                                            <td colspan="14" class="text-center text-muted">
+                                            Select a customer to view available cargo items
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                            <div class="mt-3">
+                                <button type="button" id="add-selected-cargo" class="btn btn-primary" disabled>
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Add Selected Cargo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Cargo Summary -->
+                        <div id="selected-cargo-summary" class="mt-4" style="display: none;">
+                            <h6 class="text-primary border-bottom pb-2">
+                                <i class="bi bi-list-check me-2"></i>
+                                Selected Cargo Items
+                            </h6>
+                        <div class="table-responsive">
+                                <table class="table table-sm table-bordered cargo-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Job No</th>
+                                        <th>Item Code</th>
+                                        <th>Item</th>
+                                        <th>HS Code</th>
+                                        <th>Unit</th>
+                                        <th>QTY</th>
+                                        <th>COO</th>
+                                        <th>N-weight</th>
+                                        <th>G-weight</th>
+                                        <th>Rate</th>
+                                        <th>Amount</th>
+                                        <th>ED</th>
+                                            <th>Remark</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="selected-cargo-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        <!-- Submit Buttons -->
+        <div class="row mt-4 mx-0">
+            <div class="col-12 px-0 d-flex justify-content-center gap-3">
+                <a href="{% url 'crossstuffing:crossstuffing_list' %}" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check-circle me-2"></i>
+                    {% if form.instance.pk %}
+                        Update Cross Stuffing
+                    {% else %}
+                        Save Cross Stuffing
+                    {% endif %}
+                </button>
+            </div>
+        </div>
+    
+    <!-- Hidden input for selected cargo items -->
+    <input type="hidden" id="selected-cargo-items-input" name="selected_cargo_items" value="">
+    
+    {% if existing_cargo_items %}
+    {{ existing_cargo_items|json_script:"existing-cargo-items" }}
+    {% endif %}
+    
+    <!-- Hidden input for CS Summary data -->
+    <input type="hidden" id="cs-summary-data-input" name="cs_summary_data" value="">
+    
+    {% if existing_summary_items %}
+    {{ existing_summary_items|json_script:"existing-summary-items" }}
+    {% endif %}
+</form>
+
+<!-- CS Summary Modal -->
+<div class="modal fade" id="csSummaryModal" tabindex="-1" aria-labelledby="csSummaryModalLabel" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="csSummaryModalLabel">
+                    <i class="bi bi-table me-2"></i>
+                    CS Summary
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" tabindex="0"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Help text for auto-populate functionality -->
+                <div class="alert alert-info mb-3">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Auto-populate from Selected Cargo & Job:</strong> First select a job and cargo items from the main form, then click "Auto-populate from Selected Cargo" to fill Job No, Items, Qty, Imp CNTR, Size, and Seal fields from the job containers. Export fields remain empty for manual entry.
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered" id="csSummaryTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Job No</th>
+                                <th>Items</th>
+                                <th>Qty</th>
+                                <th>Imp CNTR</th>
+                                <th>Size</th>
+                                <th>Seal</th>
+                                <th>Exp CNTR</th>
+                                <th>Exp Size</th>
+                                <th>Exp Seal</th>
+                                <th>Remarks</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="csSummaryTableBody">
+                            <!-- Rows will be added dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-success me-2" id="addCsSummaryRow">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Add New Row
+                    </button>
+                    <button type="button" class="btn btn-info" id="autoPopulateFromCargo" disabled>
+                        <i class="bi bi-magic me-1"></i>
+                        Auto-populate from Selected Cargo
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveCsSummary">Save Summary</button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+let selectedCargo = [];
+let cargoData = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form submission debugging
+    const form = document.querySelector('.crossstuffing-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submission started');
+            console.log('Form action:', this.action);
+            console.log('Form method:', this.method);
+            
+            // Set the selected cargo items data before submission
+            const selectedCargoInput = document.getElementById('selected-cargo-items-input');
+            if (selectedCargoInput) {
+                selectedCargoInput.value = JSON.stringify(selectedCargo);
+                console.log('Selected cargo items:', selectedCargo);
+                console.log('Selected cargo items JSON:', selectedCargoInput.value);
+            }
+            
+            // Set the CS Summary data before submission
+            const csSummaryInput = document.getElementById('cs-summary-data-input');
+            if (csSummaryInput) {
+                csSummaryInput.value = JSON.stringify(csSummaryData);
+                console.log('CS Summary data:', csSummaryData);
+                console.log('CS Summary data JSON:', csSummaryInput.value);
+            }
+            
+            // Log all form data
+            const formData = new FormData(this);
+            for (let [key, value] of formData.entries()) {
+                console.log('Form field:', key, '=', value);
+            }
+            
+            // Don't prevent default - let the form submit normally
+            console.log('Allowing form submission to proceed');
+        });
+    }
+
+    const customerSelect = document.getElementById('customer-select') || document.getElementById('id_customer');
+    const cargoTbody = document.getElementById('cargo-items-tbody');
+    const selectAllCheckbox = document.getElementById('select-all-cargo');
+    const addSelectedBtn = document.getElementById('add-selected-cargo');
+    const selectedCargoSummary = document.getElementById('selected-cargo-summary');
+    const selectedCargoTbody = document.getElementById('selected-cargo-tbody');
+    const loadingSpinner = document.getElementById('loading-spinner');
+
+    console.log('Customer select element:', customerSelect);
+
+    function showLoading() {
+        loadingSpinner.classList.add('show');
+        cargoTbody.innerHTML = '';
+    }
+
+    function hideLoading() {
+        loadingSpinner.classList.remove('show');
+    }
+
+    function renderCargoTable(items) {
+        let html = '';
+        if (items.length > 0) {
+            items.forEach((item, idx) => {
+                const availableQty = parseFloat(item.quantity) || 0;
+                const originalQty = parseFloat(item.original_quantity) || 0;
+                const usedQty = parseFloat(item.used_quantity) || 0;
+                const originalRate = parseFloat(item.rate) || 0;
+                const originalNetWeight = parseFloat(item.net_weight) || 0;
+                const originalGrossWeight = parseFloat(item.gross_weight) || 0;
+                const originalAmount = parseFloat(item.amount) || 0;
+                
+                // Calculate weight per unit
+                const netWeightPerUnit = availableQty > 0 ? originalNetWeight / availableQty : 0;
+                const grossWeightPerUnit = availableQty > 0 ? originalGrossWeight / availableQty : 0;
+                
+                // Create balance info text
+                const balanceInfo = originalQty > 0 ? `<br><small class="text-muted">Balance: ${availableQty} / ${originalQty} (Used: ${usedQty})</small>` : '';
+                
+                html += `<tr data-idx="${idx}" data-original-qty="${availableQty}" data-original-rate="${originalRate}" data-net-weight-per-unit="${netWeightPerUnit}" data-gross-weight-per-unit="${grossWeightPerUnit}">
+                    <td><input type="checkbox" class="cargo-checkbox" data-idx="${idx}"></td>
+                    <td>${item.job_code || ''}</td>
+                    <td>${item.item_code || ''}</td>
+                    <td>${item.item_name || ''}</td>
+                    <td>${item.hs_code || ''}</td>
+                    <td>${item.unit || ''}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm cargo-qty" 
+                               value="${item.quantity || ''}" 
+                               min="0" 
+                               max="${availableQty}" 
+                               step="0.01" 
+                               data-original="${availableQty}"
+                               style="width: 80px;">
+                        ${balanceInfo}
+                    </td>
+                    <td>${item.coo || ''}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm cargo-net-weight" 
+                               value="${item.net_weight || ''}" 
+                               readonly 
+                               style="width: 80px;">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm cargo-gross-weight" 
+                               value="${item.gross_weight || ''}" 
+                               readonly 
+                               style="width: 80px;">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm cargo-rate" 
+                               value="${item.rate || ''}" 
+                               min="${originalRate}" 
+                               step="0.01" 
+                               data-original="${originalRate}"
+                               style="width: 80px;">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm cargo-amount" 
+                               value="${item.amount || ''}" 
+                               readonly 
+                               style="width: 80px;">
+                    </td>
+                    <td>${item.ed || ''}</td>
+                    <td>${item.remark || ''}</td>
+                </tr>`;
+            });
+        } else {
+            html = `<tr><td colspan="14" class="text-center text-muted">No cargo items found for this customer.</td></tr>`;
+        }
+        cargoTbody.innerHTML = html;
+        addSelectedBtn.disabled = true;
+        // Don't reset selectedCargo here - preserve existing selections when editing
+        // selectedCargo = []; // REMOVED THIS LINE
+        // Only hide selected cargo summary if there are no selected items
+        selectedCargoSummary.style.display = selectedCargo.length > 0 ? 'block' : 'none';
+        
+        // Add event listeners for editable fields
+        addCargoFieldListeners();
+    }
+
+    function addCargoFieldListeners() {
+        // Quantity change listeners
+        document.querySelectorAll('.cargo-qty').forEach(input => {
+            input.addEventListener('input', function() {
+                const row = this.closest('tr');
+                const idx = row.getAttribute('data-idx');
+                const availableQty = parseFloat(row.getAttribute('data-original-qty'));
+                const newQty = parseFloat(this.value) || 0;
+                const netWeightPerUnit = parseFloat(row.getAttribute('data-net-weight-per-unit'));
+                const grossWeightPerUnit = parseFloat(row.getAttribute('data-gross-weight-per-unit'));
+                const rateInput = row.querySelector('.cargo-rate');
+                const rate = parseFloat(rateInput.value) || 0;
+                
+                // Validate quantity
+                if (newQty > availableQty) {
+                    this.value = availableQty;
+                    alert(`Quantity cannot exceed the available quantity of ${availableQty}`);
+                    return;
+                }
+                
+                // Calculate new weights
+                const newNetWeight = newQty * netWeightPerUnit;
+                const newGrossWeight = newQty * grossWeightPerUnit;
+                const newAmount = newQty * rate;
+                
+                // Update weight and amount fields
+                row.querySelector('.cargo-net-weight').value = newNetWeight.toFixed(2);
+                row.querySelector('.cargo-gross-weight').value = newGrossWeight.toFixed(2);
+                row.querySelector('.cargo-amount').value = newAmount.toFixed(2);
+                
+                // Update cargoData
+                if (cargoData[idx]) {
+                    cargoData[idx].quantity = newQty.toString();
+                    cargoData[idx].net_weight = newNetWeight.toFixed(2);
+                    cargoData[idx].gross_weight = newGrossWeight.toFixed(2);
+                    cargoData[idx].amount = newAmount.toFixed(2);
+                }
+            });
+        });
+        
+        // Rate change listeners
+        document.querySelectorAll('.cargo-rate').forEach(input => {
+            let isUserTyping = false;
+            
+            input.addEventListener('focus', function() {
+                this.select(); // Select all text when focused
+                isUserTyping = true;
+            });
+            
+            input.addEventListener('blur', function() {
+                isUserTyping = false;
+                // Validate on blur if field is not empty
+                const originalRate = parseFloat(this.getAttribute('data-original'));
+                const newRate = parseFloat(this.value) || 0;
+                
+                if (this.value !== '' && newRate < originalRate) {
+                    this.value = originalRate;
+                    alert(`Rate cannot be less than the original rate of ${originalRate}`);
+                }
+            });
+            
+            input.addEventListener('input', function() {
+                if (!isUserTyping) return;
+                
+                const row = this.closest('tr');
+                const idx = row.getAttribute('data-idx');
+                const qtyInput = row.querySelector('.cargo-qty');
+                const qty = parseFloat(qtyInput.value) || 0;
+                
+                // Allow any input during typing, validation will happen on blur
+                const newRate = parseFloat(this.value) || 0;
+                const rateForCalculation = this.value === '' ? 0 : newRate;
+                const newAmount = qty * rateForCalculation;
+                
+                // Update amount field
+                row.querySelector('.cargo-amount').value = newAmount.toFixed(2);
+                
+                // Update cargoData
+                if (cargoData[idx]) {
+                    cargoData[idx].rate = this.value === '' ? '' : newRate.toString();
+                    cargoData[idx].amount = newAmount.toFixed(2);
+                }
+            });
+        });
+    }
+
+    function renderSelectedCargoTable() {
+        let html = '';
+        if (selectedCargo.length > 0) {
+            selectedCargo.forEach((item, idx) => {
+                html += `<tr>
+                    <td>${item.job_code || ''}</td>
+                    <td>${item.item_code || ''}</td>
+                    <td>${item.item_name || ''}</td>
+                    <td>${item.hs_code || ''}</td>
+                    <td>${item.unit || ''}</td>
+                    <td>${item.quantity || ''}</td>
+                    <td>${item.coo || ''}</td>
+                    <td>${item.net_weight || ''}</td>
+                    <td>${item.gross_weight || ''}</td>
+                    <td>${item.rate || ''}</td>
+                    <td>${item.amount || ''}</td>
+                    <td>${item.ed || ''}</td>
+                    <td>${item.remark || ''}</td>
+                    <td><button type="button" class="btn btn-danger btn-sm remove-cargo" data-idx="${idx}"><i class="bi bi-trash"></i></button></td>
+                </tr>`;
+            });
+        }
+        selectedCargoTbody.innerHTML = html;
+        selectedCargoSummary.style.display = selectedCargo.length > 0 ? 'block' : 'none';
+    }
+
+    if (customerSelect) {
+        console.log('Adding event listener to customer select');
+        customerSelect.addEventListener('change', function() {
+            const customerId = this.value;
+            console.log('Customer selected:', customerId);
+            
+            if (customerId) {
+                showLoading();
+                const url = `{% url 'crossstuffing:get_customer_cargo_items' 0 %}`.replace('0', customerId);
+                console.log('Fetching from URL:', url);
+                
+                // Use the correct URL pattern
+                fetch(url)
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Received data:', data);
+                        hideLoading();
+                        cargoData = data.items || [];
+                        renderCargoTable(cargoData);
+                        
+                        // Load jobs for this customer
+                        loadJobsForCustomer(customerId);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching cargo items:', error);
+                        hideLoading();
+                        cargoTbody.innerHTML = `<tr><td colspan="14" class="text-center text-danger">Error loading cargo items. Please try again.</td></tr>`;
+                    });
+            } else {
+                hideLoading();
+                renderCargoTable([]);
+                // Clear job options
+                clearJobOptions();
+            }
+        });
+    } else {
+        console.error('Customer select element not found!');
+    }
+
+    // Handle select all
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            console.log('Select all changed:', this.checked);
+            const checkboxes = document.querySelectorAll('.cargo-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            addSelectedBtn.disabled = !this.checked;
+        });
+    }
+
+    // Handle individual checkbox change
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('cargo-checkbox')) {
+            console.log('Checkbox changed:', e.target.checked);
+            const checkboxes = document.querySelectorAll('.cargo-checkbox');
+            const checkedBoxes = document.querySelectorAll('.cargo-checkbox:checked');
+            console.log('Total checkboxes:', checkboxes.length, 'Checked:', checkedBoxes.length);
+            addSelectedBtn.disabled = checkedBoxes.length === 0;
+        }
+    });
+
+    // Add selected cargo
+    addSelectedBtn.addEventListener('click', function() {
+        console.log('Add Selected Cargo button clicked');
+        const checkboxes = document.querySelectorAll('.cargo-checkbox:checked');
+        console.log('Checked checkboxes:', checkboxes.length);
+        
+        selectedCargo = [];
+        checkboxes.forEach((cb) => {
+            const idx = parseInt(cb.getAttribute('data-idx'));
+            console.log('Processing cargo item at index:', idx);
+            if (cargoData[idx]) {
+                // Get the current values from the form fields
+                const row = cb.closest('tr');
+                const qtyInput = row.querySelector('.cargo-qty');
+                const rateInput = row.querySelector('.cargo-rate');
+                const netWeightInput = row.querySelector('.cargo-net-weight');
+                const grossWeightInput = row.querySelector('.cargo-gross-weight');
+                const amountInput = row.querySelector('.cargo-amount');
+                
+                const selectedItem = {
+                    job_cargo_id: cargoData[idx].job_cargo_id, // Include the job_cargo_id
+                    job_code: cargoData[idx].job_code,
+                    item_code: cargoData[idx].item_code,
+                    item_name: cargoData[idx].item_name,
+                    hs_code: cargoData[idx].hs_code,
+                    unit: cargoData[idx].unit,
+                    quantity: qtyInput ? qtyInput.value : cargoData[idx].quantity,
+                    coo: cargoData[idx].coo,
+                    rate: rateInput ? rateInput.value : cargoData[idx].rate,
+                    net_weight: netWeightInput ? netWeightInput.value : cargoData[idx].net_weight,
+                    gross_weight: grossWeightInput ? grossWeightInput.value : cargoData[idx].gross_weight,
+                    amount: amountInput ? amountInput.value : cargoData[idx].amount,
+                    ed: cargoData[idx].ed,
+                    remark: cargoData[idx].remark || '',
+                };
+                
+                console.log('Adding selected item:', selectedItem);
+                selectedCargo.push(selectedItem);
+            }
+        });
+        
+        console.log('Total selected cargo:', selectedCargo.length);
+        renderSelectedCargoTable();
+    });
+
+    // Remove selected cargo
+    selectedCargoTbody.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-cargo')) {
+            const idx = e.target.closest('.remove-cargo').getAttribute('data-idx');
+            selectedCargo.splice(idx, 1);
+            renderSelectedCargoTable();
+        }
+    });
+
+    // CS Summary Modal Functionality
+    let csSummaryData = [];
+    let csSummaryRowCounter = 0;
+
+    // Add new row to CS Summary table
+    document.getElementById('addCsSummaryRow').addEventListener('click', function() {
+        addCsSummaryRow();
+    });
+
+    // Save CS Summary
+    document.getElementById('saveCsSummary').addEventListener('click', function() {
+        saveCsSummaryData();
+    });
+
+    function addCsSummaryRow(data = null) {
+        const tbody = document.getElementById('csSummaryTableBody');
+        const rowId = `cs-summary-row-${csSummaryRowCounter}`;
+        
+        const newRow = document.createElement('tr');
+        newRow.id = rowId;
+        newRow.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm" name="job_no_${csSummaryRowCounter}" placeholder="Job No" value="${data ? data.job_no : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="items_${csSummaryRowCounter}" placeholder="Items" value="${data ? data.items : ''}"></td>
+            <td><input type="number" class="form-control form-control-sm" name="qty_${csSummaryRowCounter}" placeholder="Qty" step="0.01" value="${data ? data.qty : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="imp_cntr_${csSummaryRowCounter}" placeholder="Imp CNTR" value="${data ? data.imp_cntr : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="size_${csSummaryRowCounter}" placeholder="Size" value="${data ? data.size : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="seal_${csSummaryRowCounter}" placeholder="Seal" value="${data ? data.seal : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="exp_cntr_${csSummaryRowCounter}" placeholder="Exp CNTR" value="${data ? data.exp_cntr : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="exp_size_${csSummaryRowCounter}" placeholder="Exp Size" value="${data ? data.exp_size : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="exp_seal_${csSummaryRowCounter}" placeholder="Exp Seal" value="${data ? data.exp_seal : ''}"></td>
+            <td><input type="text" class="form-control form-control-sm" name="remark_${csSummaryRowCounter}" placeholder="Remark" value="${data ? data.remarks : ''}"></td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeCsSummaryRow('${rowId}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(newRow);
+        csSummaryRowCounter++;
+        
+        // Debug: Check if the data was actually set
+        if (data) {
+            console.log(`[DEBUG] Row ${csSummaryRowCounter-1} created with data:`, {
+                job_no: newRow.querySelector(`input[name="job_no_${csSummaryRowCounter-1}"]`)?.value,
+                items: newRow.querySelector(`input[name="items_${csSummaryRowCounter-1}"]`)?.value,
+                qty: newRow.querySelector(`input[name="qty_${csSummaryRowCounter-1}"]`)?.value,
+                imp_cntr: newRow.querySelector(`input[name="imp_cntr_${csSummaryRowCounter-1}"]`)?.value,
+                size: newRow.querySelector(`input[name="size_${csSummaryRowCounter-1}"]`)?.value,
+                seal: newRow.querySelector(`input[name="seal_${csSummaryRowCounter-1}"]`)?.value,
+                exp_cntr: newRow.querySelector(`input[name="exp_cntr_${csSummaryRowCounter-1}"]`)?.value,
+                exp_size: newRow.querySelector(`input[name="exp_size_${csSummaryRowCounter-1}"]`)?.value,
+                exp_seal: newRow.querySelector(`input[name="exp_seal_${csSummaryRowCounter-1}"]`)?.value,
+                remarks: newRow.querySelector(`input[name="remark_${csSummaryRowCounter-1}"]`)?.value
+            });
+        }
+    }
+
+    function removeCsSummaryRow(rowId) {
+        const row = document.getElementById(rowId);
+        if (row) {
+            row.remove();
+        }
+    }
+
+    function saveCsSummaryData() {
+        const rows = document.querySelectorAll('#csSummaryTableBody tr');
+        csSummaryData = [];
+        
+        rows.forEach((row, index) => {
+            const rowData = {
+                job_no: row.querySelector(`input[name="job_no_${index}"]`)?.value || '',
+                items: row.querySelector(`input[name="items_${index}"]`)?.value || '',
+                qty: row.querySelector(`input[name="qty_${index}"]`)?.value || '',
+                imp_cntr: row.querySelector(`input[name="imp_cntr_${index}"]`)?.value || '',
+                size: row.querySelector(`input[name="size_${index}"]`)?.value || '',
+                seal: row.querySelector(`input[name="seal_${index}"]`)?.value || '',
+                exp_cntr: row.querySelector(`input[name="exp_cntr_${index}"]`)?.value || '',
+                exp_size: row.querySelector(`input[name="exp_size_${index}"]`)?.value || '',
+                exp_seal: row.querySelector(`input[name="exp_seal_${index}"]`)?.value || '',
+                remarks: row.querySelector(`input[name="remark_${index}"]`)?.value || ''
+            };
+            csSummaryData.push(rowData);
+        });
+        
+        console.log('CS Summary Data:', csSummaryData);
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('csSummaryModal'));
+        modal.hide();
+    }
+
+    // Job loading functions
+    function loadJobsForCustomer(customerId) {
+        const jobSelect = document.getElementById('job-select') || document.getElementById('id_job');
+        if (!jobSelect) return;
+        
+        // Clear existing options
+        jobSelect.innerHTML = '<option value="">-- Select Job --</option>';
+        
+        // Fetch jobs for this customer
+        fetch(`/job/api/customer/${customerId}/jobs/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.jobs && data.jobs.length > 0) {
+                    data.jobs.forEach(job => {
+                        const option = document.createElement('option');
+                        option.value = job.id;
+                        option.textContent = job.job_code;
+                        jobSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading jobs:', error);
+            });
+    }
+
+    function clearJobOptions() {
+        const jobSelect = document.getElementById('job-select') || document.getElementById('id_job');
+        if (jobSelect) {
+            jobSelect.innerHTML = '<option value="">-- Select Job --</option>';
+        }
+    }
+
+    // Auto-populate CS Summary when both job and cargo are selected
+    function setupAutoPopulateButton() {
+        function updateAutoPopulateButton() {
+            const autoPopulateBtn = document.getElementById('autoPopulateFromCargo');
+            const jobSelect = document.getElementById('job-select') || document.getElementById('id_job');
+            
+            if (autoPopulateBtn) {
+                const hasJob = jobSelect && jobSelect.value;
+                const hasCargo = selectedCargo && selectedCargo.length > 0;
+                autoPopulateBtn.disabled = !(hasJob && hasCargo);
+                
+                // Update button text to show requirements
+                if (!hasJob && !hasCargo) {
+                    autoPopulateBtn.title = 'Please select a job and cargo items first';
+                } else if (!hasJob) {
+                    autoPopulateBtn.title = 'Please select a job first';
+                } else if (!hasCargo) {
+                    autoPopulateBtn.title = 'Please select cargo items first';
+                } else {
+                    autoPopulateBtn.title = 'Click to auto-populate from selected cargo and job containers';
+                }
+            }
+        }
+        
+        // Update button state whenever selectedCargo changes
+        const originalPush = Array.prototype.push;
+        Array.prototype.push = function(...args) {
+            const result = originalPush.apply(this, args);
+            if (this === selectedCargo) {
+                updateAutoPopulateButton();
+            }
+            return result;
+        };
+        
+        const originalSplice = Array.prototype.splice;
+        Array.prototype.splice = function(...args) {
+            const result = originalSplice.apply(this, args);
+            if (this === selectedCargo) {
+                updateAutoPopulateButton();
+            }
+            return result;
+        };
+        
+        // Listen for job selection changes
+        const jobSelect = document.getElementById('job-select') || document.getElementById('id_job');
+        if (jobSelect) {
+            jobSelect.addEventListener('change', updateAutoPopulateButton);
+        }
+        
+        // Initial state
+        updateAutoPopulateButton();
+    }
+
+    function loadJobDataForCSSummary(jobId) {
+        console.log('[DEBUG] Loading job data for ID:', jobId);
+        // Fetch job details including containers and cargo
+        fetch(`/job/api/${jobId}/details/`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('[DEBUG] Received job data:', data);
+                if (data.success) {
+                    console.log('[DEBUG] Job data success, calling autoPopulateCSSummary with:', data.job);
+                    // Auto-populate CS Summary modal with job data
+                    autoPopulateCSSummary(data.job);
+                } else {
+                    console.error('[DEBUG] Job data failed:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading job details:', error);
+            });
+    }
+
+    function autoPopulateCSSummary() {
+        console.log('[DEBUG] autoPopulateCSSummary called with selected cargo:', selectedCargo);
+        
+        // Get the selected job to fetch container information
+        const jobSelect = document.getElementById('job-select') || document.getElementById('id_job');
+        const selectedJobId = jobSelect ? jobSelect.value : null;
+        
+        if (!selectedJobId) {
+            alert('Please select a job first to get container information.');
+            return;
+        }
+        
+        if (!selectedCargo || selectedCargo.length === 0) {
+            alert('Please select cargo items first before auto-populating.');
+            return;
+        }
+        
+        // Clear existing rows
+        document.getElementById('csSummaryTableBody').innerHTML = '';
+        csSummaryRowCounter = 0;
+        
+        // First, fetch job details to get container information
+        fetch(`/job/api/${selectedJobId}/details/`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('[DEBUG] Received job data for containers:', data);
+                
+                if (data.success && data.job) {
+                    const jobData = data.job;
+                    const containers = jobData.containers || [];
+                    
+                    // Create one row for each selected cargo item
+                    selectedCargo.forEach((cargoItem, index) => {
+                        console.log('[DEBUG] Processing cargo item:', cargoItem);
+                        
+                        // Get container info for this row (cycle through available containers)
+                        const containerIndex = index % containers.length;
+                        const container = containers[containerIndex] || {};
+                        
+                        const rowData = {
+                            job_no: cargoItem.job_code || '',
+                            items: cargoItem.item_name || '',
+                            qty: cargoItem.quantity || '',
+                            imp_cntr: container.container_number || '', // From job containers
+                            size: container.container_size || '', // From job containers
+                            seal: container.seal_number || '', // From job containers
+                            exp_cntr: '', // Leave empty for user to fill
+                            exp_size: '', // Leave empty for user to fill
+                            exp_seal: '', // Leave empty for user to fill
+                            remarks: '' // Leave empty for user to fill
+                        };
+                        console.log('[DEBUG] Row data for cargo item:', rowData);
+                        addCsSummaryRow(rowData);
+                    });
+                    
+                    // Store the data
+                    csSummaryData = Array.from(document.querySelectorAll('#csSummaryTableBody tr')).map((row, index) => ({
+                        job_no: row.querySelector(`input[name="job_no_${index}"]`)?.value || '',
+                        items: row.querySelector(`input[name="items_${index}"]`)?.value || '',
+                        qty: row.querySelector(`input[name="qty_${index}"]`)?.value || '',
+                        imp_cntr: row.querySelector(`input[name="imp_cntr_${index}"]`)?.value || '',
+                        size: row.querySelector(`input[name="size_${index}"]`)?.value || '',
+                        seal: row.querySelector(`input[name="seal_${index}"]`)?.value || '',
+                        exp_cntr: row.querySelector(`input[name="exp_cntr_${index}"]`)?.value || '',
+                        exp_size: row.querySelector(`input[name="exp_size_${index}"]`)?.value || '',
+                        exp_seal: row.querySelector(`input[name="exp_seal_${index}"]`)?.value || '',
+                        remarks: row.querySelector(`input[name="remark_${index}"]`)?.value || ''
+                    }));
+                } else {
+                    console.error('[DEBUG] Failed to get job data:', data.error);
+                    alert('Failed to get job container information. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching job details:', error);
+                alert('Error fetching job details. Please try again.');
+            });
+    }
+
+    // Initialize auto-populate button
+    setupAutoPopulateButton();
+    
+    // Setup auto-populate button
+    const autoPopulateBtn = document.getElementById('autoPopulateFromCargo');
+    if (autoPopulateBtn) {
+        autoPopulateBtn.addEventListener('click', function() {
+            if (selectedCargo && selectedCargo.length > 0) {
+                autoPopulateCSSummary();
+            } else {
+                alert('Please select cargo items first before auto-populating.');
+            }
+        });
+    }
+
+    // Initialize with one empty row when modal opens
+    document.getElementById('csSummaryModal').addEventListener('show.bs.modal', function() {
+        // Clear existing rows
+        document.getElementById('csSummaryTableBody').innerHTML = '';
+        csSummaryRowCounter = 0;
+        
+        // Load existing data if available
+        const existingSummaryInput = document.getElementById('existing-summary-items');
+        let existingData = []; // Declare variable outside the if block
+        
+        if (existingSummaryInput && existingSummaryInput.textContent) {
+            try {
+                existingData = JSON.parse(existingSummaryInput.textContent);
+                console.log('[DEBUG] Loading existing CS Summary data:', existingData);
+                
+                if (existingData.length > 0) {
+                    existingData.forEach(item => {
+                        addCsSummaryRow(item);
+                    });
+                    csSummaryData = existingData;
+                } else {
+                    addCsSummaryRow(); // Add one empty row
+                }
+            } catch (e) {
+                console.error('[DEBUG] Failed to parse existing CS Summary data:', e);
+                addCsSummaryRow(); // Add one empty row
+            }
+        } else {
+            addCsSummaryRow(); // Add one empty row
+        }
+        
+        // Add sample data for new records to demonstrate the new fields
+        if (!existingData || existingData.length === 0) {
+            // Add a sample row with export fields to show the new functionality
+            setTimeout(() => {
+                const sampleRow = document.querySelector('#csSummaryTableBody tr');
+                if (sampleRow) {
+                    const expCntrInput = sampleRow.querySelector('input[name^="exp_cntr_"]');
+                    const expSizeInput = sampleRow.querySelector('input[name^="exp_size_"]');
+                    const expSealInput = sampleRow.querySelector('input[name^="exp_seal_"]');
+                    
+                    if (expCntrInput) expCntrInput.placeholder = "e.g., EXP-001";
+                    if (expSizeInput) expSizeInput.placeholder = "e.g., 40ft";
+                    if (expSealInput) expSealInput.placeholder = "e.g., SEAL-001";
+                }
+            }, 100);
+        }
+        
+        // Focus management for accessibility
+        setTimeout(() => {
+            const firstInput = document.querySelector('#csSummaryTableBody input');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }, 150);
+    });
+    
+    // Handle modal hidden event for better focus management
+    document.getElementById('csSummaryModal').addEventListener('hidden.bs.modal', function() {
+        // Return focus to the button that opened the modal
+        const openButton = document.querySelector('[data-bs-target="#csSummaryModal"]');
+        if (openButton) {
+            openButton.focus();
+        }
+    });
+
+    // If editing, load existing cargo items (run this after all functions are defined)
+    const existingCargoInput = document.getElementById('existing-cargo-items');
+    if (existingCargoInput) {
+        console.log('[DEBUG] Found script tag for existing cargo items:', existingCargoInput.textContent);
+        try {
+            selectedCargo = JSON.parse(existingCargoInput.textContent);
+            console.log('[DEBUG] Parsed selectedCargo:', selectedCargo);
+        } catch (e) {
+            console.error('[DEBUG] Failed to parse existing cargo items:', e);
+            selectedCargo = [];
+        }
+        // Always render the selected cargo table after parsing
+        if (typeof renderSelectedCargoTable === 'function') {
+            renderSelectedCargoTable();
+            console.log('[DEBUG] Called renderSelectedCargoTable() after parsing existing cargo');
+        } else {
+            console.error('[DEBUG] renderSelectedCargoTable function not found');
+            // Fallback: manually show the selected cargo table if we have items
+            if (selectedCargo.length > 0) {
+                const selectedCargoSummary = document.getElementById('selected-cargo-summary');
+                if (selectedCargoSummary) {
+                    selectedCargoSummary.style.display = 'block';
+                    console.log('[DEBUG] Manually showed selected cargo summary');
+                }
+            }
+        }
+        // Pre-select the customer and trigger change to load available cargo
+        const customerSelect = document.getElementById('customer-select') || document.getElementById('id_customer');
+        if (customerSelect) {
+            customerSelect.value = '{{ crossstuffing.customer.id }}';
+            customerSelect.dispatchEvent(new Event('change'));
+            console.log('[DEBUG] Pre-selected customer and triggered change event');
+        } else {
+            console.error('[DEBUG] Customer select element not found');
+        }
+    } else {
+        // No existing cargo items (create mode)
+        selectedCargo = [];
+        if (typeof renderSelectedCargoTable === 'function') {
+            renderSelectedCargoTable();
+            console.log('[DEBUG] Called renderSelectedCargoTable() in create mode');
+        }
+    }
+
+    // Customer dropdown functionality for Bill To and Deliver To
+    document.addEventListener('DOMContentLoaded', function() {
+        const billToSelect = document.getElementById('id_bill_to_customer');
+        const deliverToSelect = document.getElementById('id_deliver_to_customer');
+        const billToAddressField = document.getElementById('id_bill_to_address');
+        const deliverToAddressField = document.getElementById('id_deliver_to_address');
+
+        // Function to get customer address via AJAX
+        function getCustomerAddress(customerId, addressField) {
+            if (!customerId) {
+                if (addressField) addressField.value = '';
+                return;
+            }
+            
+            fetch(`/customer/api/${customerId}/address/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (addressField && data.address) {
+                        addressField.value = data.address;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching customer address:', error);
+                });
+        }
+
+        // Bill To customer selection
+        if (billToSelect) {
+            billToSelect.addEventListener('change', function() {
+                const customerId = this.value;
+                getCustomerAddress(customerId, billToAddressField);
+            });
+        }
+
+        // Deliver To customer selection
+        if (deliverToSelect) {
+            deliverToSelect.addEventListener('change', function() {
+                const customerId = this.value;
+                getCustomerAddress(customerId, deliverToAddressField);
+            });
+        }
+    });
+});
+</script>
+{% endblock %} 

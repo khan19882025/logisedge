@@ -1,0 +1,528 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}PDF Preview Tool Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-file-pdf text-primary"></i>
+                    PDF Preview Tool Dashboard
+                </h1>
+                <p class="page-subtitle">Manage and preview your ERP documents with advanced PDF capabilities</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Documents
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_documents }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-pdf fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Recent Sessions
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ recent_sessions|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-eye fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Document Types
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ documents_by_type|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tags fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Recent Activity
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ recent_activity|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_upload' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-upload"></i>
+                                Upload Document
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_create' %}" class="btn btn-success btn-block">
+                                <i class="fas fa-plus"></i>
+                                Create Document
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:document_list' %}" class="btn btn-info btn-block">
+                                <i class="fas fa-list"></i>
+                                Browse Documents
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{% url 'pdf_preview_tool:preview_settings' %}" class="btn btn-warning btn-block">
+                                <i class="fas fa-cog"></i>
+                                Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Documents -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clock"></i> Recent Documents
+                    </h6>
+                    <a href="{% url 'pdf_preview_tool:document_list' %}" class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_documents %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in recent_documents %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="document-icon me-3">
+                                                    <i class="fas fa-file-pdf text-danger"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ document.title }}</strong>
+                                                    {% if document.description %}
+                                                        <br><small class="text-muted">{{ document.description|truncatechars:50 }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ document.document_type.get_category_display }}</span>
+                                        </td>
+                                        <td>
+                                            {% if document.status == 'approved' %}
+                                                <span class="badge badge-success">Approved</span>
+                                            {% elif document.status == 'pending' %}
+                                                <span class="badge badge-warning">Pending</span>
+                                            {% elif document.status == 'draft' %}
+                                                <span class="badge badge-secondary">Draft</span>
+                                            {% else %}
+                                                <span class="badge badge-dark">{{ document.get_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ document.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'pdf_preview_tool:document_detail' document.id %}" 
+                                                   class="btn btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'pdf_preview_tool:document_preview' document.id %}" 
+                                                   class="btn btn-outline-success" title="Preview">
+                                                    <i class="fas fa-search"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-pdf fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No documents found.</p>
+                            <a href="{% url 'pdf_preview_tool:document_upload' %}" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Upload Your First Document
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Recent Preview Sessions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history"></i> Recent Preview Sessions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_sessions %}
+                        {% for session in recent_sessions %}
+                        <div class="session-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ session.document.title|truncatechars:30 }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ session.started_at|timesince }} ago
+                                    </small>
+                                </div>
+                                <span class="badge badge-info">{{ session.document.document_type.name }}</span>
+                            </div>
+                            {% if session.duration %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> Duration: {{ session.duration }}s
+                                    </small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent preview sessions.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Document Types Distribution -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie"></i> Document Types
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if documents_by_type %}
+                        {% for doc_type in documents_by_type %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>{{ doc_type.name }}</span>
+                            <span class="badge badge-primary">{{ doc_type.doc_count }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No document types found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-activity"></i> Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                        {% for activity in recent_activity %}
+                        <div class="activity-item mb-2 p-2 border-start border-3 border-primary">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                                <span class="badge badge-sm badge-{{ activity.access_type|yesno:'success,warning' }}">
+                                    {{ activity.get_access_type_display }}
+                                </span>
+                            </div>
+                            <div class="mt-1">
+                                <strong>{{ activity.document.title|truncatechars:25 }}</strong>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent activity.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Preview Modal -->
+<div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfPreviewModalLabel">PDF Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="pdfPreviewContainer" class="text-center">
+                    <p class="text-muted">Loading PDF preview...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadPdf">
+                    <i class="fas fa-download"></i> Download
+                </button>
+                <button type="button" class="btn btn-success" id="printPdf">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.page-subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.document-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fc;
+    border-radius: 50%;
+}
+
+.session-item {
+    transition: all 0.3s ease;
+}
+
+.session-item:hover {
+    background-color: #f8f9fc;
+    transform: translateY(-2px);
+}
+
+.activity-item {
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background-color: #f8f9fc;
+}
+
+.border-start {
+    border-left-width: 3px !important;
+}
+
+.border-primary {
+    border-color: #4e73df !important;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+.me-3 {
+    margin-right: 1rem !important;
+}
+
+.mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+.mt-2 {
+    margin-top: 0.5rem !important;
+}
+
+.mt-1 {
+    margin-top: 0.25rem !important;
+}
+
+.py-4 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+}
+
+.py-3 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+
+.py-2 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+.p-3 {
+    padding: 1rem !important;
+}
+
+.p-2 {
+    padding: 0.5rem !important;
+}
+
+.px-3 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+.badge-sm {
+    font-size: 0.75em;
+    padding: 0.25em 0.6em;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // PDF Preview functionality
+    function openPdfPreview(documentId) {
+        const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+        modal.show();
+        
+        // Load PDF preview
+        loadPdfPreview(documentId);
+    }
+
+    function loadPdfPreview(documentId) {
+        const container = document.getElementById('pdfPreviewContainer');
+        container.innerHTML = '<p class="text-muted">Loading PDF preview...</p>';
+        
+        // Here you would implement the actual PDF loading logic
+        // For now, we'll show a placeholder
+        setTimeout(() => {
+            container.innerHTML = `
+                <div class="pdf-placeholder">
+                    <i class="fas fa-file-pdf fa-5x text-danger mb-3"></i>
+                    <h5>PDF Preview</h5>
+                    <p class="text-muted">PDF preview functionality will be implemented here</p>
+                    <p class="text-muted">Document ID: ${documentId}</p>
+                </div>
+            `;
+        }, 1000);
+    }
+
+    // Download PDF functionality
+    document.getElementById('downloadPdf').addEventListener('click', function() {
+        // Implement download logic
+        alert('Download functionality will be implemented here');
+    });
+
+    // Print PDF functionality
+    document.getElementById('printPdf').addEventListener('click', function() {
+        // Implement print logic
+        alert('Print functionality will be implemented here');
+    });
+
+    // Add click handlers for preview buttons
+    document.querySelectorAll('.btn-outline-success').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const documentId = this.closest('tr').querySelector('a[href*="/documents/"]').href.split('/').slice(-2)[0];
+            openPdfPreview(documentId);
+        });
+    });
+});
+</script>
+{% endblock %}

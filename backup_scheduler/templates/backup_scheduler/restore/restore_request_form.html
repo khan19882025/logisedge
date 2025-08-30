@@ -1,0 +1,614 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Restore Request{% else %}New Restore Request{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+    }
+    
+    .form-section {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #f8f9fa;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .radio-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .radio-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .radio-item:hover {
+        border-color: #667eea;
+        background-color: #f8f9ff;
+    }
+    
+    .radio-item input[type="radio"] {
+        margin: 0;
+    }
+    
+    .checkbox-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .checkbox-item:hover {
+        border-color: #667eea;
+        background-color: #f8f9ff;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        margin: 0;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .alert-info {
+        background-color: #e7f3ff;
+        border-color: #b3d9ff;
+        color: #004085;
+    }
+    
+    .btn-group {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+    }
+    
+    .progress-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+    
+    .step {
+        display: flex;
+        align-items: center;
+        margin: 0 1rem;
+    }
+    
+    .step-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+    
+    .step.active .step-number {
+        background: #667eea;
+        color: white;
+    }
+    
+    .step.completed .step-number {
+        background: #28a745;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    {% if form.instance.pk %}Edit Restore Request{% else %}New Restore Request{% endif %}
+                </h1>
+                <div>
+                    <a href="{% url 'backup_scheduler:restore_request_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <a href="{% url 'backup_scheduler:restore_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="row">
+        <div class="col-12">
+            <div class="progress-indicator">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <span>Basic Information</span>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <span>Restore Configuration</span>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <span>Safety & Scheduling</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="restoreRequestForm">
+        {% csrf_token %}
+        
+        <!-- Basic Information Section -->
+        <div class="form-container">
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-info-circle text-primary"></i> Basic Information
+                </h5>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                {{ form.title.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                {{ form.priority.label }}
+                            </label>
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.priority.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                        {{ form.description.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.description.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.target_environment.id_for_label }}" class="form-label">
+                                {{ form.target_environment.label }}
+                            </label>
+                            {{ form.target_environment }}
+                            {% if form.target_environment.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.target_environment.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Requires Approval</label>
+                            <div class="form-check">
+                                {{ form.requires_approval }}
+                                <label class="form-check-label" for="{{ form.requires_approval.id_for_label }}">
+                                    This restore request requires approval before execution
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restore Configuration Section -->
+        <div class="form-container">
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-cogs text-warning"></i> Restore Configuration
+                </h5>
+                
+                <div class="form-group">
+                    <label class="form-label">Restore Type <span class="text-danger">*</span></label>
+                    <div class="radio-group">
+                        {% for choice in form.restore_type_display %}
+                        <label class="radio-item">
+                            {{ choice.tag }}
+                            <span>{{ choice.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.restore_type.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.restore_type.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Source Type <span class="text-danger">*</span></label>
+                    <div class="radio-group">
+                        {% for choice in form.source_type %}
+                        <label class="radio-item">
+                            {{ choice.tag }}
+                            <span>{{ choice.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.source_backup.id_for_label }}" class="form-label">
+                                Source Backup
+                            </label>
+                            {{ form.source_backup }}
+                            {% if form.source_backup.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.source_backup.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">Select an existing backup to restore from</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.backup_file.id_for_label }}" class="form-label">
+                                Upload Backup File
+                            </label>
+                            {{ form.backup_file }}
+                            {% if form.backup_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.backup_file.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">Upload a backup file (.sql, .bak, .zip, .tar.gz)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.restore_modules.id_for_label }}" class="form-label">
+                                Restore Modules
+                            </label>
+                            {{ form.restore_modules }}
+                            {% if form.restore_modules.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.restore_modules.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">Select specific modules to restore</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.target_timestamp.id_for_label }}" class="form-label">
+                                Target Timestamp
+                            </label>
+                            {{ form.target_timestamp }}
+                            {% if form.target_timestamp.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.target_timestamp.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="help-text">Required for point-in-time recovery</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.restore_tables.id_for_label }}" class="form-label">
+                        Specific Tables
+                    </label>
+                    {{ form.restore_tables }}
+                    {% if form.restore_tables.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.restore_tables.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="help-text">Enter table names, one per line (optional)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.restore_records.id_for_label }}" class="form-label">
+                        Record Filters
+                    </label>
+                    {{ form.restore_records }}
+                    {% if form.restore_records.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.restore_records.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="help-text">Enter record filters in JSON format (optional)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Safety & Scheduling Section -->
+        <div class="form-container">
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-shield-alt text-success"></i> Safety & Scheduling
+                </h5>
+                
+                <div class="form-group">
+                    <label class="form-label">Safety Options</label>
+                    <div class="checkbox-group">
+                        {% for choice in form.safety_options %}
+                        <label class="checkbox-item">
+                            {{ choice.tag }}
+                            <span>{{ choice.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Execution Schedule</label>
+                            <div class="radio-group">
+                                {% for choice in form.schedule_type %}
+                                <label class="radio-item">
+                                    {{ choice.tag }}
+                                    <span>{{ choice.choice_label }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.scheduled_at.id_for_label }}" class="form-label">
+                                Scheduled Time
+                            </label>
+                            {{ form.scheduled_at }}
+                            {% if form.scheduled_at.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.scheduled_at.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.estimated_duration.id_for_label }}" class="form-label">
+                                Estimated Duration (minutes)
+                            </label>
+                            {{ form.estimated_duration }}
+                            {% if form.estimated_duration.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.estimated_duration.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.rollback_plan.id_for_label }}" class="form-label">
+                                Rollback Plan
+                            </label>
+                            {{ form.rollback_plan }}
+                            {% if form.rollback_plan.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.rollback_plan.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden Fields -->
+        {{ form.restore_type }}
+        
+        <!-- Action Buttons -->
+        <div class="form-container">
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 
+                    {% if form.instance.pk %}Update Request{% else %}Create Request{% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle restore type selection
+        $('input[name="restore_type_display"]').change(function() {
+            const selectedType = $(this).val();
+            $('#id_restore_type').val(selectedType);
+            
+            // Show/hide relevant fields based on type
+            if (selectedType === 'point_in_time') {
+                $('.target-timestamp-group').show();
+            } else {
+                $('.target-timestamp-group').hide();
+            }
+            
+            if (selectedType === 'module_specific') {
+                $('.restore-modules-group').show();
+            } else {
+                $('.restore-modules-group').hide();
+            }
+        });
+        
+        // Handle source type selection
+        $('input[name="source_type"]').change(function() {
+            const selectedSource = $(this).val();
+            
+            if (selectedSource === 'backup_execution') {
+                $('#id_source_backup').closest('.form-group').show();
+                $('#id_backup_file').closest('.form-group').hide();
+            } else if (selectedSource === 'file_upload') {
+                $('#id_source_backup').closest('.form-group').hide();
+                $('#id_backup_file').closest('.form-group').show();
+            } else {
+                $('#id_source_backup').closest('.form-group').hide();
+                $('#id_backup_file').closest('.form-group').hide();
+            }
+        });
+        
+        // Handle schedule type selection
+        $('input[name="schedule_type"]').change(function() {
+            const selectedSchedule = $(this).val();
+            
+            if (selectedSchedule === 'scheduled') {
+                $('#id_scheduled_at').closest('.form-group').show();
+            } else {
+                $('#id_scheduled_at').closest('.form-group').hide();
+            }
+        });
+        
+        // Initialize form state
+        $('input[name="restore_type_display"]:checked').trigger('change');
+        $('input[name="source_type"]:checked').trigger('change');
+        $('input[name="schedule_type"]:checked').trigger('change');
+        
+        // Form validation
+        $('#restoreRequestForm').submit(function(e) {
+            let isValid = true;
+            
+            // Check required fields
+            if (!$('#id_title').val().trim()) {
+                alert('Please enter a title for the restore request.');
+                isValid = false;
+            }
+            
+            if (!$('#id_description').val().trim()) {
+                alert('Please enter a description for the restore request.');
+                isValid = false;
+            }
+            
+            if (!$('input[name="restore_type_display"]:checked').val()) {
+                alert('Please select a restore type.');
+                isValid = false;
+            }
+            
+            if (!$('input[name="source_type"]:checked').val()) {
+                alert('Please select a source type.');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock %}

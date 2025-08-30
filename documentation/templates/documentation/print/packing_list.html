@@ -1,0 +1,632 @@
+{% load invoice_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packing List - {{ documentation.document_no }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            font-weight: 600;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Header Section */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #000;
+        }
+        
+        .company-section {
+            flex: 1;
+            max-width: 60%;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: 900;
+            color: #000;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
+        }
+        
+        .company-details {
+            font-size: 10px;
+            color: #000;
+            line-height: 1.5;
+            font-weight: 600;
+        }
+        
+        .company-details p {
+            margin: 2px 0;
+        }
+        
+        .packing-section {
+            flex: 1;
+            max-width: 40%;
+            text-align: right;
+        }
+        
+        .packing-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: #000;
+            margin: 0 0 15px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        .packing-meta {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #000;
+        }
+        
+        .packing-meta table {
+            width: 100%;
+        }
+        
+        .packing-meta td {
+            padding: 4px 0;
+            font-size: 10px;
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .packing-meta td:first-child {
+            font-weight: 700;
+            color: #000;
+            width: 40%;
+        }
+        
+        .packing-meta td:last-child {
+            color: #000;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        /* Customer and Document Info */
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        
+        .customer-info, .document-info {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #000;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: #000;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 10px;
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .info-label {
+            font-weight: 700;
+            color: #000;
+            min-width: 80px;
+        }
+        
+        .info-value {
+            color: #000;
+            text-align: right;
+            flex: 1;
+            font-weight: 600;
+        }
+        
+        /* Items Table */
+        .items-section {
+            margin-bottom: 25px;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .items-table th {
+            background: #000;
+            color: white;
+            font-weight: 900;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 8px;
+            text-align: center;
+            border: none;
+        }
+        
+        .items-table td {
+            padding: 10px 8px;
+            border: 1px solid #000;
+            font-size: 10px;
+            text-align: center;
+            vertical-align: middle;
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .items-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .items-table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .description-cell {
+            text-align: left;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .sr-no-cell {
+            width: 40px;
+            text-align: center;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .unit-cell {
+            width: 50px;
+            text-align: center;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .qty-cell {
+            width: 50px;
+            text-align: center;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .n-weight-cell {
+            width: 60px;
+            text-align: center;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .g-weight-cell {
+            width: 60px;
+            text-align: center;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .boe-cell {
+            width: 140px;
+            text-align: center;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        /* Totals Section */
+        .totals-section {
+            margin-bottom: 25px;
+            text-align: right;
+        }
+        
+        .totals-table {
+            margin-left: auto;
+            border-collapse: collapse;
+            border: 2px solid #000;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .totals-table td {
+            padding: 8px 15px;
+            border: 1px solid #000;
+            font-size: 11px;
+            color: #000;
+            font-weight: 700;
+        }
+        
+        .totals-table td:first-child {
+            background: #f8f9fa;
+            font-weight: 800;
+            color: #000;
+            text-align: left;
+            min-width: 120px;
+        }
+        
+        .totals-table td:last-child {
+            background: #e8f5e8;
+            font-weight: 900;
+            color: #000;
+            text-align: right;
+            min-width: 100px;
+        }
+        
+        .total-row td:last-child {
+            background: #d4edda;
+            font-size: 14px;
+            color: #000;
+            font-weight: 900;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #000;
+            text-align: center;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+        }
+        
+        .signature-section {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .signature-line {
+            width: 150px;
+            height: 2px;
+            background: #000;
+            margin: 20px auto 5px;
+        }
+        
+        .signature-label {
+            font-size: 10px;
+            color: #000;
+            font-weight: 700;
+        }
+        
+        .computer-generated {
+            background: #f8f9fa;
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 9px;
+            color: #000;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        /* Print Optimizations */
+        @media print {
+            body {
+                font-size: 10px;
+            }
+            
+            .header {
+                page-break-inside: avoid;
+            }
+            
+            .items-table {
+                page-break-inside: avoid;
+            }
+            
+            .totals-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="company-section">
+                {% if company %}
+                    <h1 class="company-name">{{ company.company_name|default:company.name }}</h1>
+                    <div class="company-details">
+                        {% if company.address %}
+                            <p>{{ company.address|linebreaks }}</p>
+                        {% endif %}
+                        {% if company.phone or company.email %}
+                            <p>
+                                {% if company.phone %}📞 {{ company.phone }}{% endif %}
+                                {% if company.phone and company.email %} | {% endif %}
+                                {% if company.email %}✉️ {{ company.email }}{% endif %}
+                            </p>
+                        {% endif %}
+                        {% if company.website %}
+                            <p>🌐 {{ company.website }}</p>
+                        {% endif %}
+                        {% if company.tax_number or company.registration_number %}
+                            <p>
+                                {% if company.tax_number %}🏛️ Tax: {{ company.tax_number }}{% endif %}
+                                {% if company.tax_number and company.registration_number %} | {% endif %}
+                                {% if company.registration_number %}📋 Reg: {{ company.registration_number }}{% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <h1 class="company-name">Company Name</h1>
+                    <div class="company-details">
+                        <p>Address: ________________________</p>
+                        <p>Phone: ________________________</p>
+                        <p>Email: ________________________</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="packing-section">
+                <h1 class="packing-title">Packing List</h1>
+                <div class="packing-meta">
+                    <table>
+                        <tr>
+                            <td>Packing List No:</td>
+                            <td>{{ documentation.document_no }}</td>
+                        </tr>
+                        <tr>
+                            <td>Date:</td>
+                            <td>{{ documentation.date|date:"M d, Y"|default:"N/A" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Job No:</td>
+                            <td>{{ documentation.display_job_no|default:"N/A" }}</td>
+                        </tr>
+                        <tr>
+                            <td>Document Type:</td>
+                            <td>{{ documentation.get_document_type_display|default:"N/A" }}</td>
+                        </tr>
+                        {% if documentation.bl_number %}
+                        <tr>
+                            <td>BL Number:</td>
+                            <td>{{ documentation.bl_number }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if documentation.container %}
+                        <tr>
+                            <td>Container:</td>
+                            <td>{{ documentation.container }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer and Document Info -->
+        <div class="info-section">
+            <div class="customer-info">
+                <h3 class="section-title">Shipper Details</h3>
+                <div class="info-row">
+                    <span class="info-label">Customer:</span>
+                    <span class="info-value">{{ documentation.bill_to|default:documentation.customer.customer_name|default:"N/A" }}</span>
+                </div>
+                {% if documentation.bill_to_address %}
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value">{{ documentation.bill_to_address|linebreaks }}</span>
+                </div>
+                {% endif %}
+                {% if documentation.shipper %}
+                <div class="info-row">
+                    <span class="info-label">Shipper:</span>
+                    <span class="info-value">{{ documentation.shipper }}</span>
+                </div>
+                {% endif %}
+                {% if documentation.consignee %}
+                <div class="info-row">
+                    <span class="info-label">Consignee:</span>
+                    <span class="info-value">{{ documentation.consignee }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="document-info">
+                <h3 class="section-title">Shipment Details</h3>
+                {% if documentation.origin %}
+                <div class="info-row">
+                    <span class="info-label">Origin:</span>
+                    <span class="info-value">{{ documentation.origin }}</span>
+                </div>
+                {% endif %}
+                {% if documentation.destination %}
+                <div class="info-row">
+                    <span class="info-label">Destination:</span>
+                    <span class="info-value">{{ documentation.destination }}</span>
+                </div>
+                {% endif %}
+                {% if documentation.port_loading %}
+                <div class="info-row">
+                    <span class="info-label">Port Loading:</span>
+                    <span class="info-value">{{ documentation.port_loading }}</span>
+                </div>
+                {% endif %}
+                {% if documentation.port_discharge %}
+                <div class="info-row">
+                    <span class="info-label">Port Discharge:</span>
+                    <span class="info-value">{{ documentation.port_discharge }}</span>
+                </div>
+                {% endif %}
+                {% if documentation.vessel %}
+                <div class="info-row">
+                    <span class="info-label">Vessel:</span>
+                    <span class="info-value">{{ documentation.vessel }}</span>
+                </div>
+                {% endif %}
+                {% if documentation.voyage %}
+                <div class="info-row">
+                    <span class="info-label">Voyage:</span>
+                    <span class="info-value">{{ documentation.voyage }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="items-section">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th class="sr-no-cell">Sr No</th>
+                        <th>Item Code</th>
+                        <th>Description</th>
+                        <th>HS Code</th>
+                        <th class="boe-cell">ED</th>
+                        <th>COO</th>
+                        <th class="unit-cell">Unit</th>
+                        <th class="qty-cell">Qty</th>
+                        <th class="n-weight-cell">N-Weight</th>
+                        <th class="g-weight-cell">G-Weight</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cargo in cargo_items %}
+                    <tr>
+                        <td class="sr-no-cell">{{ forloop.counter }}</td>
+                        <td>{{ cargo.item_code|default:"-" }}</td>
+                        <td class="description-cell">{{ cargo.item_name|default:"-" }}</td>
+                        <td>{{ cargo.hs_code|default:"-" }}</td>
+                        <td class="boe-cell">
+                            {% if cargo.job_cargo.job.containers.first.ed_number %}
+                                {{ cargo.job_cargo.job.containers.first.ed_number }}
+                            {% else %}
+                                {{ documentation.boe|default:"-" }}
+                            {% endif %}
+                        </td>
+                        <td>{{ cargo.coo|default:"-" }}</td>
+                        <td class="unit-cell">{{ cargo.unit|default:"-" }}</td>
+                        <td class="qty-cell">{{ cargo.quantity|default:"-" }}</td>
+                        <td class="n-weight-cell">{{ cargo.net_weight|default:"-" }}</td>
+                        <td class="g-weight-cell">{{ cargo.gross_weight|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 20px; color: #000;">
+                            No items found for this packing list.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals Section -->
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr>
+                    <td>Total Items:</td>
+                    <td>{{ cargo_items|length }}</td>
+                </tr>
+                <tr>
+                    <td>Total Quantity:</td>
+                    <td>
+                        {% if cargo_items %}
+                            {% with total_qty=0 %}
+                                {% for cargo in cargo_items %}
+                                    {% if cargo.quantity %}
+                                        {{ total_qty|add:cargo.quantity }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total Net Weight:</td>
+                    <td>
+                        {% if cargo_items %}
+                            {% with total_net=0 %}
+                                {% for cargo in cargo_items %}
+                                    {% if cargo.net_weight %}
+                                        {{ total_net|add:cargo.net_weight }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                        {% else %}
+                            0.00
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total Gross Weight:</td>
+                    <td>
+                        {% if cargo_items %}
+                            {% with total_gross=0 %}
+                                {% for cargo in cargo_items %}
+                                    {% if cargo.gross_weight %}
+                                        {{ total_gross|add:cargo.gross_weight }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                        {% else %}
+                            0.00
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div class="signature-section">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Prepared By</div>
+                </div>
+                
+                <div class="signature-section">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Authorized Signature</div>
+                </div>
+                
+                <div class="signature-section">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">Company Stamp</div>
+                </div>
+            </div>
+            
+            <div class="computer-generated">
+                <strong>This is a computer generated packing list, does not require signature and stamp</strong>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

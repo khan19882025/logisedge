@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Quotation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'freight_quotation/css/quotation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-trash me-2"></i>Delete Quotation
+        </h1>
+        <div>
+            <a href="{% url 'freight_quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <h6 class="alert-heading">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Warning!
+                </h6>
+                <p class="mb-0">
+                    You are about to delete the quotation "<strong>{{ object.quotation_number }}</strong>". 
+                    This action cannot be undone.
+                </p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Quotation Details:</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Quotation Number:</strong></td>
+                            <td>{{ object.quotation_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Customer:</strong></td>
+                            <td>{{ object.customer.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Origin:</strong></td>
+                            <td>{{ object.origin }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Destination:</strong></td>
+                            <td>{{ object.destination }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                {% if object.status == 'draft' %}
+                                    <span class="badge bg-secondary">Draft</span>
+                                {% elif object.status == 'sent' %}
+                                    <span class="badge bg-info">Sent</span>
+                                {% elif object.status == 'accepted' %}
+                                    <span class="badge bg-success">Accepted</span>
+                                {% elif object.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Cancelled</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Amount:</strong></td>
+                            <td>{{ object.currency }} {{ object.grand_total }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Impact Analysis:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-info-circle text-info me-2"></i>
+                            This quotation has {{ object.charges.count }} charge(s)
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-info-circle text-info me-2"></i>
+                            This quotation has {{ object.attachments.count }} attachment(s)
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            All associated charges and attachments will also be deleted
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'freight_quotation:quotation_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Quotation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

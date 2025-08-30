@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account Types - {{ company.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chart_of_accounts/chart_of_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-tags text-primary"></i>
+                Account Types
+            </h1>
+            <p class="text-muted">Manage account types and categories for chart of accounts</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="btn-group" role="group">
+                <a href="{% url 'chart_of_accounts:account_type_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i>
+                    New Account Type
+                </a>
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-download"></i>
+                    Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'chart_of_accounts:export_account_types_excel' %}">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
+                    </a></li>
+                </ul>
+            </div>
+            <a href="{% url 'chart_of_accounts:import_account_types_excel' %}" class="btn btn-info">
+                <i class="bi bi-upload"></i>
+                Import Excel
+            </a>
+            <a href="{% url 'chart_of_accounts:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Account Types</h6>
+                            <h3 class="mb-0">{{ total_account_types }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-tags fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active</h6>
+                            <h3 class="mb-0">{{ active_account_types }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Inactive</h6>
+                            <h3 class="mb-0">{{ inactive_account_types }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-x-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Categories</h6>
+                            <h3 class="mb-0">{{ categories|length }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-collection fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-pie-chart"></i>
+                        Account Types by Category
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for category_code, category_name in categories %}
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 mb-1">
+                                    {% for code, count in category_counts.items %}
+                                        {% if code == category_code %}{{ count }}{% endif %}
+                                    {% endfor %}
+                                </div>
+                                <small class="text-muted">{{ category_name }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Panel -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-search"></i>
+                Search & Filter
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search account types...">
+                </div>
+                <div class="col-md-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">All Categories</option>
+                        {% for category_code, category_name in categories %}
+                            <option value="{{ category_code }}" {% if category_filter == category_code %}selected{% endif %}>
+                                {{ category_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i>
+                            Search
+                        </button>
+                        <a href="{% url 'chart_of_accounts:account_type_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Account Types Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-list-ul"></i>
+                Account Types
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Accounts</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for account_type in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ account_type.name }}</strong>
+                                </td>
+                                <td>
+                                    {% if account_type.category == 'ASSET' %}
+                                        <span class="badge bg-primary">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'LIABILITY' %}
+                                        <span class="badge bg-danger">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'EQUITY' %}
+                                        <span class="badge bg-success">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'REVENUE' %}
+                                        <span class="badge bg-info">{{ account_type.get_category_display }}</span>
+                                    {% elif account_type.category == 'EXPENSE' %}
+                                        <span class="badge bg-warning">{{ account_type.get_category_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ account_type.get_category_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if account_type.description %}
+                                        {{ account_type.description|truncatewords:10 }}
+                                    {% else %}
+                                        <span class="text-muted">No description</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ account_type.accounts.count }} accounts
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if account_type.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'chart_of_accounts:account_type_detail' account_type.pk %}" 
+                                           class="btn btn-sm btn-outline-info"
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="View Details">
+                                            <i class="bi bi-eye-fill"></i>
+                                        </a>
+                                        <a href="{% url 'chart_of_accounts:account_type_edit' account_type.pk %}" 
+                                           class="btn btn-sm btn-outline-warning"
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <a href="{% url 'chart_of_accounts:account_type_delete' account_type.pk %}" 
+                                           class="btn btn-sm btn-outline-danger"
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="Delete">
+                                            <i class="bi bi-trash3-fill"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Account types pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-tags fs-1 text-muted"></i>
+                    <h4 class="mt-3">No Account Types Found</h4>
+                    <p class="text-muted">
+                        {% if search_query or category_filter or status_filter %}
+                            No account types match your search criteria.
+                        {% else %}
+                            No account types have been created yet.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'chart_of_accounts:account_type_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>
+                        Create First Account Type
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+</script>
+{% endblock %}

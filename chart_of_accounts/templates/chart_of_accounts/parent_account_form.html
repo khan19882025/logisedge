@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Chart of Accounts{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chart_of_accounts/chart_of_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-folder-plus text-success"></i>
+                {{ title }}
+            </h1>
+            <p class="text-muted">
+                {% if form.instance.pk %}
+                    Edit parent account details and settings
+                {% else %}
+                    Create a new parent account (group) in the chart of accounts
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'chart_of_accounts:account_list' %}" class="coa-btn coa-btn-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Parent Account Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="coa-form-card">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Parent Account Information:</strong> Parent accounts are group accounts that can contain child accounts. They cannot have transactions posted directly to them.
+                </div>
+                
+                <form method="post" class="coa-form" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Hidden field for account ID in edit mode -->
+                    {% if form.instance.pk %}
+                        <input type="hidden" id="account-id" value="{{ form.instance.pk }}">
+                    {% endif %}
+                    
+                    <div class="row">
+                        <!-- Basic Information -->
+                        <div class="col-md-6">
+                            <h5 class="form-title">
+                                <i class="bi bi-info-circle"></i>
+                                Basic Information
+                            </h5>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.account_code.id_for_label }}" class="form-label">
+                                    Account Code <span class="text-danger">*</span>
+                                </label>
+                                
+                                <!-- Auto-generate checkbox -->
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="auto_generate_code" name="auto_generate_code" checked>
+                                    <label class="form-check-label" for="auto_generate_code">
+                                        Auto-generate account code based on account type
+                                    </label>
+                                </div>
+                                
+                                {{ form.account_code }}
+                                {% if form.account_code.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.account_code.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Parent account code will be auto-generated based on account type. You can also enter a custom code if needed.
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    Parent Account Name <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    Description
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Account Classification -->
+                        <div class="col-md-6">
+                            <h5 class="form-title">
+                                <i class="bi bi-tags"></i>
+                                Account Classification
+                            </h5>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.account_type.id_for_label }}" class="form-label">
+                                    Account Type <span class="text-danger">*</span>
+                                </label>
+                                {{ form.account_type }}
+                                {% if form.account_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.account_type.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.account_nature.id_for_label }}" class="form-label">
+                                    Account Nature <span class="text-danger">*</span>
+                                </label>
+                                {{ form.account_nature }}
+                                {% if form.account_nature.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.account_nature.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                    Currency <span class="text-danger">*</span>
+                                </label>
+                                {{ form.currency }}
+                                {% if form.currency.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.currency.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        Active
+                                    </label>
+                                </div>
+                                {% if form.is_active.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.is_active.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Inactive parent accounts cannot be used for new child accounts.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'chart_of_accounts:account_list' %}" class="coa-btn coa-btn-secondary">
+                                    <i class="bi bi-x-circle"></i>
+                                    Cancel
+                                </a>
+                                <button type="submit" class="coa-btn coa-btn-success">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if form.instance.pk %}
+                                        Update Parent Account
+                                    {% else %}
+                                        Create Parent Account
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'chart_of_accounts/chart_of_accounts.js' %}"></script>
+<script>
+    // Account type categories for JavaScript
+    const accountTypeCategories = {{ account_type_categories|safe }};
+    
+    $(document).ready(function() {
+        // Initialize account code generation
+        initializeAccountCodeGeneration();
+        
+        // Update account nature based on account type selection
+        $('#account_type').on('change', function() {
+            const accountTypeId = $(this).val();
+            const category = accountTypeCategories[accountTypeId];
+            
+            if (category) {
+                updateAccountNatureOptions(category);
+            }
+            
+            // Auto-generate code if checkbox is checked
+            if ($('#auto_generate_code').is(':checked')) {
+                generateAccountCode();
+            }
+        });
+        
+        // Auto-generate code when checkbox is checked
+        $('#auto_generate_code').on('change', function() {
+            if ($(this).is(':checked')) {
+                generateAccountCode();
+            }
+        });
+        
+        // Function to generate account code
+        function generateAccountCode() {
+            const accountTypeId = $('#account_type').val();
+            
+            if (accountTypeId) {
+                $.ajax({
+                    url: '/chart-of-accounts/ajax/generate-account-code/',
+                    method: 'POST',
+                    data: {
+                        account_type_id: accountTypeId,
+                        is_parent: true,
+                        csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#account_code').val(response.account_code);
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Function to update account nature options
+        function updateAccountNatureOptions(category) {
+            const accountNatureSelect = $('#account_nature');
+            accountNatureSelect.empty();
+            
+            // Add default option
+            accountNatureSelect.append('<option value="">Select Account Nature</option>');
+            
+            // Add nature options based on category
+            if (category === 'ASSET' || category === 'EXPENSE') {
+                accountNatureSelect.append('<option value="DEBIT">Debit</option>');
+            } else if (category === 'LIABILITY' || category === 'EQUITY' || category === 'REVENUE') {
+                accountNatureSelect.append('<option value="CREDIT">Credit</option>');
+            }
+        }
+    });
+</script>
+{% endblock %}

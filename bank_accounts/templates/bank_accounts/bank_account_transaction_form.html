@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bank_accounts/css/bank_accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="bank-accounts-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-exchange-alt"></i> {{ title }}</h2>
+                <p class="subtitle">
+                    Add transaction to {{ bank_account.bank_name }} - {{ bank_account.masked_account_number }}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'bank_accounts:bank_account_transactions' bank_account.pk %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Transactions
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="bank-account-form-content">
+        <!-- Account Information -->
+        <div class="form-section">
+            <h4><i class="fas fa-info-circle"></i> Account Information</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <label class="info-label">Bank Name</label>
+                        <div class="info-value">{{ bank_account.bank_name }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-group">
+                        <label class="info-label">Current Balance</label>
+                        <div class="info-value current-balance">{{ bank_account.balance_formatted }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Form -->
+        <form method="post" id="transaction-form" class="transaction-form">
+            {% csrf_token %}
+            
+            <div class="form-section">
+                <h4><i class="fas fa-edit"></i> Transaction Details</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="{{ form.transaction_date.id_for_label }}" class="form-label">Transaction Date *</label>
+                        {{ form.transaction_date }}
+                        {% if form.transaction_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.transaction_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.transaction_type.id_for_label }}" class="form-label">Transaction Type *</label>
+                        {{ form.transaction_type }}
+                        {% if form.transaction_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.transaction_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">Amount *</label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.amount.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.reference_number.id_for_label }}" class="form-label">Reference Number</label>
+                        {{ form.reference_number }}
+                        {% if form.reference_number.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.reference_number.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description *</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Balance Preview -->
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <div class="balance-preview-card">
+                            <div class="balance-preview-header">
+                                <h6><i class="fas fa-calculator"></i> Balance Preview</h6>
+                            </div>
+                            <div class="balance-preview-content">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="balance-item">
+                                            <label>Current Balance</label>
+                                            <div class="balance-value" id="current-balance" data-balance="{{ bank_account.current_balance }}">
+                                                {{ bank_account.balance_formatted }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="balance-item">
+                                            <label>Transaction Amount</label>
+                                            <div class="balance-value" id="transaction-amount">
+                                                {{ bank_account.currency.symbol }} 0.00
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="balance-item">
+                                            <label>New Balance</label>
+                                            <div class="balance-value" id="new-balance">
+                                                {{ bank_account.balance_formatted }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-primary" data-original-text="{{ submit_text }}">
+                    <i class="fas fa-save"></i> {{ submit_text }}
+                </button>
+                <a href="{% url 'bank_accounts:bank_account_transactions' bank_account.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bank_accounts/js/bank_accounts.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize form validation
+    $('#transaction-form').on('submit', function(e) {
+        if (!validateTransactionForm()) {
+            e.preventDefault();
+            showAlert('Please correct the errors in the form.', 'danger');
+            scrollToFirstError();
+        }
+    });
+
+    // Real-time balance calculation
+    $('#id_amount, #id_transaction_type').on('input change', function() {
+        updateBalancePreview();
+    });
+
+    // Amount formatting
+    $('#id_amount').on('input', function() {
+        formatAmount($(this));
+    });
+
+    // Date picker enhancement
+    $('#id_transaction_date').on('change', function() {
+        validateTransactionDate($(this));
+    });
+});
+
+function validateTransactionForm() {
+    var isValid = true;
+    
+    // Required fields validation
+    $('.form-control[required], .form-select[required]').each(function() {
+        if (!$(this).val()) {
+            $(this).addClass('is-invalid');
+            isValid = false;
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+    
+    // Amount validation
+    var amount = parseFloat($('#id_amount').val());
+    if (isNaN(amount) || amount <= 0) {
+        $('#id_amount').addClass('is-invalid');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+function updateBalancePreview() {
+    var currentBalance = parseFloat($('#current-balance').data('balance')) || 0;
+    var amount = parseFloat($('#id_amount').val()) || 0;
+    var transactionType = $('#id_transaction_type').val();
+    var currencySymbol = '{{ bank_account.currency.symbol }}';
+    
+    // Update transaction amount display
+    $('#transaction-amount').text(currencySymbol + ' ' + amount.toFixed(2));
+    
+    // Calculate new balance
+    var newBalance;
+    if (transactionType === 'credit') {
+        newBalance = currentBalance + amount;
+    } else {
+        newBalance = currentBalance - amount;
+    }
+    
+    // Update new balance display
+    $('#new-balance').text(currencySymbol + ' ' + newBalance.toFixed(2));
+    
+    // Add visual feedback
+    if (newBalance < 0) {
+        $('#new-balance').addClass('text-danger');
+    } else {
+        $('#new-balance').removeClass('text-danger');
+    }
+}
+
+function formatAmount(field) {
+    var value = field.val().replace(/[^0-9.]/g, '');
+    var parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    if (parts.length === 2 && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    field.val(value);
+}
+
+function validateTransactionDate(field) {
+    var selectedDate = new Date(field.val());
+    var today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    if (selectedDate > today) {
+        showFieldError(field, 'Transaction date cannot be in the future.');
+        return false;
+    }
+    
+    return true;
+}
+
+function showFieldError(field, message) {
+    field.addClass('is-invalid');
+    field.siblings('.invalid-feedback').remove();
+    field.after('<div class="invalid-feedback">' + message + '</div>');
+}
+
+function showAlert(message, type) {
+    var alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    $('.alert-container').html(alertHtml);
+    
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 5000);
+}
+
+function scrollToFirstError() {
+    var firstError = $('.is-invalid').first();
+    if (firstError.length) {
+        $('html, body').animate({
+            scrollTop: firstError.offset().top - 100
+        }, 500);
+        firstError.focus();
+    }
+}
+</script>
+{% endblock %} 

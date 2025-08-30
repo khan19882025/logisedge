@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Recurring Entry - LogisEdge ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5>Are you sure you want to delete this recurring entry template?</h5>
+                        <p><strong>{{ recurring_entry.template_name }}</strong></p>
+                    </div>
+                    
+                    <div class="template-details">
+                        <h6>Template Details:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Type:</strong> {{ recurring_entry.get_journal_type_display }}</li>
+                            <li><strong>Frequency:</strong> {{ recurring_entry.get_frequency_display }}</li>
+                            <li><strong>Start Date:</strong> {{ recurring_entry.start_date|date:"M d, Y" }}</li>
+                            <li><strong>Status:</strong> 
+                                {% if recurring_entry.status == 'ACTIVE' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif recurring_entry.status == 'PAUSED' %}
+                                    <span class="badge bg-warning">Paused</span>
+                                {% elif recurring_entry.status == 'COMPLETED' %}
+                                    <span class="badge bg-primary">Completed</span>
+                                {% elif recurring_entry.status == 'CANCELLED' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    {% if recurring_entry.generated_entries.exists %}
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Important Note:</h6>
+                            <p>This template has {{ recurring_entry.generated_entries.count }} generated journal entries. 
+                            Deleting the template will not affect the generated entries, but you will lose the ability to 
+                            generate new entries from this template.</p>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="text-center mt-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Delete Template
+                            </button>
+                            <a href="{% url 'recurring_journal_entry:recurring_entry_detail' recurring_entry.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Container Bookings{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'container_management/css/container.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="bi bi-calendar-check me-2"></i>Container Bookings
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'container_management:booking_create' %}" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-plus me-1"></i>New Booking
+            </a>
+            <a href="{% url 'container_management:dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-graph-up me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-search me-2"></i>Search & Filter
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="{{ search_form.search_by.id_for_label }}" class="form-label">Search By</label>
+                    {{ search_form.search_by }}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ search_form.search_term.id_for_label }}" class="form-label">Search Term</label>
+                    {{ search_form.search_term }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.status.id_for_label }}" class="form-label">Status</label>
+                    {{ search_form.status }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.date_from.id_for_label }}" class="form-label">From Date</label>
+                    {{ search_form.date_from }}
+                </div>
+                <div class="col-md-2">
+                    <label for="{{ search_form.date_to.id_for_label }}" class="form-label">To Date</label>
+                    {{ search_form.date_to }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-sm me-2">
+                        <i class="bi bi-search me-1"></i>Search
+                    </button>
+                    <a href="{% url 'container_management:booking_list' %}" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bookings List -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="bi bi-list me-2"></i>Bookings ({{ page_obj.paginator.count }})
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if bookings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Booking #</th>
+                                <th>Container</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Pickup Date</th>
+                                <th>Drop Off</th>
+                                <th>Rate</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in bookings %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ booking.booking_number }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ booking.container.container_type|title }}</small>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ booking.container.container_number }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ booking.container_size }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ booking.customer.name }}</strong>
+                                            {% if booking.customer.email %}
+                                                <br>
+                                                <small class="text-muted">{{ booking.customer.email }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ booking.get_status_display_class }}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ booking.pickup_date|date:"M d, Y" }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ booking.pickup_location }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ booking.drop_off_date|date:"M d, Y" }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ booking.drop_off_port }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>AED {{ booking.rate|floatformat:2 }}</strong>
+                                        {% if booking.weight %}
+                                            <br>
+                                            <small class="text-muted">{{ booking.weight }} kg</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'container_management:booking_detail' booking.pk %}" 
+                                               class="btn btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'container_management:booking_update' booking.pk %}" 
+                                               class="btn btn-outline-warning" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'container_management:booking_delete' booking.pk %}" 
+                                               class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Booking pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search_by %}&search_by={{ request.GET.search_by }}{% endif %}{% if request.GET.search_term %}&search_term={{ request.GET.search_term }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-check fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No bookings found</h5>
+                    <p class="text-muted">Try adjusting your search criteria or create a new booking.</p>
+                    <a href="{% url 'container_management:booking_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus me-1"></i>Create First Booking
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'container_management/js/container.js' %}"></script>
+    <script>
+        // Initialize form enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add Bootstrap classes to form fields
+            const formFields = document.querySelectorAll('input, select, textarea');
+            formFields.forEach(field => {
+                field.classList.add('form-control');
+            });
+
+            // Auto-submit form on select changes
+            const selectFields = document.querySelectorAll('select');
+            selectFields.forEach(select => {
+                select.addEventListener('change', function() {
+                    this.closest('form').submit();
+                });
+            });
+
+            // Search debouncing
+            const searchInput = document.getElementById('{{ search_form.search_term.id_for_label }}');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        this.closest('form').submit();
+                    }, 500);
+                });
+            }
+
+            // Date field enhancements
+            const dateFields = document.querySelectorAll('input[type="date"]');
+            dateFields.forEach(field => {
+                field.addEventListener('change', function() {
+                    this.closest('form').submit();
+                });
+            });
+        });
+    </script>
+{% endblock %}

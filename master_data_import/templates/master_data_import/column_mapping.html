@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Column Mapping - Master Data Import{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'master_data_import/css/column_mapping.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-columns me-2"></i>Column Mapping
+        </h1>
+        <div>
+            <a href="{% url 'master_data_import:upload_file' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Upload
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Map File Columns to Database Fields</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Template:</strong> {{ import_job.template.name }} ({{ import_job.template.get_data_type_display }})
+                        <br>
+                        <strong>File:</strong> {{ import_job.file_name }} ({{ columns|length }} columns)
+                    </div>
+
+                    <form method="post" id="mapping-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="font-weight-bold text-primary">File Columns</h6>
+                                <p class="text-muted small">Columns found in your uploaded file</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="font-weight-bold text-success">Database Fields</h6>
+                                <p class="text-muted small">Fields available in the template</p>
+                            </div>
+                        </div>
+
+                        <div class="mapping-container">
+                            {% for column in columns %}
+                            <div class="mapping-row">
+                                <div class="file-column">
+                                    <span class="column-name">{{ column }}</span>
+                                </div>
+                                <div class="mapping-arrow">
+                                    <i class="fas fa-arrow-right"></i>
+                                </div>
+                                <div class="database-field">
+                                    {{ form|get_field:column }}
+                                    {% if form|get_field_errors:column %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form|get_field_errors:column %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="auto-map" checked>
+                                        <label class="form-check-label" for="auto-map">
+                                            Auto-map columns with matching names
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <button type="button" class="btn btn-outline-secondary" id="clear-mapping">
+                                        <i class="fas fa-eraser me-1"></i>Clear All
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'master_data_import:upload_file' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="continue-btn">
+                                <i class="fas fa-arrow-right me-1"></i>Continue to Preview
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Template Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-alt me-2"></i>Template Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>{{ import_job.template.name }}</h6>
+                    <p class="text-muted">{{ import_job.template.description|default:"No description available" }}</p>
+                    
+                    <div class="template-details">
+                        <div class="detail-item">
+                            <strong>Data Type:</strong> {{ import_job.template.get_data_type_display }}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Required Fields:</strong>
+                            <ul class="list-unstyled mt-1">
+                                {% for field in template_fields %}
+                                    {% if field in import_job.template.required_fields %}
+                                        <li><i class="fas fa-asterisk text-danger me-1"></i>{{ field }}</li>
+                                    {% else %}
+                                        <li><i class="fas fa-circle text-muted me-1"></i>{{ field }}</li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mapping Tips -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-lightbulb me-2"></i>Mapping Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Required fields are marked with <i class="fas fa-asterisk text-danger"></i>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Leave unmapped to skip columns
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Use auto-map for columns with matching names
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Preview data before final import
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'master_data_import/js/column_mapping.js' %}"></script>
+{% endblock %}

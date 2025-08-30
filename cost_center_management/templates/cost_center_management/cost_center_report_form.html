@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Cost Center Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cost_center_management/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-bar mr-2"></i>{{ title }}
+        </h1>
+        <div>
+            <a href="{% url 'cost_center_management:cost_center_report_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">{{ title }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Report Name -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.report_name.id_for_label }}" class="form-label">
+                                Report Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.report_name }}
+                            {% if form.report_name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.report_name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Enter a descriptive name for the report.</small>
+                        </div>
+                    </div>
+
+                    <!-- Report Type -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.report_type.id_for_label }}" class="form-label">
+                                Report Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.report_type }}
+                            {% if form.report_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.report_type.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Select the type of report to generate.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Cost Center -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.cost_center.id_for_label }}" class="form-label">
+                                Cost Center
+                            </label>
+                            {{ form.cost_center }}
+                            {% if form.cost_center.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.cost_center.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Leave blank to include all cost centers.</small>
+                        </div>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                Start Date
+                            </label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.start_date.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Start date for the report period.</small>
+                        </div>
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">
+                                End Date
+                            </label>
+                            {{ form.end_date }}
+                            {% if form.end_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.end_date.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">End date for the report period.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-group">
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-chart-bar mr-1"></i>Generate Report
+                        </button>
+                        <a href="{% url 'cost_center_management:cost_center_report_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times mr-1"></i>Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Types Help -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-question-circle mr-1"></i>Report Types
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card border-left-danger shadow h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                        Expense Report
+                                    </div>
+                                    <div class="h6 mb-0 font-weight-bold text-gray-800">Cost Center Expenses</div>
+                                    <div class="text-xs text-muted">
+                                        Detailed breakdown of expenses by cost center, including transaction history, categories, and trends.
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-left-warning shadow h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Budget Variance
+                                    </div>
+                                    <div class="h6 mb-0 font-weight-bold text-gray-800">Budget vs Actual</div>
+                                    <div class="text-xs text-muted">
+                                        Comparison of budgeted amounts vs actual expenses, showing variances and utilization percentages.
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-left-success shadow h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Profit & Loss
+                                    </div>
+                                    <div class="h6 mb-0 font-weight-bold text-gray-800">P&L by Cost Center</div>
+                                    <div class="text-xs text-muted">
+                                        Profit and loss statement broken down by cost center, showing revenue, expenses, and net income.
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-chart-bar fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Report Templates -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-bolt mr-1"></i>Quick Report Templates
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-primary btn-block" onclick="loadTemplate('monthly_expense')">
+                        <i class="fas fa-calendar-alt mr-1"></i>Monthly Expense Report
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-warning btn-block" onclick="loadTemplate('quarterly_budget')">
+                        <i class="fas fa-chart-pie mr-1"></i>Quarterly Budget Variance
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-success btn-block" onclick="loadTemplate('annual_pl')">
+                        <i class="fas fa-chart-bar mr-1"></i>Annual P&L Report
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-info btn-block" onclick="loadTemplate('custom')">
+                        <i class="fas fa-cogs mr-1"></i>Custom Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cost_center_management/script.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize form validation
+    $('.needs-validation').on('submit', function(event) {
+        if (!this.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        $(this).addClass('was-validated');
+    });
+
+    // Set default dates if empty
+    if (!$('#id_start_date').val()) {
+        var today = new Date();
+        var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        $('#id_start_date').val(firstDay.toISOString().split('T')[0]);
+    }
+    
+    if (!$('#id_end_date').val()) {
+        var today = new Date().toISOString().split('T')[0];
+        $('#id_end_date').val(today);
+    }
+
+    // Auto-generate report name if empty
+    $('#id_report_name').on('blur', function() {
+        if (!$(this).val()) {
+            var reportType = $('#id_report_type option:selected').text();
+            var startDate = $('#id_start_date').val();
+            var endDate = $('#id_end_date').val();
+            
+            if (startDate && endDate) {
+                var name = reportType + ' Report (' + startDate + ' to ' + endDate + ')';
+                $(this).val(name);
+            }
+        }
+    });
+});
+
+// Load report templates
+function loadTemplate(template) {
+    var today = new Date();
+    var startDate, endDate, reportName, reportType;
+    
+    switch(template) {
+        case 'monthly_expense':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            reportName = 'Monthly Expense Report (' + startDate.toISOString().split('T')[0] + ' to ' + endDate.toISOString().split('T')[0] + ')';
+            reportType = 'expense';
+            break;
+        case 'quarterly_budget':
+            var quarter = Math.floor(today.getMonth() / 3);
+            startDate = new Date(today.getFullYear(), quarter * 3, 1);
+            endDate = new Date(today.getFullYear(), (quarter + 1) * 3, 0);
+            reportName = 'Quarterly Budget Variance Report (' + startDate.toISOString().split('T')[0] + ' to ' + endDate.toISOString().split('T')[0] + ')';
+            reportType = 'budget_variance';
+            break;
+        case 'annual_pl':
+            startDate = new Date(today.getFullYear(), 0, 1);
+            endDate = new Date(today.getFullYear(), 11, 31);
+            reportName = 'Annual P&L Report (' + today.getFullYear() + ')';
+            reportType = 'profit_loss';
+            break;
+        case 'custom':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = today;
+            reportName = 'Custom Report (' + startDate.toISOString().split('T')[0] + ' to ' + endDate.toISOString().split('T')[0] + ')';
+            reportType = 'expense';
+            break;
+    }
+    
+    // Populate form fields
+    $('#id_report_name').val(reportName);
+    $('#id_report_type').val(reportType);
+    $('#id_start_date').val(startDate.toISOString().split('T')[0]);
+    $('#id_end_date').val(endDate.toISOString().split('T')[0]);
+    
+    // Show success message
+    $('<div class="alert alert-success alert-dismissible fade show" role="alert">')
+        .html('<i class="fas fa-check mr-1"></i>Template loaded successfully!')
+        .append('<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>')
+        .insertBefore('.card');
+}
+</script>
+{% endblock %}

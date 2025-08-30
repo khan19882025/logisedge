@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Security Event - {{ security_event.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title">
+                        <i class="fas fa-shield-alt"></i> Security Event Details
+                    </h4>
+                    <div class="btn-group">
+                        <a href="{% url 'activity_logs:security_event_update' security_event.pk %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'activity_logs:security_event_delete' security_event.pk %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        <a href="{% url 'activity_logs:security_event_list' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <!-- Event Information -->
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-info-circle"></i> Event Information
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Event Type:</label>
+                                        <span class="info-value">
+                                            <span class="badge bg-info">{{ security_event.get_event_type_display }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Severity:</label>
+                                        <span class="info-value">
+                                            {% if security_event.severity == 'CRITICAL' %}
+                                                <span class="badge bg-danger">{{ security_event.get_severity_display }}</span>
+                                            {% elif security_event.severity == 'HIGH' %}
+                                                <span class="badge bg-warning">{{ security_event.get_severity_display }}</span>
+                                            {% elif security_event.severity == 'MEDIUM' %}
+                                                <span class="badge bg-primary">{{ security_event.get_severity_display }}</span>
+                                            {% else %}
+                                                <span class="badge bg-success">{{ security_event.get_severity_display }}</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Title:</label>
+                                        <span class="info-value">{{ security_event.title }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Description:</label>
+                                        <span class="info-value">{{ security_event.description|linebreaks }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Source Information -->
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-map-marker-alt"></i> Source Information
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Source IP:</label>
+                                        <span class="info-value">
+                                            <code>{{ security_event.source_ip }}</code>
+                                        </span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Source Location:</label>
+                                        <span class="info-value">
+                                            {{ security_event.source_location|default:"Not specified" }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Details -->
+                            {% if security_event.details %}
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-file-code"></i> Additional Details
+                                </h5>
+                                <div class="info-group">
+                                    <label class="info-label">Details:</label>
+                                    <span class="info-value">
+                                        <pre class="details-json">{{ security_event.details|pprint }}</pre>
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <!-- Metadata -->
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-clock"></i> Metadata
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Timestamp:</label>
+                                        <span class="info-value">{{ security_event.timestamp|date:"M d, Y H:i:s" }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Status:</label>
+                                        <span class="info-value">
+                                            {% if security_event.is_resolved %}
+                                                <span class="badge bg-success">Resolved</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Open</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% if security_event.user %}
+                                    <div class="info-group">
+                                        <label class="info-label">User:</label>
+                                        <span class="info-value">{{ security_event.user.username }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Resolution Information -->
+                            {% if security_event.is_resolved %}
+                            <div class="info-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-check-circle"></i> Resolution
+                                </h5>
+                                <div class="info-grid">
+                                    <div class="info-group">
+                                        <label class="info-label">Resolved By:</label>
+                                        <span class="info-value">{{ security_event.resolved_by.username|default:"Unknown" }}</span>
+                                    </div>
+                                    <div class="info-group">
+                                        <label class="info-label">Resolved At:</label>
+                                        <span class="info-value">{{ security_event.resolved_at|date:"M d, Y H:i:s" }}</span>
+                                    </div>
+                                    {% if security_event.resolution_notes %}
+                                    <div class="info-group">
+                                        <label class="info-label">Resolution Notes:</label>
+                                        <span class="info-value">{{ security_event.resolution_notes|linebreaks }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .section-title {
+        color: #495057;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .info-grid {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .info-value {
+        color: #212529;
+        font-size: 0.95rem;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .details-json {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        font-size: 0.875rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0.25rem;
+    }
+    
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+</style>
+{% endblock %}

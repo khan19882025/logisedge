@@ -1,0 +1,472 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ asset.asset_name }} - Asset Details - LogisEdge ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'asset_register/css/asset_register.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="asset-register-container">
+    <!-- Header -->
+    <div class="asset-register-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-building"></i> Asset Details</h1>
+                <p>{{ asset.asset_code }} - {{ asset.asset_name }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'asset_register:asset_print' asset.id %}" class="btn btn-outline" target="_blank">
+                    <i class="fas fa-print"></i> Print
+                </a>
+                <a href="{% url 'asset_register:asset_edit' asset.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Asset
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Information Grid -->
+    <div class="row">
+        <!-- Main Asset Information -->
+        <div class="col-lg-8">
+            <div class="asset-card mb-4">
+                <div class="asset-card-header">
+                    <h3><i class="fas fa-info-circle"></i> Asset Information</h3>
+                </div>
+                <div class="asset-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Asset Code:</label>
+                                <div class="fs-5 fw-bold">{{ asset.asset_code }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Asset Name:</label>
+                                <div>{{ asset.asset_name }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Category:</label>
+                                <div>{{ asset.category.name|default:"Not specified" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Location:</label>
+                                <div>{{ asset.location.name|default:"Not specified" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Status:</label>
+                                <div>
+                                    <span class="status-badge {{ asset.status.name|lower|cut:' ' }}">
+                                        {{ asset.status.name|default:"Unknown" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Serial Number:</label>
+                                <div>{{ asset.serial_number|default:"Not specified" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Model Number:</label>
+                                <div>{{ asset.model_number|default:"Not specified" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Manufacturer:</label>
+                                <div>{{ asset.manufacturer|default:"Not specified" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Assigned To:</label>
+                                <div>
+                                    {% if asset.assigned_to %}
+                                    {{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}
+                                    {% if asset.assigned_date %}
+                                    <br><small class="text-muted">Since {{ asset.assigned_date|date:"M d, Y" }}</small>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">Not assigned</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Description:</label>
+                                <div>{{ asset.description|default:"No description provided"|linebreaks }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Information -->
+            <div class="asset-card mb-4">
+                <div class="asset-card-header">
+                    <h3><i class="fas fa-dollar-sign"></i> Financial Information</h3>
+                </div>
+                <div class="asset-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Purchase Date:</label>
+                                <div>{{ asset.purchase_date|date:"F d, Y" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Purchase Value:</label>
+                                <div class="fs-5 fw-bold text-success">AED {{ asset.purchase_value|floatformat:2 }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Current Value:</label>
+                                <div class="fs-5 fw-bold">AED {{ asset.current_value|floatformat:2 }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Salvage Value:</label>
+                                <div>AED {{ asset.salvage_value|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Depreciation Method:</label>
+                                <div>{{ asset.depreciation_method.name|default:"Not specified" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Useful Life:</label>
+                                <div>{{ asset.useful_life_years }} years</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Accumulated Depreciation:</label>
+                                <div class="text-warning">AED {{ asset.accumulated_depreciation|floatformat:2 }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Book Value:</label>
+                                <div class="fs-5 fw-bold text-primary">AED {{ asset.book_value|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="asset-card mb-4">
+                <div class="asset-card-header">
+                    <h3><i class="fas fa-clipboard-list"></i> Additional Information</h3>
+                </div>
+                <div class="asset-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Warranty Expiry:</label>
+                                <div>
+                                    {% if asset.warranty_expiry %}
+                                    {{ asset.warranty_expiry|date:"M d, Y" }}
+                                    {% if asset.warranty_expiry < today %}
+                                    <span class="badge bg-danger ms-2">Expired</span>
+                                    {% else %}
+                                    <span class="badge bg-success ms-2">Active</span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Insurance Policy:</label>
+                                <div>{{ asset.insurance_policy|default:"Not specified" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Insurance Expiry:</label>
+                                <div>
+                                    {% if asset.insurance_expiry %}
+                                    {{ asset.insurance_expiry|date:"M d, Y" }}
+                                    {% if asset.insurance_expiry < today %}
+                                    <span class="badge bg-danger ms-2">Expired</span>
+                                    {% else %}
+                                    <span class="badge bg-success ms-2">Active</span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Last Maintenance:</label>
+                                <div>
+                                    {% if asset.last_maintenance_date %}
+                                    {{ asset.last_maintenance_date|date:"M d, Y" }}
+                                    {% else %}
+                                    <span class="text-muted">No maintenance recorded</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Next Maintenance:</label>
+                                <div>
+                                    {% if asset.next_maintenance_date %}
+                                    {{ asset.next_maintenance_date|date:"M d, Y" }}
+                                    {% if asset.next_maintenance_date < today %}
+                                    <span class="badge bg-warning ms-2">Overdue</span>
+                                    {% else %}
+                                    <span class="badge bg-info ms-2">Scheduled</span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">Not scheduled</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Maintenance Notes:</label>
+                                <div>{{ asset.maintenance_notes|default:"No notes"|linebreaks }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disposal Information -->
+            {% if asset.disposal_date %}
+            <div class="asset-card mb-4">
+                <div class="asset-card-header">
+                    <h3><i class="fas fa-trash"></i> Disposal Information</h3>
+                </div>
+                <div class="asset-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Disposal Date:</label>
+                                <div>{{ asset.disposal_date|date:"F d, Y" }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Disposal Value:</label>
+                                <div>AED {{ asset.disposal_value|floatformat:2|default:"0.00" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted">Disposal Reason:</label>
+                                <div>{{ asset.disposal_reason|default:"Not specified"|linebreaks }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- QR Code and Barcode -->
+            <div class="asset-card mb-4">
+                <div class="asset-card-header">
+                    <h3><i class="fas fa-qrcode"></i> QR Code & Barcode</h3>
+                </div>
+                <div class="asset-card-body text-center">
+                    {% if asset.qr_code %}
+                    <div class="mb-3">
+                        <img src="{{ asset.qr_code.url }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+                        <div class="mt-2">
+                            <a href="{% url 'asset_register:asset_qr_code' asset.id %}" class="btn btn-sm btn-outline" target="_blank">
+                                <i class="fas fa-download"></i> Download QR
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if asset.barcode %}
+                    <div class="mb-3">
+                        <img src="{{ asset.barcode.url }}" alt="Barcode" class="img-fluid" style="max-width: 200px;">
+                        <div class="mt-2">
+                            <a href="{% url 'asset_register:asset_barcode' asset.id %}" class="btn btn-sm btn-outline" target="_blank">
+                                <i class="fas fa-download"></i> Download Barcode
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print Asset Label
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="asset-card mb-4">
+                <div class="asset-card-header">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                </div>
+                <div class="asset-card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'asset_register:asset_movement' asset.id %}" class="btn btn-outline">
+                            <i class="fas fa-exchange-alt"></i> Record Movement
+                        </a>
+                        <a href="{% url 'asset_register:asset_maintenance' asset.id %}" class="btn btn-outline">
+                            <i class="fas fa-tools"></i> Add Maintenance
+                        </a>
+                        {% if asset.status.name != 'Disposed' %}
+                        <a href="{% url 'asset_register:asset_dispose' asset.id %}" class="btn btn-warning">
+                            <i class="fas fa-trash"></i> Dispose Asset
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'asset_register:asset_edit' asset.id %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Asset
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Information -->
+            <div class="asset-card mb-4">
+                <div class="asset-card-header">
+                    <h3><i class="fas fa-history"></i> Audit Information</h3>
+                </div>
+                <div class="asset-card-body">
+                    <div class="mb-3">
+                        <label class="fw-bold text-muted">Created By:</label>
+                        <div>{{ asset.created_by.get_full_name|default:asset.created_by.username }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold text-muted">Created On:</label>
+                        <div>{{ asset.created_at|date:"M d, Y H:i" }}</div>
+                    </div>
+                    {% if asset.updated_by %}
+                    <div class="mb-3">
+                        <label class="fw-bold text-muted">Last Updated By:</label>
+                        <div>{{ asset.updated_by.get_full_name|default:asset.updated_by.username }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold text-muted">Last Updated:</label>
+                        <div>{{ asset.updated_at|date:"M d, Y H:i" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movement History -->
+    <div class="asset-card mb-4">
+        <div class="asset-card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3><i class="fas fa-route"></i> Movement History</h3>
+                <a href="{% url 'asset_register:asset_movement' asset.id %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Add Movement
+                </a>
+            </div>
+        </div>
+        <div class="asset-card-body">
+            {% if movements %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Reason</th>
+                            <th>Created By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in movements %}
+                        <tr>
+                            <td>{{ movement.movement_date|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ movement.get_movement_type_display }}</span>
+                            </td>
+                            <td>
+                                {% if movement.from_location %}
+                                {{ movement.from_location.name }}
+                                {% endif %}
+                                {% if movement.from_user %}
+                                <br><small>{{ movement.from_user.get_full_name|default:movement.from_user.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if movement.to_location %}
+                                {{ movement.to_location.name }}
+                                {% endif %}
+                                {% if movement.to_user %}
+                                <br><small>{{ movement.to_user.get_full_name|default:movement.to_user.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ movement.reason|default:"-" }}</td>
+                            <td>{{ movement.created_by.get_full_name|default:movement.created_by.username }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-route fa-3x mb-3"></i>
+                <h5>No movement history</h5>
+                <p>No movements have been recorded for this asset.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Maintenance Records -->
+    <div class="asset-card mb-4">
+        <div class="asset-card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3><i class="fas fa-tools"></i> Maintenance Records</h3>
+                <a href="{% url 'asset_register:asset_maintenance' asset.id %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Add Maintenance
+                </a>
+            </div>
+        </div>
+        <div class="asset-card-body">
+            {% if maintenance_records %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Cost</th>
+                            <th>Performed By</th>
+                            <th>Next Maintenance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for maintenance in maintenance_records %}
+                        <tr>
+                            <td>{{ maintenance.maintenance_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge bg-warning">{{ maintenance.get_maintenance_type_display }}</span>
+                            </td>
+                            <td>{{ maintenance.description|truncatewords:10 }}</td>
+                            <td>AED {{ maintenance.cost|floatformat:2 }}</td>
+                            <td>{{ maintenance.performed_by|default:"-" }}</td>
+                            <td>
+                                {% if maintenance.next_maintenance_date %}
+                                {{ maintenance.next_maintenance_date|date:"M d, Y" }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-tools fa-3x mb-3"></i>
+                <h5>No maintenance records</h5>
+                <p>No maintenance has been recorded for this asset.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'asset_register/js/asset_register.js' %}"></script>
+{% endblock %} 

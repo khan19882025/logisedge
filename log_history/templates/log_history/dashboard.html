@@ -1,0 +1,601 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Log History Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-history"></i> Log History Dashboard
+                </h1>
+                <p class="page-subtitle">Comprehensive overview of system and user activities</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Selector -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="date-range-selector">
+                            <label for="date-range" class="form-label me-2">Time Period:</label>
+                            <select id="date-range" class="form-select form-select-sm" style="width: auto;">
+                                <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+                                <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+                                <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+                                <option value="180" {% if days == 180 %}selected{% endif %}>Last 6 Months</option>
+                                <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
+                            </select>
+                        </div>
+                        <div class="quick-actions">
+                            <a href="{% url 'log_history:log_history_list' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-list"></i> View All Logs
+                            </a>
+                            <a href="{% url 'log_history:log_history_search' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search"></i> Advanced Search
+                            </a>
+                            <a href="{% url 'log_history:log_history_export' %}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-download"></i> Export Data
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Logs
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_logs|floatformat:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Users
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ user_stats|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Error Logs
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ error_logs|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Avg Execution Time
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ avg_execution_time|floatformat:3 }}s
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Daily Activity Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Daily Activity Trend</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                             aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Chart Options:</div>
+                            <a class="dropdown-item" href="#" onclick="refreshChart()">Refresh Data</a>
+                            <a class="dropdown-item" href="#" onclick="exportChart()">Export Chart</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="dailyActivityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Type Distribution -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Action Type Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="actionTypeChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        {% for action in action_stats %}
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-primary"></i> {{ action.action_type }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics and Recent Activity Row -->
+    <div class="row">
+        <!-- Severity Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Severity Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="severityChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        {% for severity in severity_stats %}
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-{% if severity.severity == 'CRITICAL' %}danger{% elif severity.severity == 'HIGH' %}warning{% elif severity.severity == 'MEDIUM' %}info{% else %}success{% endif %}"></i> 
+                            {{ severity.severity }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Users -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Active Users</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Actions</th>
+                                    <th>% of Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_stat in user_stats %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <i class="fas fa-user-circle fa-lg text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">{{ user_stat.user__username }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ user_stat.count }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {% widthratio user_stat.count total_logs 100 %}%"></div>
+                                        </div>
+                                        <small class="text-muted">
+                                            {% widthratio user_stat.count total_logs 100 %}%
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Error Logs -->
+    <div class="row">
+        <!-- Recent Activity -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for log in recent_logs %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}success{% endif %}">
+                                <i class="fas fa-{% if log.action_type == 'CREATE' %}plus{% elif log.action_type == 'UPDATE' %}edit{% elif log.action_type == 'DELETE' %}trash{% elif log.action_type == 'LOGIN' %}sign-in-alt{% elif log.action_type == 'LOGOUT' %}sign-out-alt{% else %}circle{% endif %}"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <span class="badge bg-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'HIGH' %}warning{% elif log.severity == 'MEDIUM' %}info{% else %}success{% endif %} me-2">
+                                        {{ log.get_severity_display }}
+                                    </span>
+                                    <span class="badge bg-secondary me-2">{{ log.get_action_display }}</span>
+                                    <small class="text-muted">{{ log.timestamp|timesince }} ago</small>
+                                </div>
+                                <div class="timeline-body">
+                                    <strong>{{ log.description }}</strong>
+                                    {% if log.user %}
+                                    <br><small class="text-muted">by {{ log.user.username }}</small>
+                                    {% endif %}
+                                    {% if log.module %}
+                                    <br><small class="text-muted">in {{ log.module }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="timeline-footer">
+                                    <a href="{% url 'log_history:log_history_detail' log.pk %}" class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Logs -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">Recent Errors & Warnings</h6>
+                </div>
+                <div class="card-body">
+                    {% if error_logs %}
+                        {% for log in error_logs %}
+                        <div class="alert alert-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'HIGH' %}warning{% else %}info{% endif %} alert-sm mb-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ log.get_action_display }}</strong>
+                                    <br><small>{{ log.description|truncatechars:60 }}</small>
+                                    <br><small class="text-muted">{{ log.timestamp|timesince }} ago</small>
+                                </div>
+                                <a href="{% url 'log_history:log_history_detail' log.pk %}" class="btn btn-sm btn-outline-{% if log.severity == 'CRITICAL' %}danger{% elif log.severity == 'HIGH' %}warning{% else %}info{% endif %}">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p>No errors or warnings in the selected period</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+    
+    .page-subtitle {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .border-left-primary {
+        border-left: 0.25rem solid #4e73df !important;
+    }
+    
+    .border-left-success {
+        border-left: 0.25rem solid #1cc88a !important;
+    }
+    
+    .border-left-warning {
+        border-left: 0.25rem solid #f6c23e !important;
+    }
+    
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    
+    .text-gray-300 {
+        color: #dddfeb !important;
+    }
+    
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+    
+    .chart-area {
+        position: relative;
+        height: 20rem;
+        width: 100%;
+    }
+    
+    .chart-pie {
+        position: relative;
+        height: 15rem;
+        width: 100%;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -2.5rem;
+        top: 0.5rem;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+    }
+    
+    .timeline-content {
+        background: #f8f9fc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 3px solid #4e73df;
+    }
+    
+    .timeline-header {
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-body {
+        margin-bottom: 1rem;
+    }
+    
+    .avatar-sm {
+        width: 2rem;
+        height: 2rem;
+    }
+    
+    .alert-sm {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quick-actions .btn {
+        margin-left: 0.5rem;
+    }
+    
+    .date-range-selector {
+        display: flex;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Chart configurations and data
+    let dailyActivityChart, actionTypeChart, severityChart;
+    
+    // Initialize charts when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+        loadChartData();
+    });
+    
+    // Date range change handler
+    document.getElementById('date-range').addEventListener('change', function() {
+        const days = this.value;
+        window.location.href = `?days=${days}`;
+    });
+    
+    function initializeCharts() {
+        // Daily Activity Chart
+        const dailyCtx = document.getElementById('dailyActivityChart').getContext('2d');
+        dailyActivityChart = new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Log Entries',
+                    data: [],
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Action Type Chart
+        const actionCtx = document.getElementById('actionTypeChart').getContext('2d');
+        actionTypeChart = new Chart(actionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                        '#858796', '#5a5c69', '#2e59d9', '#17a673', '#2c9faf'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // Severity Chart
+        const severityCtx = document.getElementById('severityChart').getContext('2d');
+        severityChart = new Chart(severityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        '#e74a3b', '#f6c23e', '#36b9cc', '#1cc88a'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+    
+    function loadChartData() {
+        const days = document.getElementById('date-range').value;
+        
+        fetch(`{% url 'log_history:log_history_chart_data' %}?days=${days}`)
+            .then(response => response.json())
+            .then(data => {
+                updateCharts(data);
+            })
+            .catch(error => {
+                console.error('Error loading chart data:', error);
+            });
+    }
+    
+    function updateCharts(data) {
+        // Update Daily Activity Chart
+        if (data.daily_stats) {
+            dailyActivityChart.data.labels = data.daily_stats.map(item => item.date);
+            dailyActivityChart.data.datasets[0].data = data.daily_stats.map(item => item.count);
+            dailyActivityChart.update();
+        }
+        
+        // Update Action Type Chart
+        if (data.action_stats) {
+            actionTypeChart.data.labels = data.action_stats.map(item => item.action_type);
+            actionTypeChart.data.datasets[0].data = data.action_stats.map(item => item.count);
+            actionTypeChart.update();
+        }
+        
+        // Update Severity Chart
+        if (data.severity_stats) {
+            severityChart.data.labels = data.severity_stats.map(item => item.severity);
+            severityChart.data.datasets[0].data = data.severity_stats.map(item => item.count);
+            severityChart.update();
+        }
+    }
+    
+    function refreshChart() {
+        loadChartData();
+    }
+    
+    function exportChart() {
+        // Implementation for chart export
+        alert('Chart export functionality would be implemented here');
+    }
+</script>
+{% endblock %}

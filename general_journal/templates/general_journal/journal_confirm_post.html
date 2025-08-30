@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Post Journal Entry - {{ journal_entry.journal_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Confirm Post
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Are you sure you want to post the following journal entry?</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Journal Number:</strong> {{ journal_entry.journal_number }}<br>
+                        <strong>Date:</strong> {{ journal_entry.date|date:"F d, Y" }}<br>
+                        <strong>Description:</strong> {{ journal_entry.description|default:"No description" }}<br>
+                        <strong>Total Debit:</strong> AED {{ journal_entry.total_debit|floatformat:2 }}<br>
+                        <strong>Total Credit:</strong> AED {{ journal_entry.total_credit|floatformat:2 }}<br>
+                        <strong>Balance:</strong> 
+                        {% if journal_entry.is_balanced %}
+                            <span class="badge bg-success">BALANCED</span>
+                        {% else %}
+                            <span class="badge bg-danger">UNBALANCED</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if not journal_entry.is_balanced %}
+                        <div class="alert alert-warning">
+                            <strong>Warning:</strong> This journal entry is not balanced. It cannot be posted until debits equal credits.
+                        </div>
+                    {% endif %}
+                    
+                    <p class="text-info"><strong>Note:</strong> Posted journal entries cannot be edited or deleted.</p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'general_journal:journal_detail' journal_entry.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success" {% if not journal_entry.is_balanced %}disabled{% endif %}>
+                                <i class="bi bi-check-circle me-1"></i>
+                                Post Journal Entry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

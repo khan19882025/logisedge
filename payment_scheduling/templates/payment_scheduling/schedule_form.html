@@ -1,0 +1,321 @@
+{% extends 'payment_scheduling/base.html' %}
+{% load static %}
+
+{% block title %}{% if mode == 'create' %}Create{% else %}Edit{% endif %} Payment Schedule{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">
+    <a href="{% url 'payment_scheduling:schedule_list' %}">Schedules</a>
+</li>
+<li class="breadcrumb-item active">{% if mode == 'create' %}Create{% else %}Edit{% endif %}</li>
+{% endblock %}
+
+{% block payment_scheduling_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    {% if mode == 'create' %}Create New Payment Schedule{% else %}Edit Payment Schedule{% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Basic Information -->
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Basic Information</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.payment_type.id_for_label }}" class="form-label">
+                                    Payment Type <span class="text-danger">*</span>
+                                </label>
+                                {{ form.payment_type }}
+                                {% if form.payment_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.payment_type.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 customer-field" style="display: none;">
+                                <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                    Customer <span class="text-danger">*</span>
+                                </label>
+                                {{ form.customer }}
+                                {% if form.customer.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.customer.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 vendor-field" style="display: none;">
+                                <label for="{{ form.vendor.id_for_label }}" class="form-label">
+                                    Vendor <span class="text-danger">*</span>
+                                </label>
+                                {{ form.vendor }}
+                                {% if form.vendor.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.vendor.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                    Currency <span class="text-danger">*</span>
+                                </label>
+                                {{ form.currency }}
+                                {% if form.currency.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.currency.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.due_date.id_for_label }}" class="form-label">
+                                    Due Date <span class="text-danger">*</span>
+                                </label>
+                                {{ form.due_date }}
+                                {% if form.due_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.due_date.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Amount Details -->
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Amount Details</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.total_amount.id_for_label }}" class="form-label">
+                                    Total Amount <span class="text-danger">*</span>
+                                </label>
+                                {{ form.total_amount }}
+                                {% if form.total_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.total_amount.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.vat_rate.id_for_label }}" class="form-label">
+                                    VAT Rate (%) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.vat_rate }}
+                                {% if form.vat_rate.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.vat_rate.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">VAT Amount</label>
+                                <div class="form-control-plaintext" id="vat_amount_display">
+                                    {% if form.instance.vat_amount %}
+                                        {{ form.instance.vat_amount|floatformat:2 }}
+                                    {% else %}
+                                        0.00
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Total with VAT</label>
+                                <div class="form-control-plaintext" id="total_with_vat_display">
+                                    {% if form.instance.total_with_vat %}
+                                        {{ form.instance.total_with_vat|floatformat:2 }}
+                                    {% else %}
+                                        0.00
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.installment_count.id_for_label }}" class="form-label">
+                                    Number of Installments <span class="text-danger">*</span>
+                                </label>
+                                {{ form.installment_count }}
+                                {% if form.installment_count.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.installment_count.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.installment_amount.id_for_label }}" class="form-label">
+                                    Installment Amount
+                                </label>
+                                {{ form.installment_amount }}
+                                {% if form.installment_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.installment_amount.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- References -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">References</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.invoice_reference.id_for_label }}" class="form-label">
+                                            Invoice Reference
+                                        </label>
+                                        {{ form.invoice_reference }}
+                                        {% if form.invoice_reference.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.invoice_reference.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.po_reference.id_for_label }}" class="form-label">
+                                            PO Reference
+                                        </label>
+                                        {{ form.po_reference }}
+                                        {% if form.po_reference.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.po_reference.errors.0 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    Description
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'payment_scheduling:schedule_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to List
+                                </a>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 
+                                        {% if mode == 'create' %}Create Schedule{% else %}Update Schedule{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle payment type change
+    const paymentTypeSelect = document.getElementById('{{ form.payment_type.id_for_label }}');
+    const customerField = document.querySelector('.customer-field');
+    const vendorField = document.querySelector('.vendor-field');
+
+    function toggleFields() {
+        const selectedValue = paymentTypeSelect.value;
+        
+        if (selectedValue === 'customer') {
+            customerField.style.display = 'block';
+            vendorField.style.display = 'none';
+            document.getElementById('{{ form.customer.id_for_label }}').required = true;
+            document.getElementById('{{ form.vendor.id_for_label }}').required = false;
+        } else if (selectedValue === 'vendor') {
+            customerField.style.display = 'none';
+            vendorField.style.display = 'block';
+            document.getElementById('{{ form.customer.id_for_label }}').required = false;
+            document.getElementById('{{ form.vendor.id_for_label }}').required = true;
+        } else {
+            customerField.style.display = 'none';
+            vendorField.style.display = 'none';
+            document.getElementById('{{ form.customer.id_for_label }}').required = false;
+            document.getElementById('{{ form.vendor.id_for_label }}').required = false;
+        }
+    }
+
+    // Initialize fields on page load
+    toggleFields();
+
+    // Add event listener for payment type change
+    paymentTypeSelect.addEventListener('change', toggleFields);
+
+    // Handle amount calculations
+    const totalAmountInput = document.getElementById('{{ form.total_amount.id_for_label }}');
+    const vatRateInput = document.getElementById('{{ form.vat_rate.id_for_label }}');
+    const vatAmountDisplay = document.getElementById('vat_amount_display');
+    const totalWithVatDisplay = document.getElementById('total_with_vat_display');
+
+    function calculateAmounts() {
+        const totalAmount = parseFloat(totalAmountInput.value) || 0;
+        const vatRate = parseFloat(vatRateInput.value) || 0;
+        
+        const vatAmount = (totalAmount * vatRate) / 100;
+        const totalWithVat = totalAmount + vatAmount;
+        
+        if (vatAmountDisplay) {
+            vatAmountDisplay.textContent = vatAmount.toFixed(2);
+        }
+        if (totalWithVatDisplay) {
+            totalWithVatDisplay.textContent = totalWithVat.toFixed(2);
+        }
+    }
+
+    if (totalAmountInput && vatRateInput) {
+        totalAmountInput.addEventListener('input', calculateAmounts);
+        vatRateInput.addEventListener('input', calculateAmounts);
+    }
+
+    // Handle installment calculations
+    const installmentCountInput = document.getElementById('{{ form.installment_count.id_for_label }}');
+    const installmentAmountInput = document.getElementById('{{ form.installment_amount.id_for_label }}');
+
+    function calculateInstallments() {
+        const totalAmount = parseFloat(totalAmountInput.value) || 0;
+        const installmentCount = parseInt(installmentCountInput.value) || 1;
+        
+        if (installmentCount > 0) {
+            const installmentAmount = totalAmount / installmentCount;
+            installmentAmountInput.value = installmentAmount.toFixed(2);
+        }
+    }
+
+    if (installmentCountInput && totalAmountInput) {
+        installmentCountInput.addEventListener('input', calculateInstallments);
+        totalAmountInput.addEventListener('input', calculateInstallments);
+    }
+});
+</script>
+{% endblock %}
