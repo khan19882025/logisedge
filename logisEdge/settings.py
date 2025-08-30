@@ -308,7 +308,7 @@ EMAIL_HOST_PASSWORD = ''
 # EMAIL_HOST_PASSWORD = 'your-app-password'
 
 # Site URL for email links
-SITE_URL = 'http://localhost:8000'  # Update for production
+SITE_URL = os.getenv('SITE_URL', 'https://logisedge.onrender.com')
 
 # Billing Notification Settings
 BILLING_NOTIFICATION_FROM_EMAIL = DEFAULT_FROM_EMAIL
@@ -316,8 +316,8 @@ BILLING_REMINDER_FREQUENCY_DAYS = 3  # Send reminders every 3 days for overdue b
 BILLING_UPCOMING_REMINDER_DAYS = 3   # Send reminders 3 days before due date
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/1')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -348,10 +348,10 @@ CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
 # Redis Configuration
-REDIS_HOST = 'localhost'
-REDIS_PORT = 6379
-REDIS_DB = 0
-REDIS_PASSWORD = None  # Set if Redis requires authentication
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
+REDIS_DB = int(os.getenv('REDIS_DB', '0'))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
 
 # Task Execution Settings
 TASK_EXECUTION_TIMEOUT = 3600  # 1 hour
