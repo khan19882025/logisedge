@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -184,12 +186,28 @@ WSGI_APPLICATION = 'logisEdge.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Fetching database credentials from environment variables for better security.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'adiraifreight'),
+        'USER': os.getenv('DB_USER', 'adiraifreight_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'FnB2pRZQ4IefiWrdMaQwnlQ2LTUrvGHG'),
+        'HOST': os.getenv('DB_HOST', 'dpg-d2pgrlp5pdvs73ehaalg-a.oregon-postgres.render.com'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
+# Optional: If you have specific environment variables for different environments
+# Example: To specify internal or external DB based on environment settings
+DB_ENV = os.getenv('DB_ENV', 'external')  # 'external' or 'internal'
+
+if DB_ENV == 'external':
+    DATABASES['default']['HOST'] = 'dpg-d2pgrlp5pdvs73ehaalg-a.oregon-postgres.render.com'
+elif DB_ENV == 'internal':
+    DATABASES['default']['HOST'] = 'dpg-d2pgrlp5pdvs73ehaalg-a'
+
+# Ensure these environment variables are set in your deployment environment or .env file
 
 
 # Password validation
