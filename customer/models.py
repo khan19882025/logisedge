@@ -98,7 +98,7 @@ class Customer(models.Model):
         
         # Find the highest number for this exact prefix
         import re
-        pattern = f"^{re.escape(type_prefix)}(\d+)$"
+        pattern = rf"^{re.escape(type_prefix)}(\d+)$"
         
         customers_with_prefix = Customer.objects.filter(
             customer_code__regex=pattern
