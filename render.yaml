@@ -1,31 +1,66 @@
 services:
+  # Web Service - Django Application
   - type: web
-    name: logisedge
+    name: logisedge-web
     env: python
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
-    startCommand: gunicorn logisEdge.wsgi:application --bind 0.0.0.0:${PORT}
+    region: oregon
     plan: free
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: gunicorn logisEdge.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --timeout 120
     healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DEBUG
-        value: False
+        value: false
+      - key: DJANGO_SETTINGS_MODULE
+        value: logisEdge.settings
       - key: ALLOWED_HOSTS
-        value: logisedge.onrender.com,localhost,127.0.0.1
-      - key: DB_ENV
-        value: external
-      - key: DB_NAME
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        value: 5432
+        value: logisedge.onrender.com,*.onrender.com,localhost,127.0.0.1
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: logisedge-db
+          property: connectionString
       - key: SITE_URL
         value: https://logisedge.onrender.com
+      - key: DISABLE_COLLECTSTATIC
+        value: 1
+      - key: WEB_CONCURRENCY
+        value: 2
+      - key: PORT
+        value: 10000
+
+  # Migration Job - Runs database migrations
+  - type: job
+    name: logisedge-migrate
+    env: python
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: python manage.py migrate --noinput
+    schedule: "@initial"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: false
+      - key: DJANGO_SETTINGS_MODULE
+        value: logisEdge.settings
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: logisedge-db
+          property: connectionString
+
+databases:
+  - name: logisedge-db
+    databaseName: logisedge
+    user: logisedge_user
+    region: oregon
+    plan: free
